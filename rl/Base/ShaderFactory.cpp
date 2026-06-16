@@ -3,10 +3,11 @@
 #include <stdexcept>
 #include <vector>
 
-namespace Rl::Providers
-{
+namespace Rl::Providers {
 
-ShaderObject::ShaderModule ShaderObject::CreateShaderModule(const VkDevice device, const std::vector<char>& code) {
+ShaderObject::ShaderModule ShaderObject::CreateShaderModule(const VkDevice device,
+                                                            const std::vector<char>& code)
+{
     ShaderModule module;
 
     VkShaderModuleCreateInfo createInfo{};
@@ -14,24 +15,29 @@ ShaderObject::ShaderModule ShaderObject::CreateShaderModule(const VkDevice devic
     createInfo.codeSize = code.size();
     createInfo.pCode = reinterpret_cast<const uint32_t*>(code.data());
 
-    if (vkCreateShaderModule(device, &createInfo, nullptr, &module.module) != VK_SUCCESS) {
+    if (vkCreateShaderModule(device, &createInfo, nullptr, &module.module) != VK_SUCCESS)
+    {
         throw std::runtime_error("Failed to create shader module");
     }
 
     return module;
 }
 
-void ShaderObject::DestroyShaderModule(VkDevice device, ShaderModule& shaderModule) {
-    if (shaderModule.module != VK_NULL_HANDLE) {
+void ShaderObject::DestroyShaderModule(VkDevice device, ShaderModule& shaderModule)
+{
+    if (shaderModule.module != VK_NULL_HANDLE)
+    {
         vkDestroyShaderModule(device, shaderModule.module, nullptr);
         shaderModule.module = VK_NULL_HANDLE;
     }
 }
 
-std::vector<char> ShaderObject::ReadShaderFile(const std::string& filename) {
+std::vector<char> ShaderObject::ReadShaderFile(const std::string& filename)
+{
     std::ifstream file(filename, std::ios::ate | std::ios::binary);
 
-    if (!file.is_open()) {
+    if (!file.is_open())
+    {
         throw std::runtime_error("Failed to open shader file " + filename);
     }
     size_t fileSize = static_cast<size_t>(file.tellg());
@@ -43,4 +49,4 @@ std::vector<char> ShaderObject::ReadShaderFile(const std::string& filename) {
     return buffer;
 }
 
-}
+} // namespace Rl::Providers

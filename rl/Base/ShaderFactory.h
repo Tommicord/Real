@@ -1,15 +1,15 @@
 #pragma once
 
-#include <vulkan/vulkan.h>
 #include <string>
 #include <vector>
+#include <vulkan/vulkan.h>
 
-namespace Rl::Providers
-{
+namespace Rl::Providers {
 
 class ShaderObject {
 public:
-    struct ShaderModule {
+    struct ShaderModule
+    {
         VkShaderModule module;
     };
 
@@ -23,4 +23,4 @@ public:
     ShaderObject& operator=(const ShaderObject&) = delete;
 };
 
-}
+} // namespace Rl::Providers

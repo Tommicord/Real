@@ -2,13 +2,12 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#include <vulkan/vulkan.h>
 #include <optional>
 #include <string>
 #include <vector>
+#include <vulkan/vulkan.h>
 
-namespace Rl::Game
-{
+namespace Rl::Game {
 
 struct VulkanContext
 {
@@ -36,16 +35,12 @@ struct VulkanContext
     {
         std::optional<uint32_t> graphicsFamily;
         std::optional<uint32_t> presentFamily;
-        bool isComplete() const
-        {
-            return graphicsFamily.has_value() && presentFamily.has_value();
-        }
+        bool isComplete() const { return graphicsFamily.has_value() && presentFamily.has_value(); }
     };
     QueueFamilyIndices queueFamilyIndices;
 };
 
-class GameLauncher
-{
+class GameLauncher {
 public:
     GameLauncher();
     ~GameLauncher();
@@ -69,8 +64,8 @@ private:
     GLFWwindow* vkWindow = nullptr;
     VulkanContext vkContext;
 
-    static constexpr int width = 800;
-    static constexpr int height = 600;
+    static constexpr int width = 1800;
+    static constexpr int height = 1000;
     void CreateInstance();
     void SetupDebugMessenger();
     void CreateSurface();
@@ -94,4 +89,4 @@ private:
     std::vector<const char*> GetRequiredExtensions();
 };
 
-}
+} // namespace Rl::Game

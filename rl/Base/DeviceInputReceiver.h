@@ -1,16 +1,17 @@
 #pragma once
 
-#include <functional>
-#include <vector>
-#include <memory>
-#include <thread>
-#include <mutex>
 #include <atomic>
 #include <condition_variable>
+#include <functional>
+#include <memory>
+#include <mutex>
+#include <thread>
+#include <vector>
 
 namespace Rl::Input {
 
-enum class Key {
+enum class Key
+{
     Unknown = 0,
     Space = 32,
     Apostrophe = 39,
@@ -134,7 +135,8 @@ enum class Key {
     Menu = 348
 };
 
-enum class MouseButton {
+enum class MouseButton
+{
     Unknown = 0,
     Left = 1,
     Right = 2,
@@ -146,13 +148,15 @@ enum class MouseButton {
     Button8 = 8
 };
 
-enum class Action {
+enum class Action
+{
     Release = 0,
     Press = 1,
     Repeat = 2
 };
 
-enum class Modifier {
+enum class Modifier
+{
     None = 0,
     Shift = 1,
     Control = 2,
@@ -162,23 +166,27 @@ enum class Modifier {
     NumLock = 32
 };
 
-struct KeyEvent {
+struct KeyEvent
+{
     Key key;
     Action action;
     int modifiers;
 };
 
-struct MouseButtonEvent {
+struct MouseButtonEvent
+{
     MouseButton button;
     Action action;
     int modifiers;
 };
 
-struct MouseMoveEvent {
+struct MouseMoveEvent
+{
     double x, y;
 };
 
-struct MouseScrollEvent {
+struct MouseScrollEvent
+{
     double xoffset, yoffset;
 };
 
@@ -206,6 +214,7 @@ public:
     void NotifyMouseScrollEvent(const MouseScrollEvent& event);
     void Start();
     void Stop();
+
 private:
     DeviceInputReceiver();
     ~DeviceInputReceiver();
@@ -226,4 +235,4 @@ private:
 #endif
 };
 
-} // namespace Input
+} // namespace Rl::Input
