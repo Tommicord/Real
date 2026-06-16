@@ -7,6 +7,9 @@
 #include <string>
 #include <vector>
 
+namespace Rl::Game
+{
+
 struct VulkanContext
 {
     VkInstance instance = VK_NULL_HANDLE;
@@ -90,3 +93,5 @@ private:
     bool CheckValidationLayerSupport();
     std::vector<const char*> GetRequiredExtensions();
 };
+
+}

@@ -7,6 +7,13 @@
 #include <cstdint>
 #include <algorithm>
 
+#include "CameraProvider.h"
+
+namespace Rl::Game
+{
+
+using namespace Rl::Providers;
+
 const std::vector<const char*> validationLayers = {
     "VK_LAYER_KHRONOS_validation"
 };
@@ -106,7 +113,7 @@ void GameLauncher::CreateInstance() {
     if (enableValidationLayers && !CheckValidationLayerSupport()) {
         throw std::runtime_error("Validation layers requested, but not available");
     }
-    
+
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "RL";
@@ -114,7 +121,7 @@ void GameLauncher::CreateInstance() {
     appInfo.pEngineName = "No Engine";
     appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
     appInfo.apiVersion = VK_API_VERSION_1_0;
-    
+
     VkInstanceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
     createInfo.pApplicationInfo = &appInfo;
@@ -130,7 +137,7 @@ void GameLauncher::CreateInstance() {
     } else {
         createInfo.enabledLayerCount = 0;
     }
-    
+
     if (vkCreateInstance(&createInfo, nullptr, &vkContext.instance) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create instance");
     }
@@ -148,21 +155,21 @@ void GameLauncher::CreateSurface() {
 void GameLauncher::PickPhysicalDevice() {
     uint32_t deviceCount = 0;
     vkEnumeratePhysicalDevices(vkContext.instance, &deviceCount, nullptr);
-    
+
     if (deviceCount == 0) {
         throw std::runtime_error("Failed to find GPUs with Vulkan support");
     }
-    
+
     std::vector<VkPhysicalDevice> devices(deviceCount);
     vkEnumeratePhysicalDevices(vkContext.instance, &deviceCount, devices.data());
-    
+
     for (const auto& device : devices) {
         if (IsDeviceSuitable(device)) {
             vkContext.physicalDevice = device;
             break;
         }
     }
-    
+
     if (vkContext.physicalDevice == VK_NULL_HANDLE) {
         throw std::runtime_error("failed to find a suitable GPU!");
     }
@@ -170,13 +177,13 @@ void GameLauncher::PickPhysicalDevice() {
 
 void GameLauncher::CreateLogicalDevice() {
     vkContext.queueFamilyIndices = FindQueueFamilies(vkContext.physicalDevice);
-    
+
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::set<uint32_t> uniqueQueueFamilies = {
         vkContext.queueFamilyIndices.graphicsFamily.value(),
         vkContext.queueFamilyIndices.presentFamily.value()
     };
-    
+
     float queuePriority = 1.0f;
     for (uint32_t queueFamily : uniqueQueueFamilies) {
         VkDeviceQueueCreateInfo queueCreateInfo{};
@@ -186,22 +193,22 @@ void GameLauncher::CreateLogicalDevice() {
         queueCreateInfo.pQueuePriorities = &queuePriority;
         queueCreateInfos.push_back(queueCreateInfo);
     }
-    
+
     VkPhysicalDeviceFeatures deviceFeatures{};
-    
+
     VkDeviceCreateInfo createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
     createInfo.queueCreateInfoCount = static_cast<uint32_t>(queueCreateInfos.size());
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.pEnabledFeatures = &deviceFeatures;
-    
+
     const std::vector<const char*> deviceExtensions = {
         VK_KHR_SWAPCHAIN_EXTENSION_NAME
     };
-    
+
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
-    
+
     if (enableValidationLayers) {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
         createInfo.ppEnabledLayerNames = validationLayers.data();
@@ -212,26 +219,26 @@ void GameLauncher::CreateLogicalDevice() {
     if (vkCreateDevice(vkContext.physicalDevice, &createInfo, nullptr, &vkContext.device) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create logical device");
     }
-    
+
     vkGetDeviceQueue(vkContext.device, vkContext.queueFamilyIndices.graphicsFamily.value(), 0, &vkContext.graphicsQueue);
     vkGetDeviceQueue(vkContext.device, vkContext.queueFamilyIndices.presentFamily.value(), 0, &vkContext.presentQueue);
 }
 
 void GameLauncher::CreateSwapChain() {
     VulkanContext::QueueFamilyIndices indices = FindQueueFamilies(vkContext.physicalDevice);
-    
+
     VkSurfaceCapabilitiesKHR caps;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkContext.physicalDevice, vkContext.surface, &caps);
 
     constexpr VkSurfaceFormatKHR surfaceFormat = {VK_FORMAT_B8G8R8A8_SRGB, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
     constexpr VkPresentModeKHR presentMode = VK_PRESENT_MODE_FIFO_KHR;
     constexpr VkExtent2D extent = { width, height };
-    
+
     uint32_t imageCount = caps.minImageCount + 1;
     if (caps.maxImageCount > 0 && imageCount > caps.maxImageCount) {
         imageCount = caps.maxImageCount;
     }
-    
+
     VkSwapchainCreateInfoKHR createInfo{};
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.surface = vkContext.surface;
@@ -247,22 +254,22 @@ void GameLauncher::CreateSwapChain() {
     createInfo.presentMode = presentMode;
     createInfo.clipped = VK_TRUE;
     createInfo.oldSwapchain = VK_NULL_HANDLE;
-    
+
     if (vkCreateSwapchainKHR(vkContext.device, &createInfo, nullptr, &vkContext.swapChain) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create swap chain");
     }
-    
+
     vkGetSwapchainImagesKHR(vkContext.device, vkContext.swapChain, &imageCount, nullptr);
     vkContext.swapChainImages.resize(imageCount);
     vkGetSwapchainImagesKHR(vkContext.device, vkContext.swapChain, &imageCount, vkContext.swapChainImages.data());
-    
+
     vkContext.swapChainImageFormat = surfaceFormat.format;
     vkContext.swapChainExtent = extent;
 }
 
 void GameLauncher::CreateImageViews() {
     vkContext.swapChainImageViews.resize(vkContext.swapChainImages.size());
-    
+
     for (size_t i = 0; i < vkContext.swapChainImages.size(); i++) {
         VkImageViewCreateInfo createInfo{};
         createInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
@@ -278,7 +285,7 @@ void GameLauncher::CreateImageViews() {
         createInfo.subresourceRange.levelCount = 1;
         createInfo.subresourceRange.baseArrayLayer = 0;
         createInfo.subresourceRange.layerCount = 1;
-        
+
         if (vkCreateImageView(vkContext.device, &createInfo, nullptr, &vkContext.swapChainImageViews[i]) != VK_SUCCESS) {
             throw std::runtime_error("Failed to create image views");
         }
@@ -295,23 +302,23 @@ void GameLauncher::CreateRenderPass() {
     colorAttachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
     colorAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     colorAttachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-    
+
     VkAttachmentReference colorAttachmentRef{};
     colorAttachmentRef.attachment = 0;
     colorAttachmentRef.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-    
+
     VkSubpassDescription subpass{};
     subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     subpass.colorAttachmentCount = 1;
     subpass.pColorAttachments = &colorAttachmentRef;
-    
+
     VkRenderPassCreateInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
     renderPassInfo.attachmentCount = 1;
     renderPassInfo.pAttachments = &colorAttachment;
     renderPassInfo.subpassCount = 1;
     renderPassInfo.pSubpasses = &subpass;
-    
+
     if (vkCreateRenderPass(vkContext.device, &renderPassInfo, nullptr, &vkContext.renderPass) != VK_SUCCESS) {
         throw std::runtime_error("failed to create render pass!");
     }
@@ -320,9 +327,8 @@ void GameLauncher::CreateRenderPass() {
 void GameLauncher::CreateGraphicsPipeline() {
     auto vertShaderCode = ShaderObject::ReadShaderFile("Shaders/shader.vert.spv");
     auto fragShaderCode = ShaderObject::ReadShaderFile("Shaders/shader.frag.spv");
-
-    ShaderObject::ShaderModule vertShaderModule = ShaderObject::CreateShaderModule(vkContext.device, vertShaderCode);
-    ShaderObject::ShaderModule fragShaderModule = ShaderObject::CreateShaderModule(vkContext.device, fragShaderCode);
+    auto vertShaderModule = ShaderObject::CreateShaderModule(vkContext.device, vertShaderCode);
+    auto fragShaderModule = ShaderObject::CreateShaderModule(vkContext.device, fragShaderCode);
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -422,12 +428,12 @@ void GameLauncher::CreateGraphicsPipeline() {
 
 void GameLauncher::CreateFramebuffers() {
     vkContext.swapChainFramebuffers.resize(vkContext.swapChainImageViews.size());
-    
+
     for (size_t i = 0; i < vkContext.swapChainImageViews.size(); i++) {
         const VkImageView attachments[] = {
             vkContext.swapChainImageViews[i]
         };
-        
+
         VkFramebufferCreateInfo framebufferInfo{};
         framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
         framebufferInfo.renderPass = vkContext.renderPass;
@@ -436,7 +442,7 @@ void GameLauncher::CreateFramebuffers() {
         framebufferInfo.width = vkContext.swapChainExtent.width;
         framebufferInfo.height = vkContext.swapChainExtent.height;
         framebufferInfo.layers = 1;
-        
+
         if (vkCreateFramebuffer(vkContext.device, &framebufferInfo, nullptr, &vkContext.swapChainFramebuffers[i]) != VK_SUCCESS) {
             throw std::runtime_error("failed to create framebuffer!");
         }
@@ -448,7 +454,7 @@ void GameLauncher::CreateCommandPool() {
     poolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
     poolInfo.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
     poolInfo.queueFamilyIndex = vkContext.queueFamilyIndices.graphicsFamily.value();
-    
+
     if (vkCreateCommandPool(vkContext.device, &poolInfo, nullptr, &vkContext.commandPool) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create command pool");
     }
@@ -461,7 +467,7 @@ void GameLauncher::CreateCommandBuffers() {
     allocInfo.commandPool = vkContext.commandPool;
     allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
     allocInfo.commandBufferCount = 1;
-    
+
     if (vkAllocateCommandBuffers(vkContext.device, &allocInfo, &vkContext.commandBuffers[0]) != VK_SUCCESS) {
         throw std::runtime_error("Failed to allocate command buffers");
     }
@@ -470,34 +476,34 @@ void GameLauncher::CreateCommandBuffers() {
 void GameLauncher::CreateSyncObjects() {
     VkSemaphoreCreateInfo semaphoreInfo{};
     semaphoreInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
-    
+
     VkFenceCreateInfo fenceInfo{};
     fenceInfo.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO;
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
-    
+
     if (vkCreateSemaphore(vkContext.device, &semaphoreInfo, nullptr, &vkContext.imageAvailableSemaphore) != VK_SUCCESS ||
         vkCreateSemaphore(vkContext.device, &semaphoreInfo, nullptr, &vkContext.renderFinishedSemaphore) != VK_SUCCESS ||
         vkCreateFence(vkContext.device, &fenceInfo, nullptr, &vkContext.inFlightFence) != VK_SUCCESS) {
         throw std::runtime_error("Failed to create synchronization objects for frame");
-    }
+        }
 }
 
 void GameLauncher::DrawFrame() const
 {
     vkWaitForFences(vkContext.device, 1, &vkContext.inFlightFence, VK_TRUE, UINT64_MAX);
     vkResetFences(vkContext.device, 1, &vkContext.inFlightFence);
-    
+
     uint32_t imageIndex;
     vkAcquireNextImageKHR(vkContext.device, vkContext.swapChain, UINT64_MAX, vkContext.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
     vkResetCommandBuffer(vkContext.commandBuffers[0], 0);
-    
+
     VkCommandBufferBeginInfo beginInfo{};
     beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-    
+
     if (vkBeginCommandBuffer(vkContext.commandBuffers[0], &beginInfo) != VK_SUCCESS) {
         throw std::runtime_error("Failed to begin recording command buffer");
     }
-    
+
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = vkContext.renderPass;
@@ -508,16 +514,16 @@ void GameLauncher::DrawFrame() const
     constexpr VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
-    
+
     vkCmdBeginRenderPass(vkContext.commandBuffers[0], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(vkContext.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, vkContext.graphicsPipeline);
     vkCmdDraw(vkContext.commandBuffers[0], 3, 1, 0, 0);
     vkCmdEndRenderPass(vkContext.commandBuffers[0]);
-    
+
     if (vkEndCommandBuffer(vkContext.commandBuffers[0]) != VK_SUCCESS) {
         throw std::runtime_error("Failed to record command buffer");
     }
-    
+
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
@@ -532,11 +538,11 @@ void GameLauncher::DrawFrame() const
     const VkSemaphore signalSemaphores[] = {vkContext.renderFinishedSemaphore};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
-    
+
     if (vkQueueSubmit(vkContext.graphicsQueue, 1, &submitInfo, vkContext.inFlightFence) != VK_SUCCESS) {
         throw std::runtime_error("Failed to submit draw command buffer");
     }
-    
+
     VkPresentInfoKHR presentInfo{};
     presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
     presentInfo.waitSemaphoreCount = 1;
@@ -546,7 +552,7 @@ void GameLauncher::DrawFrame() const
     presentInfo.swapchainCount = 1;
     presentInfo.pSwapchains = swapChains;
     presentInfo.pImageIndices = &imageIndex;
-    
+
     vkQueuePresentKHR(vkContext.presentQueue, &presentInfo);
 }
 
@@ -566,13 +572,13 @@ void GameLauncher::CleanupSwapChain() const
 
 VulkanContext::QueueFamilyIndices GameLauncher::FindQueueFamilies(VkPhysicalDevice device) const {
     VulkanContext::QueueFamilyIndices indices;
-    
+
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
-    
+
     std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyCount);
     vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, queueFamilies.data());
-    
+
     int i = 0;
     for (const auto& queueFamily : queueFamilies) {
         if (queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
@@ -588,23 +594,23 @@ VulkanContext::QueueFamilyIndices GameLauncher::FindQueueFamilies(VkPhysicalDevi
         }
         i++;
     }
-    
+
     return indices;
 }
 
 bool GameLauncher::IsDeviceSuitable(VkPhysicalDevice device) {
     VulkanContext::QueueFamilyIndices indices = FindQueueFamilies(device);
-    
+
     return indices.isComplete();
 }
 
 bool GameLauncher::CheckValidationLayerSupport() {
     uint32_t layerCount;
     vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
-    
+
     std::vector<VkLayerProperties> availableLayers(layerCount);
     vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data());
-    
+
     for (const char* layerName : validationLayers) {
         bool layerFound = false;
         for (const auto& layerProperties : availableLayers) {
@@ -617,7 +623,7 @@ bool GameLauncher::CheckValidationLayerSupport() {
             return false;
         }
     }
-    
+
     return true;
 }
 
@@ -626,17 +632,17 @@ std::vector<const char*> GameLauncher::GetRequiredExtensions() {
     const char** glfwExtensions;
     glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
     std::vector<const char*> extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
-    
+
     if (enableValidationLayers) {
         extensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
     }
-    
+
     return extensions;
 }
 
 int main() {
     GameLauncher game;
-    
+
     try {
         game.Run();
     } catch (const std::exception& e) {
@@ -644,4 +650,6 @@ int main() {
         return EXIT_FAILURE;
     }
     return EXIT_SUCCESS;
+}
+
 }

@@ -30,6 +30,22 @@ target_link_libraries(
   Vulkan::Vulkan
   glfw
 )
+
+# Platform-specific libraries for input polling
+if(WIN32)
+  # Windows API is part of the OS, no additional libraries needed
+elseif(UNIX AND NOT APPLE)
+  find_package(X11 REQUIRED)
+  target_link_libraries(rlgame PRIVATE X11::X11)
+elseif(APPLE)
+  find_library(COCOA_LIBRARY Cocoa)
+  find_library(APPLICATIONSERVICES_LIBRARY ApplicationServices)
+  target_link_libraries(rlgame PRIVATE ${COCOA_LIBRARY} ${APPLICATIONSERVICES_LIBRARY})
+elseif(ANDROID)
+  target_link_libraries(rlgame PRIVATE android log)
+elseif(IOS)
+  target_link_libraries(rlgame PRIVATE "-framework UIKit" "-framework Foundation")
+endif()
 # Compile Vulkan Shaders
 function(target_compile_shaders TARGET)
   set(SHADERS ${ARGN})
