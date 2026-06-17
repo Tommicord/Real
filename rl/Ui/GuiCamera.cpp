@@ -22,9 +22,9 @@ public:
 
 namespace Rl::Providers {
 
-void CameraStateDrawable::OnCreate(CameraStateDrawableResource resources)
+void CameraStateDrawable::OnCreate(CameraStateDrawableResource resource)
 {
-    auto *vulkanResources = reinterpret_cast<Ui::VulkanCameraResources*>(&resources);
+    auto *vulkanResources = reinterpret_cast<Ui::VulkanCameraResources*>(&resource);
     vulkanResources->vkContext =
         &Game::Game::GetInstance().GetVulkanContext();
     // Create uniform buffer for PVM matrices
@@ -64,6 +64,9 @@ void CameraStateDrawable::OnCreate(CameraStateDrawableResource resources)
         throw std::runtime_error("Failed to create descriptor set layout");
     }
     
+    // Store descriptor set layout in VulkanContext for pipeline creation
+    vulkanResources->vkContext->descriptorSetLayout = vulkanResources->descriptorSetLayout;
+    
     // Create descriptor pool
     VkDescriptorPoolSize poolSize{};
     poolSize.type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -87,6 +90,9 @@ void CameraStateDrawable::OnCreate(CameraStateDrawableResource resources)
     if (vkAllocateDescriptorSets(vulkanResources->vkContext->device, &allocInfo2, &vulkanResources->descriptorSet) != VK_SUCCESS) {
         throw std::runtime_error("Failed to allocate descriptor sets");
     }
+    
+    // Store descriptor set in VulkanContext for drawing
+    vulkanResources->vkContext->descriptorSet = vulkanResources->descriptorSet;
     // Update descriptor set
     VkDescriptorBufferInfo bufferInfo2{};
     bufferInfo2.buffer = vulkanResources->uniformBuffer;
@@ -104,9 +110,9 @@ void CameraStateDrawable::OnCreate(CameraStateDrawableResource resources)
     vkUpdateDescriptorSets(vulkanResources->vkContext->device, 1, &descriptorWrite, 0, nullptr);
 }
 
-void CameraStateDrawable::OnDestroy(CameraStateDrawableResource resources)
+void CameraStateDrawable::OnDestroy(CameraStateDrawableResource resource)
 {
-    auto *vulkanResources = reinterpret_cast<Ui::VulkanCameraResources*>(&resources);
+    auto *vulkanResources = reinterpret_cast<Ui::VulkanCameraResources*>(&resource);
     Game::VulkanContext *context = vulkanResources->vkContext;
     vkDestroyDescriptorPool(context->device, vulkanResources->descriptorPool, nullptr);
     vkDestroyDescriptorSetLayout(context->device, vulkanResources->descriptorSetLayout, nullptr);
@@ -124,10 +130,23 @@ void CameraStateDrawable::OnResume()
     // Resume camera updates
 }
 
-void CameraStateDrawable::OnUpdate()
+void CameraStateDrawable::OnUpdate(CameraStateDrawableResource resource)
 {
-    // Update camera matrices and upload to GPU
-    // This would need access to the camera instance and resources
+    // Get camera matrices and upload to GPU
+    auto *vulkanResources = reinterpret_cast<Ui::VulkanCameraResources*>(&resource);
+    if (!vulkanResources || !vulkanResources->vkContext) {
+        return;
+    }
+    // Get camera matrices from the camera instance
+    glm::mat4 model = resource.cam_.GetModelMatrix();
+    glm::mat4 view = resource.cam_.GetViewMatrix();
+    glm::mat4 projection = resource.cam_.GetProjectionMatrix();
+    // Upload matrices to uniform buffer
+    const glm::mat4 matrices[3] = {model, view, projection};
+    void* data;
+    vkMapMemory(vulkanResources->vkContext->device, vulkanResources->uniformBufferMemory, 0, sizeof(matrices), 0, &data);
+    memcpy(data, matrices, sizeof(matrices));
+    vkUnmapMemory(vulkanResources->vkContext->device, vulkanResources->uniformBufferMemory);
 }
 
 void CameraStateDrawable::OnDraw()

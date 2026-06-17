@@ -47,13 +47,15 @@ void Game::Render() {}
 
 void Game::CleanupGraphics() const
 {
-
-    vkDestroySemaphore(vkContext.device, vkContext.renderFinishedSemaphore, nullptr);
     vkDestroySemaphore(vkContext.device, vkContext.imageAvailableSemaphore, nullptr);
+    for (const auto semaphore : vkContext.renderFinishedSemaphores) {
+        vkDestroySemaphore(vkContext.device, semaphore, nullptr);
+    }
     vkDestroyFence(vkContext.device, vkContext.inFlightFence, nullptr);
     vkDestroyCommandPool(vkContext.device, vkContext.commandPool, nullptr);
     vkDestroyPipelineLayout(vkContext.device, vkContext.pipelineLayout, nullptr);
     vkDestroyPipeline(vkContext.device, vkContext.graphicsPipeline, nullptr);
+    vkDestroyDescriptorSetLayout(vkContext.device, vkContext.descriptorSetLayout, nullptr);
     vkDestroySurfaceKHR(vkContext.instance, vkContext.surface, nullptr);
     vkDestroyRenderPass(vkContext.device, vkContext.renderPass, nullptr);
     for (const auto framebuffer : vkContext.swapChainFramebuffers)
@@ -119,6 +121,7 @@ void Game::InitGraphics()
     CreateSwapChain();
     CreateImageViews();
     CreateRenderPass();
+    CreateResources();
     CreateGraphicsPipeline();
     CreateFramebuffers();
     CreateCommandPool();
@@ -154,7 +157,10 @@ void Game::UpdatePhysics() {}
 
 void Game::UpdateAudio() {}
 
-void Game::UpdateUI() {}
+void Game::UpdateUI()
+{
+    cameraDrawable_->OnUpdate( CameraStateDrawableResource(*camera_));
+}
 
 void Game::UpdateLogic() {}
 
@@ -261,7 +267,7 @@ void Game::CreateLogicalDevice()
     vkContext.queueFamilyIndices = FindQueueFamilies(vkContext.physicalDevice);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-    std::set<uint32_t> uniqueQueueFamilies = {vkContext.queueFamilyIndices.graphicsFamily.value(),
+    std::set uniqueQueueFamilies = {vkContext.queueFamilyIndices.graphicsFamily.value(),
                                               vkContext.queueFamilyIndices.presentFamily.value()};
 
     float queuePriority = 1.0f;
@@ -283,7 +289,7 @@ void Game::CreateLogicalDevice()
     createInfo.pQueueCreateInfos = queueCreateInfos.data();
     createInfo.pEnabledFeatures = &deviceFeatures;
 
-    const std::vector<const char*> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+    const std::vector deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
 
     createInfo.enabledExtensionCount = static_cast<uint32_t>(deviceExtensions.size());
     createInfo.ppEnabledExtensionNames = deviceExtensions.data();
@@ -419,7 +425,7 @@ void Game::CreateRenderPass()
     if (vkCreateRenderPass(vkContext.device, &renderPassInfo, nullptr, &vkContext.renderPass) !=
         VK_SUCCESS)
     {
-        throw std::runtime_error("failed to create render pass!");
+        throw std::runtime_error("Failed to create Render pass");
     }
 }
 
@@ -500,11 +506,13 @@ void Game::CreateGraphicsPipeline()
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &vkContext.descriptorSetLayout;
 
     if (vkCreatePipelineLayout(vkContext.device, &pipelineLayoutInfo, nullptr,
                                &vkContext.pipelineLayout) != VK_SUCCESS)
     {
-        throw std::runtime_error("failed to create pipeline layout!");
+        throw std::runtime_error("Failed to create pipeline layout");
     }
 
     VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -551,7 +559,7 @@ void Game::CreateFramebuffers()
         if (vkCreateFramebuffer(vkContext.device, &framebufferInfo, nullptr,
                                 &vkContext.swapChainFramebuffers[i]) != VK_SUCCESS)
         {
-            throw std::runtime_error("failed to create framebuffer!");
+            throw std::runtime_error("Failed to create Framebuffer");
         }
     }
 }
@@ -596,10 +604,20 @@ void Game::CreateSyncObjects()
     fenceInfo.flags = VK_FENCE_CREATE_SIGNALED_BIT;
 
     if (vkCreateSemaphore(vkContext.device, &semaphoreInfo, nullptr,
-                          &vkContext.imageAvailableSemaphore) != VK_SUCCESS ||
-        vkCreateSemaphore(vkContext.device, &semaphoreInfo, nullptr,
-                          &vkContext.renderFinishedSemaphore) != VK_SUCCESS ||
-        vkCreateFence(vkContext.device, &fenceInfo, nullptr, &vkContext.inFlightFence) !=
+                          &vkContext.imageAvailableSemaphore) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create image available semaphore");
+    }
+
+    // Create one render finished semaphore per swapchain image
+    vkContext.renderFinishedSemaphores.resize(vkContext.swapChainImages.size());
+    for (size_t i = 0; i < vkContext.swapChainImages.size(); i++) {
+        if (vkCreateSemaphore(vkContext.device, &semaphoreInfo, nullptr,
+                              &vkContext.renderFinishedSemaphores[i]) != VK_SUCCESS) {
+            throw std::runtime_error("Failed to create render finished semaphore");
+        }
+    }
+
+    if (vkCreateFence(vkContext.device, &fenceInfo, nullptr, &vkContext.inFlightFence) !=
             VK_SUCCESS)
     {
         throw std::runtime_error("Failed to create synchronization objects for frame");
@@ -609,11 +627,12 @@ void Game::CreateSyncObjects()
 void Game::DrawFrame() const
 {
     vkWaitForFences(vkContext.device, 1, &vkContext.inFlightFence, VK_TRUE, UINT64_MAX);
-    vkResetFences(vkContext.device, 1, &vkContext.inFlightFence);
-
+    
     uint32_t imageIndex;
     vkAcquireNextImageKHR(vkContext.device, vkContext.swapChain, UINT64_MAX,
                           vkContext.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
+    
+    vkResetFences(vkContext.device, 1, &vkContext.inFlightFence);
     vkResetCommandBuffer(vkContext.commandBuffers[0], 0);
 
     VkCommandBufferBeginInfo beginInfo{};
@@ -638,6 +657,8 @@ void Game::DrawFrame() const
     vkCmdBeginRenderPass(vkContext.commandBuffers[0], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(vkContext.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS,
                       vkContext.graphicsPipeline);
+    vkCmdBindDescriptorSets(vkContext.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS,
+                          vkContext.pipelineLayout, 0, 1, &vkContext.descriptorSet, 0, nullptr);
     vkCmdDraw(vkContext.commandBuffers[0], 3, 1, 0, 0);
     vkCmdEndRenderPass(vkContext.commandBuffers[0]);
 
@@ -649,7 +670,7 @@ void Game::DrawFrame() const
     VkSubmitInfo submitInfo{};
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
-    const VkSemaphore waitSemaphores[] = {vkContext.imageAvailableSemaphore};
+    const VkSemaphore waitSemaphores[] = { vkContext.imageAvailableSemaphore };
     constexpr VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
@@ -657,7 +678,7 @@ void Game::DrawFrame() const
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &vkContext.commandBuffers[0];
 
-    const VkSemaphore signalSemaphores[] = {vkContext.renderFinishedSemaphore};
+    const VkSemaphore signalSemaphores[] = {vkContext.renderFinishedSemaphores[imageIndex]};
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 

@@ -17,7 +17,7 @@ public:
     StateDrawable& operator=(const StateDrawable& other) = delete;
     virtual ~StateDrawable() = default;
     virtual void OnDraw() = 0;
-    virtual void OnUpdate() = 0;
+    virtual void OnUpdate(value_type resource) = 0;
     virtual void OnCreate(value_type resources) = 0;
     virtual void OnDestroy(value_type resources) = 0;
     virtual void OnPause() = 0;

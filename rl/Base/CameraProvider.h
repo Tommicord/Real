@@ -103,9 +103,9 @@ struct CameraStateDrawableResource : StateResource {
 struct CameraStateDrawable : StateDrawable<CameraStateDrawableResource>
 {
     void OnDraw() override;
-    void OnUpdate() override;
-    void OnCreate(CameraStateDrawableResource resources) override;
-    void OnDestroy(CameraStateDrawableResource resources) override;
+    void OnUpdate(CameraStateDrawableResource resource) override;
+    void OnCreate(CameraStateDrawableResource resource) override;
+    void OnDestroy(CameraStateDrawableResource resource) override;
     void OnPause() override;
     void OnResume() override;
 };
