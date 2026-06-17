@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <array>
 #include <memory>
+
+#include "rl/World/UnitResourceName.h"
 #include "rl/Base/Texture2.h"
 
 namespace Rl::World {
@@ -11,32 +13,30 @@ using namespace Rl::Providers;
 
 enum class WorldUnitType
 {
-    Visible,
-    NoVisible,
-    Solid,
-    Liquid,
+    Visible,    // Unit Visible
+    NoVisible,  // Unit No Visible
+    Solid,      // Is Unit Solid
+    Liquid,     // Is Unit Solid
 };
 
 template<class K, class V>
-class WorldUnitRegistry;
+class UnitRegistryKVPair;
 
-struct WorldUnitTexture2D : Texture2
+struct WorldUnitTexture2 : Texture2
 {
     Texture2 *top,
-               down,
-               left, right,
-               front, back;
-    WorldUnitTexture2D();
-    ~WorldUnitTexture2D();
+              down,
+              left, right,
+              front, back;
+    WorldUnitTexture2();
+    ~WorldUnitTexture2();
 };
 
-class AbstractWorldUnit
+class AbstractUnit
 {
     /* Internal Field: Stores the count of registered world units */
-    static WorldUnitRegistry<>& registry_;
+    static UnitRegistryKVPair<UnitResourceName, AbstractUnit>& registry_;
 public:
-    /* Count of Properties */
-
     /* Stores the properties of the world unit */
     struct
     {
@@ -45,7 +45,7 @@ public:
     } props;
 
     /* Creates a basic WorldUnit, automatically registers the unit */
-    AbstractWorldUnit();
+    AbstractUnit();
 
     struct PolFence
     {
@@ -53,7 +53,7 @@ public:
     };
 
     /* Delete a world unit */
-    virtual ~AbstractWorldUnit();
+    virtual ~AbstractUnit();
 
     /* Sets the resistance against TNT of the unit */
     virtual void SetResistance(float resistance);
@@ -83,7 +83,7 @@ public:
     virtual bool IsCollisionEnabled();
 protected:
     /* Texture of the unit, back, front, left, right, bottom, top */
-    std::unique_ptr<WorldUnitTexture2D> texture;
+    std::unique_ptr<WorldUnitTexture2> texture;
 
     /* Width, Height, Depth of the unit */
     float inWidth, inHeight, inDepth;
@@ -125,26 +125,51 @@ protected:
 };
 
 template<class K, class V>
-class WorldUnitRegistry final
+class UnitRegisters
+{
+    static std::vector<UnitRegistryKVPair<K, V>> registry;
+public:
+    /* Puts a Key-Value pair of Unit register */
+    static void PutKV(UnitRegistryKVPair<K, V>& reg) noexcept;
+
+    /* Returns the registry size */
+    [[nodiscard]]
+    size_t GetRegistrySize();
+
+    /* Returns the current registry */
+    [[nodiscard]]
+    std::vector<UnitRegistryKVPair<K, V>>& GetRegistry();
+
+    /* This is only to the KV Pair access the PutKV method
+     * When a register is created, automatically
+     * Adds the KV pair to the registry */
+    friend class UnitRegistryKVPair<K, V>;
+};
+
+template<class K, class V>
+class UnitRegistryKVPair
 {
 protected:
     K& regKey;
     V& regValue;
 public:
     /* Creates a basic register of world unit */
-    WorldUnitRegistry(K defaultRegKey);
+    explicit UnitRegistryKVPair(K& defaultRegKey);
 
     /* Registers a Unit into the registry */
-    void Register();
+    void Register(int id, K& key, V& value);
 
     /* Gets the name we use to identify the object */
-    K GetNameForObject(V value);
+    [[nodiscard]]
+    static K GetNameForObject(V& value);
 
     /* Gets the object from the name identifier */
-    K GetObject(K name);
+    [[nodiscard]]
+    static K GetObject(K name);
 
     /* Gets the object from the id identifier */
-    V GetObjectById(int id);
+    [[nodiscard]]
+    static V GetObjectById(int id);
 };
 
-}
+} // namespace Rl::World

@@ -36,8 +36,9 @@ add_executable(
   rl/Ui/GuiCamera.cpp
   rl/Base/SimplexNoise.cpp
   rl/Base/SimplexNoise.h
-  rl/World/WorldUnit.cpp
-  rl/World/WorldUnit.h
+  rl/World/Unit.cpp
+  rl/World/Unit.h
+  rl/World/UnitResourceName.h
   rl/Base/Texture2.cpp
   rl/Base/Texture2.h
 )
