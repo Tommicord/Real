@@ -28,6 +28,8 @@ add_executable(
   rl/Base/CameraProvider.h
   rl/Base/CameraProvider.cpp
   rl/Ui/GuiCamera.cpp
+  rl/Base/SimplexNoise.cpp
+  rl/Base/SimplexNoise.h
 )
 target_include_directories(
   rlgame
