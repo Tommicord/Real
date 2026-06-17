@@ -4,26 +4,26 @@
 #include <cstdint>
 
 namespace Rl::Providers {
+
 class AbstractOpenSimplexNoise
 {
 public:
     virtual ~AbstractOpenSimplexNoise() = default;
-    virtual float eval(float x, float y) = 0;
-    virtual float eval(float x, float y, float z) = 0;
-    virtual float eval(float x, float y, float z, float w) = 0;
+    virtual float eval(float x, float y) const = 0;
+    virtual float eval(float x, float y, float z) const = 0;
+    virtual float eval(float x, float y, float z, float w) const = 0;
 };
 
-class OpenSimplexNoiseFactory :
+class OpenSimplexNoiseGen :
     public AbstractOpenSimplexNoise
 {
 public:
-    static OpenSimplexNoiseFactory& GetInstance();
-    float eval(float x, float y) const;
-    float eval(float x, float y, float z) const;
-    float eval(float x, float y, float z, float w) const;
+    float eval(float x, float y) const override;
+    float eval(float x, float y, float z) const override;
+    float eval(float x, float y, float z, float w ) const override;
 private:
-    OpenSimplexNoiseFactory();
-    OpenSimplexNoiseFactory(int64_t seed);
+    OpenSimplexNoiseGen();
+    OpenSimplexNoiseGen(int64_t seed);
     const double m_stretch2d;
     const double m_squish2d;
     const double m_stretch3d;
@@ -44,4 +44,4 @@ private:
     double extrapolate(int xsb, int ysb, int zsb, int wsb, double dx, double dy, double dz, double dw) const;
 };
 
-}
+} // namespace Rl::Providers

@@ -7,7 +7,7 @@
 
 namespace Rl::Providers {
 
-OpenSimplexNoiseFactory::OpenSimplexNoiseFactory() :
+OpenSimplexNoiseGen::OpenSimplexNoiseGen() :
     m_stretch2d(-0.211324865405187), //(1/Math.sqrt(2+1)-1)/2;
     m_squish2d(0.366025403784439), //(Math.sqrt(2+1)-1)/2;
     m_stretch3d(-1.0 / 6), //(1/Math.sqrt(3+1)-1)/3;
@@ -44,8 +44,8 @@ OpenSimplexNoiseFactory::OpenSimplexNoiseFactory() :
 {
 }
 
-OpenSimplexNoiseFactory::OpenSimplexNoiseFactory(int64_t seed) :
-    OpenSimplexNoiseFactory()
+OpenSimplexNoiseGen::OpenSimplexNoiseGen(int64_t seed) :
+    OpenSimplexNoiseGen()
 {
     short source[256];
     for (short i = 0; i < 256; i++)
@@ -70,7 +70,7 @@ OpenSimplexNoiseFactory::OpenSimplexNoiseFactory(int64_t seed) :
     }
 }
 
-float OpenSimplexNoiseFactory::eval(const float x, const float y) const
+float OpenSimplexNoiseGen::eval(const float x, const float y) const
 {
     // Place input coordinates onto grid.
     double stretchOffset = (x + y) * m_stretch2d;
@@ -203,7 +203,7 @@ float OpenSimplexNoiseFactory::eval(const float x, const float y) const
     return value / m_norm2d;
 }
 
-float OpenSimplexNoiseFactory::eval(float x, float y, float z) const
+float OpenSimplexNoiseGen::eval(float x, float y, float z) const
 {
     // Place input coordinates on simplectic honeycomb.
     double stretchOffset = (x + y + z) * m_stretch3d;
@@ -892,7 +892,7 @@ float OpenSimplexNoiseFactory::eval(float x, float y, float z) const
     return value / m_norm3d;
 }
 
-float OpenSimplexNoiseFactory::eval(float x, float y, float z, float w) const
+float OpenSimplexNoiseGen::eval(float x, float y, float z, float w) const
 {
     // Place input coordinates on simplectic honeycomb.
     double stretchOffset = (x + y + z + w) * m_stretch4d;
@@ -2570,7 +2570,7 @@ float OpenSimplexNoiseFactory::eval(float x, float y, float z, float w) const
     return value / m_norm4d;
 }
 
-double OpenSimplexNoiseFactory::extrapolate(
+double OpenSimplexNoiseGen::extrapolate(
     const int xsb, const int ysb,
     const double dx, const double dy) const
 {
@@ -2578,14 +2578,14 @@ double OpenSimplexNoiseFactory::extrapolate(
     return m_gradients2d[index] * dx + m_gradients2d[index + 1] * dy;
 }
 
-double OpenSimplexNoiseFactory::extrapolate(int xsb, int ysb, int zsb, double dx, double dy, double dz) const
+double OpenSimplexNoiseGen::extrapolate(int xsb, int ysb, int zsb, double dx, double dy, double dz) const
 {
     const int index = m_permGradIndex3d[(m_perm[(m_perm[xsb & 0xFF] + ysb) & 0xFF] + zsb) & 0xFF];
     return m_gradients3d[index] * dx + m_gradients3d[index + 1] * dy +
            m_gradients3d[index + 2] * dz;
 }
 
-double OpenSimplexNoiseFactory::extrapolate(
+double OpenSimplexNoiseGen::extrapolate(
     const int xsb, const int ysb,
     const int zsb, const int wsb,
     const double dx, const double dy, const double dz, const double dw) const
