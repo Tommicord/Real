@@ -7,7 +7,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 find_package(Vulkan REQUIRED COMPONENTS glslc)
-
 include(FetchContent)
 FetchContent_Declare(
   glm
@@ -15,6 +14,13 @@ FetchContent_Declare(
   GIT_TAG 	      0af55ccecd98d4e5a8d1fad7de25ba429d60e863 #refs/tags/1.0.1
 )
 FetchContent_MakeAvailable(glm)
+
+FetchContent_Declare(
+  stb
+  GIT_REPOSITORY https://github.com/nothings/stb.git
+  GIT_TAG        master
+)
+FetchContent_MakeAvailable(stb)
 
 add_subdirectory(Deps/glfw)
 add_executable(
@@ -30,11 +36,16 @@ add_executable(
   rl/Ui/GuiCamera.cpp
   rl/Base/SimplexNoise.cpp
   rl/Base/SimplexNoise.h
+  rl/World/WorldUnit.cpp
+  rl/World/WorldUnit.h
+  rl/Base/Texture2.cpp
+  rl/Base/Texture2.h
 )
 target_include_directories(
   rlgame
   PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}
+  ${stb_SOURCE_DIR}
 )
 target_link_libraries(
   rlgame
