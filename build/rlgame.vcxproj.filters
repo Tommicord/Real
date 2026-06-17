@@ -38,19 +38,11 @@
     <CustomBuild Include="C:\Users\USUARIO\IdeaProjects\RL\build\CMakeFiles\f7289cfeb62aed14cb5283489eb2fb8a\shader.vert.spv.rule">
       <Filter>CMake Rules</Filter>
     </CustomBuild>
-    <CustomBuild Include="C:\Users\USUARIO\IdeaProjects\RL\build\CMakeFiles\f7289cfeb62aed14cb5283489eb2fb8a\cam.frag.spv.rule">
-      <Filter>CMake Rules</Filter>
-    </CustomBuild>
-    <CustomBuild Include="C:\Users\USUARIO\IdeaProjects\RL\build\CMakeFiles\f7289cfeb62aed14cb5283489eb2fb8a\cam.vert.spv.rule">
-      <Filter>CMake Rules</Filter>
-    </CustomBuild>
     <CustomBuild Include="C:\Users\USUARIO\IdeaProjects\RL\CMakeLists.txt" />
   </ItemGroup>
   <ItemGroup>
     <None Include="C:\Users\USUARIO\IdeaProjects\RL\build\Shaders\shader.frag.spv" />
     <None Include="C:\Users\USUARIO\IdeaProjects\RL\build\Shaders\shader.vert.spv" />
-    <None Include="C:\Users\USUARIO\IdeaProjects\RL\build\Shaders\cam.frag.spv" />
-    <None Include="C:\Users\USUARIO\IdeaProjects\RL\build\Shaders\cam.vert.spv" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="CMake Rules">

@@ -1,29 +1,39 @@
 #pragma once
 
+#include "rl/Base/Game.h"
+
 namespace Rl::Providers {
 
 struct StateResource
 {
-    virtual ~StateResource() {}
+    virtual ~StateResource() = default;
 };
 
-template<typename T = void>
+class StateDrawableVulkan {};
+
+template<typename T = void, typename U = void>
 class StateDrawable
 {
 public:
-    using value_type = T;
+    using state_res_value_type = T;
+    using state_vk_value_type = U;
     StateDrawable() = default;
     StateDrawable(const StateDrawable& other) = delete;
     StateDrawable& operator=(const StateDrawable& other) = delete;
     virtual ~StateDrawable() = default;
-    virtual void OnDraw() = 0;
-    virtual void OnUpdate(value_type resource) = 0;
-    virtual void OnCreate(value_type resources) = 0;
-    virtual void OnDestroy(value_type resources) = 0;
+    virtual void OnDraw(const CameraStateResource& resource, CameraStateDrawableVulkan& vk,
+                        Game::VulkanContext& context) = 0;
+    virtual void OnUpdate(T& resource,
+                          U& vk,
+                          Game::Game::Context& context) = 0;
+    virtual void OnCreate(T& resources,
+                          U& vk,
+                          Game::Game::Context& context) = 0;
+    virtual void OnDestroy(T& resources,
+                           U& vk,
+                           Game::Game::Context& context) = 0;
     virtual void OnPause() = 0;
     virtual void OnResume() = 0;
 };
-
-
 
 } // namespace Rl::Providers

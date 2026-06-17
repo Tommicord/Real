@@ -89,6 +89,4 @@ target_compile_shaders(
   rlgame
   Public/Shaders/shader.frag
   Public/Shaders/shader.vert
-  Public/Shaders/cam.frag
-  Public/Shaders/cam.vert
 )

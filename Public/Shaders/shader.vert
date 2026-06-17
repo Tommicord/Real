@@ -1,15 +1,16 @@
 #version 450
 
-layout(binding = 0) uniform UniformBufferObject {
+layout(push_constant) uniform PushConstants {
     mat4 model;
     mat4 view;
     mat4 projection;
-} ubo;
+} pc;
 
-vec2 positions[3] = vec2[](
-    vec2(0.0, -1.0),
-    vec2(0.5, 0.5),
-    vec2(-0.5, 0.4)
+// Test triangle with PVM matrices
+vec3 positions[3] = vec3[](
+    vec3(0.0, -0.5, 0.0),
+    vec3(0.5, 0.5, 0.0),
+    vec3(-0.5, 0.5, 0.0)
 );
 
 vec3 colors[3] = vec3[](
@@ -21,9 +22,7 @@ vec3 colors[3] = vec3[](
 layout(location = 0) out vec3 fragColor;
 
 void main() {
-    vec2 pos = positions[gl_VertexIndex];
-    vec4 worldPos = ubo.model * vec4(pos, 0.0, 1.0);
-    vec4 viewPos = ubo.view * worldPos;
-    gl_Position = ubo.projection * viewPos;
+    vec3 pos = positions[gl_VertexIndex];
+    gl_Position = pc.projection * pc.view * pc.model * vec4(pos, 1.0);
     fragColor = colors[gl_VertexIndex];
 }

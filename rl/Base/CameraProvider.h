@@ -2,7 +2,9 @@
 
 #include "rl/Base/StateDrawable.h"
 #include "rl/Base/DeviceInputReceiver.h"
+#include "rl/Base/Game.h"
 #include <array>
+#include <vulkan/vulkan.hpp>
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -31,7 +33,6 @@ public:
     virtual ~AbstractCamera() = default;
     AbstractCamera() = default;
     AbstractCamera(const AbstractCamera& other) = delete;
-    AbstractCamera& operator=(const AbstractCamera& other) = delete;
     virtual void SetPVMMatrix(const PVMMatrix& mvp) = 0;
     virtual void SetRotateXYZ(const Eye& eye) = 0;
     virtual void SetEyePosition(const Eye& eye) = 0;
@@ -47,7 +48,7 @@ public:
     virtual glm::mat4 GetPVMMatrix() const = 0;
 };
 
-struct CameraInputReceiver : public virtual Input::InputObserver {
+struct CameraInputReceiver : Input::InputObserver {
     void OnKeyEvent(const Input::KeyEvent& event) override = 0;
     void OnMouseButtonEvent(const Input::MouseButtonEvent& event) override = 0;
     void OnMouseMoveEvent(const Input::MouseMoveEvent& event) override = 0;
@@ -57,8 +58,6 @@ struct CameraInputReceiver : public virtual Input::InputObserver {
 class Camera : public AbstractCamera, public CameraInputReceiver {
 public:
     Camera();
-    Camera(Camera& other) = delete;
-    Camera& operator=(Camera& other) = delete;
     ~Camera() override;
     void Update();
     void SetPVMMatrix(const PVMMatrix& mvp) override;
@@ -92,20 +91,38 @@ private:
 };
 
 // Just for data interchange between classes
-struct CameraStateDrawableResource : StateResource {
-    Camera &cam_;
-    explicit CameraStateDrawableResource(Camera& cam) :
-        cam_(cam)
+struct CameraStateResource : StateResource {
+    Camera* cam;
+    explicit CameraStateResource(Camera& camera) :
+        cam(&camera)
     {
     }
 };
 
-struct CameraStateDrawable : StateDrawable<CameraStateDrawableResource>
+struct CameraStateDrawableVulkan : StateDrawableVulkan {
+    VkBuffer uniformBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory uniformBufferMemory = VK_NULL_HANDLE;
+    VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
+    VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
+    VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
+    CameraStateDrawableVulkan() = default;
+};
+
+class CameraStateDrawable :
+    StateDrawable<CameraStateResource, CameraStateDrawableVulkan>
 {
-    void OnDraw() override;
-    void OnUpdate(CameraStateDrawableResource resource) override;
-    void OnCreate(CameraStateDrawableResource resource) override;
-    void OnDestroy(CameraStateDrawableResource resource) override;
+public:
+    void OnDraw(const CameraStateResource& resource, CameraStateDrawableVulkan& vk,
+                Game::VulkanContext& context) override;
+    void OnUpdate(CameraStateResource& resource,
+                  CameraStateDrawableVulkan& vk,
+                  Game::VulkanContext& context) override;
+    void OnCreate(CameraStateResource& resource,
+                  CameraStateDrawableVulkan& vk,
+                  Game::VulkanContext& context) override;
+    void OnDestroy(CameraStateResource& resource,
+                   CameraStateDrawableVulkan& vk,
+                   Game::VulkanContext& context) override;
     void OnPause() override;
     void OnResume() override;
 };

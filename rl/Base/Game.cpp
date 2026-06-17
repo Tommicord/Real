@@ -9,7 +9,6 @@
 #include <stdexcept>
 
 namespace Rl::Game {
-
 using namespace Rl::Providers;
 
 const std::vector validationLayers = {"VK_LAYER_KHRONOS_validation"};
@@ -20,7 +19,10 @@ constexpr bool enableValidationLayers = false;
 constexpr bool enableValidationLayers = true;
 #endif
 
-Game::Game() : inputReceiver_(Input::DeviceInputReceiver::GetInstance()) {}
+Game::Game() :
+    inputReceiver_(Input::DeviceInputReceiver::GetInstance())
+{
+}
 
 Game::~Game() { 
     inputReceiver_.Unsubscribe(this);
@@ -45,8 +47,9 @@ void Game::Tick() {}
 
 void Game::Render() {}
 
-void Game::CleanupGraphics() const
+void Game::CleanupGraphics()
 {
+    CleanupResources();
     vkDestroySemaphore(vkContext.device, vkContext.imageAvailableSemaphore, nullptr);
     for (const auto semaphore : vkContext.renderFinishedSemaphores) {
         vkDestroySemaphore(vkContext.device, semaphore, nullptr);
@@ -72,6 +75,13 @@ void Game::CleanupGraphics() const
     glfwDestroyWindow(vkWindow);
     glfwTerminate();
 }
+void Game::CleanupResources()
+{
+    camera_.reset();
+    cameraDrawable_->OnDestroy(*cameraResource_, *cameraVk_, vkContext);
+    cameraDrawable_.reset();
+}
+
 void Game::InitInputReceiverObserver()
 {
     inputReceiver_.Subscribe(this);
@@ -80,12 +90,6 @@ void Game::InitInputReceiverObserver()
 
 void Game::OnKeyEvent(const Input::KeyEvent& event)
 {
-    std::cerr <<
-        "Game received key event: " <<
-            static_cast<int>(event.key) <<
-        ", action: " <<
-            static_cast<int>(event.action)
-    << std::endl;
     if (camera_) {
         camera_->OnKeyEvent(event);
     }
@@ -159,7 +163,8 @@ void Game::UpdateAudio() {}
 
 void Game::UpdateUI()
 {
-    cameraDrawable_->OnUpdate( CameraStateDrawableResource(*camera_));
+    camera_->Update();
+    cameraDrawable_->OnUpdate(*cameraResource_, *cameraVk_, vkContext);
 }
 
 void Game::UpdateLogic() {}
@@ -182,7 +187,6 @@ void Game::CreateInstance()
     {
         throw std::runtime_error("Validation layers requested, but not available");
     }
-
     VkApplicationInfo appInfo{};
     appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
     appInfo.pApplicationName = "RL";
@@ -198,8 +202,6 @@ void Game::CreateInstance()
     const auto extensions = GetRequiredExtensions();
     createInfo.enabledExtensionCount = static_cast<uint32_t>(extensions.size());
     createInfo.ppEnabledExtensionNames = extensions.data();
-
-    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo { };
     if (enableValidationLayers)
     {
         createInfo.enabledLayerCount = static_cast<uint32_t>(validationLayers.size());
@@ -228,10 +230,13 @@ void Game::CreateResources()
 {
     // Create camera
     camera_ = std::make_unique<Camera>();
+    // Set aspect ratio based on swap chain extent
+    const float aspect = static_cast<float>(vkContext.swapChainExtent.width) / static_cast<float>(vkContext.swapChainExtent.height);
+    camera_->SetAspectRatio(aspect);
     cameraDrawable_ = std::make_shared<CameraStateDrawable>();
-    cameraDrawable_->OnCreate(
-        CameraStateDrawableResource(*camera_)
-        );
+    cameraResource_ = std::make_unique<CameraStateResource>(*camera_);
+    cameraVk_ = std::make_unique<CameraStateDrawableVulkan>();
+    cameraDrawable_->OnCreate(*cameraResource_, *cameraVk_, vkContext);
 }
 
 void Game::PickPhysicalDevice()
@@ -319,7 +324,6 @@ void Game::CreateLogicalDevice()
 void Game::CreateSwapChain()
 {
     VulkanContext::QueueFamilyIndices indices = FindQueueFamilies(vkContext.physicalDevice);
-
     VkSurfaceCapabilitiesKHR caps;
     vkGetPhysicalDeviceSurfaceCapabilitiesKHR(vkContext.physicalDevice, vkContext.surface, &caps);
 
@@ -431,10 +435,16 @@ void Game::CreateRenderPass()
 
 void Game::CreateGraphicsPipeline()
 {
-    auto vertShaderCode = ShaderObject::ReadShaderFile("Shaders/shader.vert.spv");
-    auto fragShaderCode = ShaderObject::ReadShaderFile("Shaders/shader.frag.spv");
+    auto vertShaderCode = ShaderObject::Shader("Shaders/shader.vert.spv");
+    auto fragShaderCode = ShaderObject::Shader("Shaders/shader.frag.spv");
     auto vertShaderModule = ShaderObject::CreateShaderModule(vkContext.device, vertShaderCode);
     auto fragShaderModule = ShaderObject::CreateShaderModule(vkContext.device, fragShaderCode);
+
+    const std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    VkPipelineDynamicStateCreateInfo dynamicState{};
+    dynamicState.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+    dynamicState.dynamicStateCount = static_cast<uint32_t>(dynamicStates.size());
+    dynamicState.pDynamicStates = dynamicStates.data();
 
     VkPipelineShaderStageCreateInfo vertShaderStageInfo{};
     vertShaderStageInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
@@ -449,7 +459,6 @@ void Game::CreateGraphicsPipeline()
     fragShaderStageInfo.pName = "main";
 
     VkPipelineShaderStageCreateInfo shaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
-
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 0;
@@ -506,8 +515,15 @@ void Game::CreateGraphicsPipeline()
 
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &vkContext.descriptorSetLayout;
+    pipelineLayoutInfo.setLayoutCount = 0;
+    pipelineLayoutInfo.pSetLayouts = nullptr;
+    
+    VkPushConstantRange pushConstantRange{};
+    pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+    pushConstantRange.offset = 0;
+    pushConstantRange.size = sizeof(glm::mat4) * 3;
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
+    pipelineLayoutInfo.pPushConstantRanges = &pushConstantRange;
 
     if (vkCreatePipelineLayout(vkContext.device, &pipelineLayoutInfo, nullptr,
                                &vkContext.pipelineLayout) != VK_SUCCESS)
@@ -525,12 +541,15 @@ void Game::CreateGraphicsPipeline()
     pipelineInfo.pRasterizationState = &rasterizer;
     pipelineInfo.pMultisampleState = &multisampling;
     pipelineInfo.pColorBlendState = &colorBlending;
+    pipelineInfo.pDynamicState = &dynamicState;
     pipelineInfo.layout = vkContext.pipelineLayout;
     pipelineInfo.renderPass = vkContext.renderPass;
     pipelineInfo.subpass = 0;
 
-    if (vkCreateGraphicsPipelines(vkContext.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr,
-                                  &vkContext.graphicsPipeline) != VK_SUCCESS)
+    if (vkCreateGraphicsPipelines(
+        vkContext.device, VK_NULL_HANDLE,
+        1, &pipelineInfo, nullptr,
+         &vkContext.graphicsPipeline) != VK_SUCCESS)
     {
         throw std::runtime_error("failed to create graphics pipeline!");
     }
@@ -608,7 +627,7 @@ void Game::CreateSyncObjects()
         throw std::runtime_error("Failed to create image available semaphore");
     }
 
-    // Create one render finished semaphore per swapchain image
+    // Create one render finished semaphore per swap chain image
     vkContext.renderFinishedSemaphores.resize(vkContext.swapChainImages.size());
     for (size_t i = 0; i < vkContext.swapChainImages.size(); i++) {
         if (vkCreateSemaphore(vkContext.device, &semaphoreInfo, nullptr,
@@ -624,7 +643,7 @@ void Game::CreateSyncObjects()
     }
 }
 
-void Game::DrawFrame() const
+void Game::DrawFrame()
 {
     vkWaitForFences(vkContext.device, 1, &vkContext.inFlightFence, VK_TRUE, UINT64_MAX);
     
@@ -657,8 +676,25 @@ void Game::DrawFrame() const
     vkCmdBeginRenderPass(vkContext.commandBuffers[0], &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
     vkCmdBindPipeline(vkContext.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS,
                       vkContext.graphicsPipeline);
-    vkCmdBindDescriptorSets(vkContext.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS,
-                          vkContext.pipelineLayout, 0, 1, &vkContext.descriptorSet, 0, nullptr);
+    
+    // Set viewport
+    VkViewport viewport{};
+    viewport.x = 0.0f;
+    viewport.y = 0.0f;
+    viewport.width = static_cast<float>(vkContext.swapChainExtent.width);
+    viewport.height = static_cast<float>(vkContext.swapChainExtent.height);
+    viewport.minDepth = 0.0f;
+    viewport.maxDepth = 1.0f;
+    vkCmdSetViewport(vkContext.commandBuffers[0], 0, 1, &viewport);
+    
+    // Set scissor
+    VkRect2D scissor{};
+    scissor.offset = {0, 0};
+    scissor.extent = vkContext.swapChainExtent;
+    vkCmdSetScissor(vkContext.commandBuffers[0], 0, 1, &scissor);
+    // Update
+    UpdateUI();
+    // Push camera matrices as push constants
     vkCmdDraw(vkContext.commandBuffers[0], 3, 1, 0, 0);
     vkCmdEndRenderPass(vkContext.commandBuffers[0]);
 

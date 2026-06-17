@@ -5,9 +5,17 @@
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan.h>
-
-#include "rl/Base/CameraProvider.h"
 #include "rl/Base/DeviceInputReceiver.h"
+
+// Forward declarations to avoid circular dependency
+namespace Rl::Providers {
+
+class CameraStateDrawable;
+class Camera;
+struct CameraStateResource;
+struct CameraStateDrawableVulkan;
+
+}
 
 namespace Rl::Game {
 
@@ -48,12 +56,17 @@ struct VulkanContext
 class Game : public Input::InputObserver {
     std::shared_ptr<Providers::CameraStateDrawable> cameraDrawable_;
     std::unique_ptr<Providers::Camera> camera_;
+    std::unique_ptr<Providers::CameraStateResource> cameraResource_;
+    std::unique_ptr<Providers::CameraStateDrawableVulkan> cameraVk_;
     Input::DeviceInputReceiver& inputReceiver_;
 public:
+    using Window = GLFWwindow;
+    using Context = VulkanContext;
     void Run();
     void Tick();
     void Render();
-    void CleanupGraphics() const;
+    void CleanupGraphics();
+    void CleanupResources();
     void InitInputReceiverObserver();
     void InitGraphics();
     void InitWindow();
@@ -74,8 +87,6 @@ public:
     void OnMouseScrollEvent(const Input::MouseScrollEvent& event) override;
     ~Game() override;
 private:
-    using Window = GLFWwindow;
-    using Context = VulkanContext;
     Game();
     Window* vkWindow = nullptr;
     Context vkContext;
@@ -94,7 +105,7 @@ private:
     void CreateCommandPool();
     void CreateCommandBuffers();
     void CreateSyncObjects();
-    void DrawFrame() const;
+    void DrawFrame();
     void RecreateSwapChain();
     VulkanContext::QueueFamilyIndices FindQueueFamilies(VkPhysicalDevice device) const;
     bool IsDeviceSuitable(VkPhysicalDevice device);
