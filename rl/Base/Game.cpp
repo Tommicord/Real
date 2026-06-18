@@ -142,6 +142,7 @@ void Game::InitWindow()
     // Configure monitor and window
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+    glfwSetInputMode(vkWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetWindowPos(
         vkWindow,
         (mode->width - width) / 2,

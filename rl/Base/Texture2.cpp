@@ -296,9 +296,15 @@ bool Texture2::LoadFromIOSBundle(const std::string& resourcePath)
 bool Texture2::LoadImage(const std::string& filepath)
 {
     int width, height, channels;
-    
+    // From root of project textures base path
+    const std::string base = "Public/Resources/Textures/";
     // Load image with stb_image
-    stbi_uc* imageData = stbi_load(filepath.c_str(), &width, &height, &channels, 0);
+    stbi_uc* imageData = stbi_load(
+        (base + filepath).c_str(),
+        &width, &height,
+        &channels,
+        0
+        );
     
     if (!imageData) {
         // Try platform-specific loading if standard loading fails

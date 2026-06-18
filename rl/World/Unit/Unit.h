@@ -4,7 +4,7 @@
 #include <array>
 #include <memory>
 
-#include "rl/World/UnitResourceName.h"
+#include "UnitResourceName.h"
 #include "rl/Base/Texture2.h"
 
 namespace Rl::World {
@@ -35,7 +35,7 @@ struct WorldUnitTexture2 : Texture2
 class AbstractUnit
 {
     /* Internal Field: Stores the count of registered world units */
-    static UnitRegistryKVPair<UnitResourceName, AbstractUnit>& registry_;
+    static UnitRegistryKVPair<UnitResourceName, AbstractUnit*>& registry;
 public:
     /* Stores the properties of the world unit */
     struct
@@ -54,6 +54,9 @@ public:
 
     /* Delete a world unit */
     virtual ~AbstractUnit();
+
+    /* Inits by default al units */
+    virtual void InitRegistryUnits();
 
     /* Sets the resistance against TNT of the unit */
     virtual void SetResistance(float resistance);

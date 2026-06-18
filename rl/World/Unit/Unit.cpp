@@ -1,9 +1,9 @@
+#include "Unit.h"
 #include <algorithm>
 #include <cstring>
 #include <memory>
 #include <vector>
-#include "rl/World/Unit.h"
-#include "rl/World/UnitResourceName.h"
+#include "UnitResourceName.h"
 
 namespace Rl::World {
 
@@ -71,7 +71,7 @@ std::vector<char*> UnitResourceName::SplitResourceName() const
             size_t length = (nm[i] == '.') ? (i - start) : (i - start + 1);
             if (length > 0)
             {
-                char* segment = new char[length + 1];
+                auto segment = new char[length + 1];
                 std::memcpy(segment, nm.data() + start, length);
                 segment[length] = 0x00;
                 res.push_back(segment);
@@ -189,4 +189,4 @@ V UnitRegistryKVPair<K, V>::GetObjectById(int id)
     return V(); // Return default if id is invalid
 }
 
-}
+} // namespace Rl::World

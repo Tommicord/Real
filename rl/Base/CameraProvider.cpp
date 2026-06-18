@@ -166,6 +166,7 @@ void Camera::OnMouseMoveEvent(const Input::MouseMoveEvent& event)
     static double lastX = 0.0;
     static double lastY = 0.0;
     static bool firstMouse = true;
+    
     if (firstMouse)
     {
         lastX = event.x;
@@ -173,14 +174,24 @@ void Camera::OnMouseMoveEvent(const Input::MouseMoveEvent& event)
         firstMouse = false;
         return;
     }
+    // Calculate offset from last position
     const double xOffset = event.x - lastX;
-    const double yOffset = lastY - event.y; // Reversed since y-coordinates go from bottom to top
+    const double yOffset = event.y - lastY;
+    
     lastX = event.x;
     lastY = event.y;
+    // Apply sensitivity
     constexpr float sensitivity = 0.1f;
+    
+    // Update yaw (horizontal rotation)
     yaw += static_cast<float>(xOffset) * sensitivity;
-    pitch += static_cast<float>(yOffset) * sensitivity;
+    
+    // Update pitch (vertical rotation)
+    pitch -= static_cast<float>(yOffset) * sensitivity;
+    
+    // Clamp pitch to prevent gimbal lock
     pitch = std::clamp(pitch, -89.0f, 89.0f);
+    
     UpdateMatrices();
 }
 
