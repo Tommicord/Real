@@ -6,6 +6,29 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Detect target architecture and set appropriate SIMD flags
+if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM|aarch64|AARCH64")
+  add_compile_definitions(ARM_)
+  message(STATUS "Target architecture ARM - NEON SIMD enabled")
+  # Enable NEON for ARM
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(rlgame PRIVATE -mfpu=neon)
+    target_compile_options(rlgame PRIVATE -mfloat-abi=hard)
+  endif()
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86|x86_64|AMD64|amd64|i386|i686")
+  add_compile_definitions(X86_)
+  message(STATUS "Target architecture x86/x86-64 - SSE/AVX SIMD enabled")
+  # Enable SSE/AVX for x86/x86-64
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(rlgame PRIVATE -msse4.2)
+    target_compile_options(rlgame PRIVATE -mavx2)
+  elseif(MSVC)
+    target_compile_options(rlgame PRIVATE /arch:AVX2)
+  endif()
+else()
+  message(WARNING "Unknown target architecture ${CMAKE_SYSTEM_PROCESSOR} - SIMD optimizations disabled")
+endif()
+
 find_package(Vulkan REQUIRED COMPONENTS glslc)
 include(FetchContent)
 FetchContent_Declare(
