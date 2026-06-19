@@ -29,6 +29,20 @@ Camera::~Camera() {}
 
 void Camera::Update()
 {
+    constexpr float moveSpeed = 0.025f;
+    // Check pressed keys and apply movement
+    if (pressedKeys.count(Input::Key::W))
+        eye.z -= moveSpeed;
+    if (pressedKeys.count(Input::Key::S))
+        eye.z += moveSpeed;
+    if (pressedKeys.count(Input::Key::A))
+        eye.x -= moveSpeed;
+    if (pressedKeys.count(Input::Key::D))
+        eye.x += moveSpeed;
+    if (pressedKeys.count(Input::Key::Space))
+        eye.y += moveSpeed;
+    if (pressedKeys.count(Input::Key::LeftShift))
+        eye.y -= moveSpeed;
     UpdateMatrices();
 }
 
@@ -117,34 +131,13 @@ glm::mat4 Camera::GetPVMMatrix() const { return pvmMatrix; }
 
 void Camera::OnKeyEvent(const Input::KeyEvent& event)
 {
-    const float moveSpeed = 0.1f;
-
-    if (event.action == Input::Action::Press || event.action == Input::Action::Repeat)
+    if (event.action == Input::Action::Press)
     {
-        switch (event.key)
-        {
-        case Input::Key::W:
-            eye.z -= moveSpeed;
-            break;
-        case Input::Key::S:
-            eye.z += moveSpeed;
-            break;
-        case Input::Key::A:
-            eye.x -= moveSpeed;
-            break;
-        case Input::Key::D:
-            eye.x += moveSpeed;
-            break;
-        case Input::Key::Space:
-            eye.y += moveSpeed;
-            break;
-        case Input::Key::LeftShift:
-            eye.y -= moveSpeed;
-            break;
-        default:
-            break;
-        }
-        UpdateMatrices();
+        pressedKeys.insert(event.key);
+    }
+    else if (event.action == Input::Action::Release)
+    {
+        pressedKeys.erase(event.key);
     }
 }
 
@@ -188,7 +181,7 @@ void Camera::OnMouseMoveEvent(const Input::MouseMoveEvent& event)
     yaw += static_cast<float>(xOffset) * sensitivity;
 
     // Update pitch (vertical rotation)
-    pitch -= static_cast<float>(yOffset) * sensitivity;
+    pitch += static_cast<float>(yOffset) * sensitivity;
 
     // Clamp pitch to prevent gimbal lock
     pitch = std::clamp(pitch, -89.0f, 89.0f);

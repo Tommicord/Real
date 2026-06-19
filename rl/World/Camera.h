@@ -3,6 +3,7 @@
 #include "rl/Base/InputReceiver.h"
 
 #include <array>
+#include <unordered_set>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
@@ -95,6 +96,7 @@ private:
     glm::mat4 viewMatrix;
     glm::mat4 projectionMatrix;
     glm::mat4 pvmMatrix;
+    std::unordered_set<Input::Key> pressedKeys;
     void UpdateMatrices();
 };
 
