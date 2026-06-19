@@ -1,11 +1,11 @@
 #include "Camera.h"
+#include "rl/Client/State/CameraState.h"
 
 #include <algorithm>
 #include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
-#include <iostream>
 
 namespace Rl::Providers {
 
@@ -40,11 +40,11 @@ void Camera::UpdateMatrices()
     front.y = sin(glm::radians(pitch));
     front.z = sin(glm::radians(yaw)) * cos(glm::radians(pitch));
     glm::vec3 cameraFront = glm::normalize(front);
-    
+
     // Calculate right and up vectors
     glm::vec3 cameraRight = glm::normalize(glm::cross(cameraFront, glm::vec3(0.0f, 1.0f, 0.0f)));
     glm::vec3 cameraUp = glm::normalize(glm::cross(cameraRight, cameraFront));
-    
+
     // View matrix, look at position + front
     glm::vec3 cameraPos = glm::vec3(eye.x, eye.y, eye.z);
     viewMatrix = glm::lookAt(cameraPos, cameraPos + cameraFront, cameraUp);
@@ -81,27 +81,27 @@ void Camera::SetEyePosition(const Eye& position)
 }
 
 void Camera::SetFar(const double far) {
-    this->far = far; 
+    this->far = far;
     UpdateMatrices();
 }
 
 void Camera::SetNear(const double near) {
-    this->near = near; 
+    this->near = near;
     UpdateMatrices();
 }
 
 void Camera::SetAspectRatio(const float aspectRatio) {
-    this->aspectRatio = aspectRatio; 
+    this->aspectRatio = aspectRatio;
     UpdateMatrices();
 }
 
 void Camera::SetFov(const float fov) {
-    this->fov = fov; 
+    this->fov = fov;
     UpdateMatrices();
 }
 
 void Camera::SetZoom(const float zoom) {
-    this->zoom = zoom; 
+    this->zoom = zoom;
     UpdateMatrices();
 }
 
@@ -167,7 +167,7 @@ void Camera::OnMouseMoveEvent(const Input::MouseMoveEvent& event)
     static double lastX = 0.0;
     static double lastY = 0.0;
     static bool firstMouse = true;
-    
+
     if (firstMouse)
     {
         lastX = event.x;
@@ -178,64 +178,29 @@ void Camera::OnMouseMoveEvent(const Input::MouseMoveEvent& event)
     // Calculate offset from last position
     const double xOffset = event.x - lastX;
     const double yOffset = event.y - lastY;
-    
+
     lastX = event.x;
     lastY = event.y;
     // Apply sensitivity
     constexpr float sensitivity = 0.1f;
-    
+
     // Update yaw (horizontal rotation)
     yaw += static_cast<float>(xOffset) * sensitivity;
-    
+
     // Update pitch (vertical rotation)
     pitch -= static_cast<float>(yOffset) * sensitivity;
-    
+
     // Clamp pitch to prevent gimbal lock
     pitch = std::clamp(pitch, -89.0f, 89.0f);
-    
+
     UpdateMatrices();
 }
 
 void Camera::OnMouseScrollEvent(const Input::MouseScrollEvent& event)
 {
-    std::cout << "Mouse scroll" << std::endl;
-    // Handle mouse scroll for zoom
     zoom -= static_cast<float>(event.yoffset);
     zoom = std::clamp(zoom, 0.1f, 10.0f);
     UpdateMatrices();
 }
 
-CameraModel::CameraModel(Game::VulkanContext& context) : StateModel(context)
-{
-    // Create camera
-    camera = std::make_unique<Camera>();
-    // Set aspect ratio based on swap chain extent
-    const float aspect = static_cast<float>(context.swapChainExtent.width) /
-                         static_cast<float>(context.swapChainExtent.height);
-    camera->SetAspectRatio(aspect);
-    cameraDrawable = std::make_shared<CameraStateDrawable>();
-    cameraResource = std::make_unique<CameraStateResource>(*camera);
-    cameraVk = std::make_unique<CameraStateDrawableVulkan>();
-    cameraDrawable->OnCreate(*cameraResource, *cameraVk, context);
 }
-
-Camera& CameraModel::GetCamera() const {
-    return *camera;
-}
-
-CameraStateResource& CameraModel::GetResource()
-{
-    return *cameraResource;
-}
-
-CameraStateDrawable& CameraModel::GetDrawable()
-{
-    return *cameraDrawable;
-}
-
-CameraStateDrawableVulkan& CameraModel::GetVulkanState()
-{
-    return *cameraVk;
-}
-
-} // namespace Rl::Providers

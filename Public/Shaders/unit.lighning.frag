@@ -133,12 +133,12 @@ vec3 CalculateAmbient(vec3 N, vec3 V, vec3 F0, PBRMaterial material, vec3 ambien
 
 // Face normals for lighting calculation
 const vec3 faceNormals[6] = vec3[](
-    vec3(0.0, 1.0, 0.0),  // Top
-    vec3(0.0, -1.0, 0.0), // Bottom
-    vec3(-1.0, 0.0, 0.0), // Left
-    vec3(1.0, 0.0, 0.0),  // Right
-    vec3(0.0, 0.0, 1.0),  // Front
-    vec3(0.0, 0.0, -1.0)  // Back
+    vec3( 0.0,  1.0,  0.0 ),  // Top
+    vec3( 0.0, -1.0,  0.0 ), // Bottom
+    vec3(-1.0,  0.0,  0.0 ), // Left
+    vec3( 1.0,  0.0,  0.0 ),  // Right
+    vec3( 0.0,  0.0,  1.0 ),  // Front
+    vec3( 0.0,  0.0, -1.0 )  // Back
 );
 
 void main() {

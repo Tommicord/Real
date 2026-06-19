@@ -5,7 +5,7 @@
 #include <iostream>
 #include <set>
 #include <stdexcept>
-#include "../Client/State/Camera.h"
+#include "../Client/State/CameraState.h"
 #include "rl/Base/ShaderFactory.h"
 
 namespace Rl::Game {

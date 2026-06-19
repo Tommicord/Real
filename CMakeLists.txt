@@ -53,10 +53,12 @@ set(SOURCES
   rl/Base/SimplexNoise.h
   rl/Base/Texture2.cpp
   rl/Base/Texture2.h
-  rl/Client/State/Camera.h
-  rl/Client/State/Camera.cpp
   rl/Client/Render/UnitRenderer.cpp
   rl/Client/Render/CameraRenderer.cpp
+  rl/Client/State/CameraState.cpp
+  rl/Client/State/CameraState.h
+  rl/World/Camera.h
+  rl/World/Camera.cpp
   rl/World/Unit/Unit.cpp
   rl/World/Unit/Unit.h
   rl/World/Unit/UnitResourceName.h
