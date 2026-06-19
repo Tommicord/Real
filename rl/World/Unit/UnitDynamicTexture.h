@@ -3,6 +3,8 @@
 #include "rl/Base/SimplexNoise.h"
 #include "rl/Base/Texture2.h"
 
+#include <vector>
+
 namespace Rl::World {
 
 class AbstractUnitDynamicTexture
@@ -25,6 +27,16 @@ public:
 
 class UnitDynamicTexture : public AbstractUnitDynamicTexture
 {
+private:
+    struct ColorFreqKV {
+        int key;
+        int freq;
+        ColorFreqKV() = default;
+        /* Increments the frequency count of the color */
+        ColorFreqKV operator++();
+    };
+    /* Stores the color frequency map */
+    std::vector<ColorFreqKV> clFreqMap;
 public:
     /* Options for randomizing the texture adding noise */
     DynamicOptions& options;
@@ -48,8 +60,14 @@ public:
      * For example, a texture of 32x32 will generate
      * Coherent to the texture noise of a 32x32 array
      */
+    [[nodiscard]]
     std::vector<float> GenNoiseValMap(float scale) const;
-
+    /* Gets the color frequency map
+     *
+     */
+    [[nodiscard]]
+    std::vector<int> GetTargetColorMap();
+    void ProcessColorFreqMap(const std::vector<ColorFreqKV>& colorFreq, std::vector<int>& outMap);
 };
 
 }
