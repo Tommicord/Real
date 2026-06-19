@@ -26,12 +26,11 @@ std::vector<float> UnitDynamicTexture::GenNoiseValMap(const float scale) const
     int width = baseTexture->GetWidth();
     int height = baseTexture->GetHeight();
     map.reserve(width * height);
-    int channels = baseTexture->GetChannels();
     for (int y = 0; y < height; ++y)
     {
         for (int x = 0; x < width; ++x)
         {
-            const size_t index = (y * width + x) * channels;
+            const size_t index = y * width + x;
             float randX = static_cast<float>(x) * scale;
             float randY = static_cast<float>(y) * scale;
             float noise = noiseGen.eval(randX, randY);

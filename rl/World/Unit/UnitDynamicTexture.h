@@ -48,7 +48,7 @@ public:
     Providers::OpenSimplexNoiseGen noiseGen;
 
     /* The base texture that will help to generate the random texture */
-    std::unique_ptr<Providers::Texture2> baseTexture;
+    Providers::Texture2* baseTexture;
 
     /* The seed for randomness */
     Seed seed;

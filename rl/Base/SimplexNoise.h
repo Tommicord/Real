@@ -9,8 +9,11 @@ class AbstractOpenSimplexNoise
 {
 public:
     virtual ~AbstractOpenSimplexNoise() = default;
+    [[nodiscard]]
     virtual float eval(float x, float y) const = 0;
+    [[nodiscard]]
     virtual float eval(float x, float y, float z) const = 0;
+    [[nodiscard]]
     virtual float eval(float x, float y, float z, float w) const = 0;
 };
 
@@ -42,8 +45,11 @@ private:
     std::array<char, 16> m_gradients2d;
     std::array<char, 72> m_gradients3d;
     std::array<char, 256> m_gradients4d;
+    [[nodiscard]]
     double extrapolate(int xsb, int ysb, double dx, double dy) const;
+    [[nodiscard]]
     double extrapolate(int xsb, int ysb, int zsb, double dx, double dy, double dz) const;
+    [[nodiscard]]
     double extrapolate(int xsb, int ysb, int zsb, int wsb, double dx, double dy, double dz, double dw) const;
 };
 

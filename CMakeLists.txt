@@ -22,9 +22,16 @@ FetchContent_Declare(
 )
 FetchContent_MakeAvailable(stb)
 
-add_subdirectory(Deps/glfw)
-add_executable(
-  rlgame
+FetchContent_Declare(
+  googletest
+  GIT_REPOSITORY https://github.com/google/googletest.git
+  GIT_TAG        release-1.12.1
+)
+# For Windows: Prevent overriding the parent project's compiler/linker settings
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+set(SOURCES 
   rl/Base/Game.cpp
   rl/Base/Game.h
   rl/Base/ShaderFactory.cpp
@@ -43,9 +50,11 @@ add_executable(
   rl/Base/Texture2.h
   rl/World/Unit/UnitGrass.cpp
   rl/World/Unit/UnitGrass.h
-  rl/World/Unit/Dyn/UnitDynamicTexture.cpp
-  rl/World/Unit/Dyn/UnitDynamicTexture.h
-)
+  rl/World/Unit/UnitDynamicTexture.cpp
+  rl/World/Unit/UnitDynamicTexture.h)
+
+add_subdirectory(Deps/glfw)
+add_executable(rlgame ${SOURCES})
 target_include_directories(
   rlgame
   PRIVATE
@@ -108,3 +117,33 @@ target_compile_shaders(
   Public/Shaders/shader.frag
   Public/Shaders/shader.vert
 )
+enable_testing()
+
+add_executable(
+  rlgame_tests 
+  Tests/UnitDynamicTextureTest.cpp
+  Tests/Main.cpp
+  rl/World/Unit/UnitDynamicTexture.cpp
+  rl/Base/Texture2.cpp
+  rl/Base/SimplexNoise.cpp
+  rl/World/Unit/UnitResourceName.h
+)
+
+target_include_directories(
+  rlgame_tests
+  PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${stb_SOURCE_DIR}
+)
+
+target_link_libraries(
+  rlgame_tests
+  PRIVATE
+  Vulkan::Vulkan
+  gtest_main
+  glm::glm
+  glfw
+)
+
+include(GoogleTest)
+gtest_discover_tests(rlgame_tests WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR})
