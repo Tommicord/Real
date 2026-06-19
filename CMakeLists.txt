@@ -47,24 +47,26 @@ set(SOURCES
   rl/Base/Game.h
   rl/Base/ShaderFactory.cpp
   rl/Base/ShaderFactory.h
-  rl/Base/DeviceInputReceiver.h
-  rl/Base/DeviceInputReceiver.cpp
-  rl/Base/CameraProvider.h
-  rl/Base/CameraProvider.cpp
-  rl/Client/Render/CameraRenderer.cpp
+  rl/Base/InputReceiver.h
+  rl/Base/InputReceiver.cpp
   rl/Base/SimplexNoise.cpp
   rl/Base/SimplexNoise.h
+  rl/Base/Texture2.cpp
+  rl/Base/Texture2.h
+  rl/Client/Render/CameraProvider.h
+  rl/Client/Render/CameraProvider.cpp
+  rl/Client/Render/CameraRenderer.cpp
   rl/World/Unit/Unit.cpp
   rl/World/Unit/Unit.h
   rl/World/Unit/UnitResourceName.h
-  rl/Base/Texture2.cpp
-  rl/Base/Texture2.h
   rl/World/Unit/UnitGrass.cpp
   rl/World/Unit/UnitGrass.h
   rl/World/Unit/UnitDynamicTexture.cpp
   rl/World/Unit/UnitDynamicTexture.h
   rl/Client/Render/Unit/UnitRenderer.cpp
-  rl/Client/Render/Unit/UnitRenderer.h)
+  rl/Client/Render/Unit/UnitRenderer.h
+  rl/Base/StateModel.h
+)
 
 add_subdirectory(Deps/glfw)
 add_executable(rlgame ${SOURCES})

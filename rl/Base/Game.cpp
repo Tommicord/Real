@@ -5,7 +5,7 @@
 #include <iostream>
 #include <set>
 #include <stdexcept>
-#include "../Client/Render/CameraProvider.h"
+#include "rl/Client/Render/CameraProvider.h"
 #include "rl/Base/ShaderFactory.h"
 
 namespace Rl::Game {
@@ -20,7 +20,7 @@ constexpr bool enableValidationLayers = true;
 #endif
 
 Game::Game() :
-    inputReceiver_(Input::DeviceInputReceiver::GetInstance())
+    inputReceiver_(Input::InputReceiver::GetInstance())
 {
 }
 
@@ -230,15 +230,7 @@ void Game::CreateSurface()
 }
 void Game::CreateResources()
 {
-    // Create camera
-    camera_ = std::make_unique<Camera>();
-    // Set aspect ratio based on swap chain extent
-    const float aspect = static_cast<float>(vkContext.swapChainExtent.width) / static_cast<float>(vkContext.swapChainExtent.height);
-    camera_->SetAspectRatio(aspect);
-    cameraDrawable_ = std::make_shared<CameraStateDrawable>();
-    cameraResource_ = std::make_unique<CameraStateResource>(*camera_);
-    cameraVk_ = std::make_unique<CameraStateDrawableVulkan>();
-    cameraDrawable_->OnCreate(*cameraResource_, *cameraVk_, vkContext);
+
 }
 
 void Game::PickPhysicalDevice()

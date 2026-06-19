@@ -199,13 +199,13 @@ public:
     virtual void OnMouseScrollEvent(const MouseScrollEvent& event) = 0;
 };
 
-class DeviceInputReceiver {
+class InputReceiver {
 public:
-    static DeviceInputReceiver& GetInstance();
-    DeviceInputReceiver(const DeviceInputReceiver&) = delete;
-    DeviceInputReceiver& operator=(const DeviceInputReceiver&) = delete;
-    DeviceInputReceiver(DeviceInputReceiver&&) = delete;
-    DeviceInputReceiver& operator=(DeviceInputReceiver&&) = delete;
+    static InputReceiver& GetInstance();
+    InputReceiver(const InputReceiver&) = delete;
+    InputReceiver& operator=(const InputReceiver&) = delete;
+    InputReceiver(InputReceiver&&) = delete;
+    InputReceiver& operator=(InputReceiver&&) = delete;
     void Subscribe(InputObserver* observer);
     void Unsubscribe(InputObserver* observer);
     void NotifyKeyEvent(const KeyEvent& event);
@@ -216,8 +216,8 @@ public:
     void Stop();
 
 private:
-    DeviceInputReceiver();
-    ~DeviceInputReceiver();
+    InputReceiver();
+    ~InputReceiver();
     void InputThread();
     void PollWindowsInput();
     void PollLinuxInput();

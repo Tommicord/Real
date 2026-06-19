@@ -5,7 +5,7 @@
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan.h>
-#include "rl/Base/DeviceInputReceiver.h"
+#include "rl/Base/InputReceiver.h"
 
 // Forward declarations to avoid circular dependency
 namespace Rl::Providers {
@@ -54,11 +54,7 @@ struct VulkanContext
 };
 
 class Game : public Input::InputObserver {
-    std::shared_ptr<Providers::CameraStateDrawable> cameraDrawable_;
-    std::unique_ptr<Providers::Camera> camera_;
-    std::unique_ptr<Providers::CameraStateResource> cameraResource_;
-    std::unique_ptr<Providers::CameraStateDrawableVulkan> cameraVk_;
-    Input::DeviceInputReceiver& inputReceiver_;
+    Input::InputReceiver& inputReceiver_;
 public:
     using Window = GLFWwindow;
     using Context = VulkanContext;

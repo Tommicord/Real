@@ -1,8 +1,9 @@
 #pragma once
 
-#include "rl/Base/StateDrawable.h"
-#include "rl/Base/DeviceInputReceiver.h"
 #include "rl/Base/Game.h"
+#include "rl/Base/InputReceiver.h"
+#include "rl/Base/StateDrawable.h"
+
 #include <array>
 #include <vulkan/vulkan.hpp>
 #include <cstdint>
@@ -12,8 +13,9 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-namespace Rl::Providers {
+#include "rl/Base/StateModel.h"
 
+namespace Rl::Providers {
 class AbstractCamera
 {
 public:
@@ -118,6 +120,9 @@ class CameraStateDrawable :
     StateDrawable<CameraStateResource, CameraStateDrawableVulkan>
 {
 public:
+    /* Stores the base class type */
+    using base_t = StateDrawable<CameraStateResource, CameraStateDrawableVulkan>;
+
     void OnDraw(const CameraStateResource& resource, CameraStateDrawableVulkan& vk,
                 Game::VulkanContext& context) override;
     void OnUpdate(CameraStateResource& resource,
@@ -131,6 +136,30 @@ public:
                    Game::VulkanContext& context) override;
     void OnPause() override;
     void OnResume() override;
+};
+
+class CameraModel :
+    public StateModel<Camera, CameraStateDrawable>
+{
+    std::shared_ptr<CameraStateDrawable> cameraDrawable;
+    std::unique_ptr<Camera> camera;
+    std::unique_ptr<CameraStateResource> cameraResource;
+    std::unique_ptr<CameraStateDrawableVulkan> cameraVk;
+public:
+    /* Constructs a model of the Camera class */
+    explicit CameraModel(Game::VulkanContext context);
+
+    /* Gets the stored camera */
+    Camera& GetCamera() const;
+
+    /* Gets the stored camera */
+    CameraStateResource& GetResource() override;
+
+    /* Gets the stored camera */
+    CameraStateDrawable& GetDrawable() override;
+
+    /* Gets the stored camera */
+    CameraStateDrawableVulkan& GetVulkanState() override;
 };
 
 } // namespace Rl::Providers

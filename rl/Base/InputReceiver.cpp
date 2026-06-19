@@ -1,9 +1,9 @@
-#include "rl/Base/DeviceInputReceiver.h"
 #include <algorithm>
 #include <chrono>
 #include <iostream>
 #include <mutex>
 #include <thread>
+#include "rl/Base/InputReceiver.h"
 
 #if defined(_WIN32) || defined(_WIN64)
 #include <windows.h>
@@ -17,14 +17,14 @@
 
 namespace Rl::Input {
 
-DeviceInputReceiver::DeviceInputReceiver()
+InputReceiver::InputReceiver()
 {
 #if defined(__linux__)
     display = XOpenDisplay(nullptr);
 #endif
 }
 
-DeviceInputReceiver::~DeviceInputReceiver()
+InputReceiver::~InputReceiver()
 {
     Stop();
 #if defined(__linux__)
@@ -35,25 +35,25 @@ DeviceInputReceiver::~DeviceInputReceiver()
 #endif
 }
 
-DeviceInputReceiver& DeviceInputReceiver::GetInstance()
+InputReceiver& InputReceiver::GetInstance()
 {
-    static DeviceInputReceiver instance;
+    static InputReceiver instance;
     return instance;
 }
 
-void DeviceInputReceiver::Subscribe(InputObserver* observer)
+void InputReceiver::Subscribe(InputObserver* observer)
 {
     std::scoped_lock lock(observersMutex);
     observers.push_back(observer);
 }
 
-void DeviceInputReceiver::Unsubscribe(InputObserver* observer)
+void InputReceiver::Unsubscribe(InputObserver* observer)
 {
     std::scoped_lock lock(observersMutex);
     observers.erase(std::remove(observers.begin(), observers.end(), observer), observers.end());
 }
 
-void DeviceInputReceiver::NotifyKeyEvent(const KeyEvent& event)
+void InputReceiver::NotifyKeyEvent(const KeyEvent& event)
 {
     std::cerr << "Key event: " << static_cast<int>(event.key) << ", action: " << static_cast<int>(event.action) << std::endl;
     std::scoped_lock lock(observersMutex);
@@ -63,7 +63,7 @@ void DeviceInputReceiver::NotifyKeyEvent(const KeyEvent& event)
     }
 }
 
-void DeviceInputReceiver::NotifyMouseButtonEvent(const MouseButtonEvent& event)
+void InputReceiver::NotifyMouseButtonEvent(const MouseButtonEvent& event)
 {
     std::scoped_lock lock(observersMutex);
     for (auto* observer : observers)
@@ -72,7 +72,7 @@ void DeviceInputReceiver::NotifyMouseButtonEvent(const MouseButtonEvent& event)
     }
 }
 
-void DeviceInputReceiver::NotifyMouseMoveEvent(const MouseMoveEvent& event)
+void InputReceiver::NotifyMouseMoveEvent(const MouseMoveEvent& event)
 {
     std::scoped_lock lock(observersMutex);
     for (auto* observer : observers)
@@ -81,7 +81,7 @@ void DeviceInputReceiver::NotifyMouseMoveEvent(const MouseMoveEvent& event)
     }
 }
 
-void DeviceInputReceiver::NotifyMouseScrollEvent(const MouseScrollEvent& event)
+void InputReceiver::NotifyMouseScrollEvent(const MouseScrollEvent& event)
 {
     std::scoped_lock lock(observersMutex);
     for (auto* observer : observers)
@@ -90,7 +90,7 @@ void DeviceInputReceiver::NotifyMouseScrollEvent(const MouseScrollEvent& event)
     }
 }
 
-void DeviceInputReceiver::Start()
+void InputReceiver::Start()
 {
     if (running.load())
     {
@@ -98,11 +98,11 @@ void DeviceInputReceiver::Start()
     }
 
     running.store(true);
-    inputThread = std::thread(&DeviceInputReceiver::InputThread, this);
+    inputThread = std::thread(&InputReceiver::InputThread, this);
     std::cerr << "DeviceInputReceiver started" << std::endl;
 }
 
-void DeviceInputReceiver::Stop()
+void InputReceiver::Stop()
 {
     if (!running.load())
     {
@@ -118,7 +118,7 @@ void DeviceInputReceiver::Stop()
     }
 }
 
-void DeviceInputReceiver::InputThread()
+void InputReceiver::InputThread()
 {
     while (running.load())
     {
@@ -347,7 +347,7 @@ Key WindowsKeyToInputKey(int vkCode)
     }
 }
 
-void DeviceInputReceiver::PollWindowsInput()
+void InputReceiver::PollWindowsInput()
 {
     static int keyStates[256] = {0};
 

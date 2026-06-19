@@ -11,7 +11,7 @@ struct StateResource
 
 class StateDrawableVulkan {};
 
-template<typename T = void, typename U = void>
+template<class T = void, class U = void>
 class StateDrawable
 {
 public:
