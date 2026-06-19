@@ -1,4 +1,4 @@
-#include "rl/Client/Render/CameraProvider.h"
+#include "Camera.h"
 
 #include <algorithm>
 #include <cmath>
@@ -205,7 +205,7 @@ void Camera::OnMouseScrollEvent(const Input::MouseScrollEvent& event)
     UpdateMatrices();
 }
 
-CameraModel::CameraModel(Game::VulkanContext context) : StateModel(context)
+CameraModel::CameraModel(Game::VulkanContext& context) : StateModel(context)
 {
     // Create camera
     camera = std::make_unique<Camera>();

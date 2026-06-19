@@ -53,8 +53,9 @@ set(SOURCES
   rl/Base/SimplexNoise.h
   rl/Base/Texture2.cpp
   rl/Base/Texture2.h
-  rl/Client/Render/CameraProvider.h
-  rl/Client/Render/CameraProvider.cpp
+  rl/Client/State/Camera.h
+  rl/Client/State/Camera.cpp
+  rl/Client/Render/UnitRenderer.cpp
   rl/Client/Render/CameraRenderer.cpp
   rl/World/Unit/Unit.cpp
   rl/World/Unit/Unit.h
@@ -63,9 +64,9 @@ set(SOURCES
   rl/World/Unit/UnitGrass.h
   rl/World/Unit/UnitDynamicTexture.cpp
   rl/World/Unit/UnitDynamicTexture.h
-  rl/Client/Render/Unit/UnitRenderer.cpp
-  rl/Client/Render/Unit/UnitRenderer.h
   rl/Base/StateModel.h
+  rl/Base/StateModel.cpp
+  rl/Base/IUpdatable.h
 )
 
 add_subdirectory(Deps/glfw)

@@ -25,4 +25,4 @@ protected:
     void Grow() override;
 };
 
-}
+} // namespace Rl::World

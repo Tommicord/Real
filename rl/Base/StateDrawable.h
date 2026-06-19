@@ -15,8 +15,8 @@ template<class T = void, class U = void>
 class StateDrawable
 {
 public:
-    using state_res_value_type = T;
-    using state_vk_value_type = U;
+    using ResValueType = T;
+    using VkValueType = U;
     StateDrawable() = default;
     StateDrawable(const StateDrawable& other) = delete;
     StateDrawable& operator=(const StateDrawable& other) = delete;

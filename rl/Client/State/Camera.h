@@ -13,6 +13,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
+#include "rl/Base/IUpdatable.h"
 #include "rl/Base/StateModel.h"
 
 namespace Rl::Providers {
@@ -63,11 +64,14 @@ struct CameraInputReceiver : Input::InputObserver {
     void OnMouseScrollEvent(const Input::MouseScrollEvent& event) override = 0;
 };
 
-class Camera : public AbstractCamera, public CameraInputReceiver {
+class Camera :
+    public AbstractCamera,
+    public CameraInputReceiver,
+    public IUpdatable {
 public:
     Camera();
     ~Camera() override;
-    void Update();
+    void Update() override;
     void SetPVMMatrix(const PVMMatrix& mvp) override;
     void SetRotateXYZ(const Eye& eye) override;
     void SetEyePosition(const Eye& eye) override;
@@ -121,7 +125,7 @@ class CameraStateDrawable :
 {
 public:
     /* Stores the base class type */
-    using base_t = StateDrawable<CameraStateResource, CameraStateDrawableVulkan>;
+    using Base = StateDrawable;
 
     void OnDraw(const CameraStateResource& resource, CameraStateDrawableVulkan& vk,
                 Game::VulkanContext& context) override;
@@ -147,7 +151,7 @@ class CameraModel :
     std::unique_ptr<CameraStateDrawableVulkan> cameraVk;
 public:
     /* Constructs a model of the Camera class */
-    explicit CameraModel(Game::VulkanContext context);
+    explicit CameraModel(Game::VulkanContext& context);
 
     /* Gets the stored camera */
     Camera& GetCamera() const;

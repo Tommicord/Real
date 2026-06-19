@@ -9,7 +9,7 @@ class StateModel
 {
 public:
     /* Initializer of a state model */
-    explicit StateModel(Game::VulkanContext context) {}
+    explicit StateModel(Game::VulkanContext& context) {}
 
     /* Default destructor for child classes */
     virtual ~StateModel() = default;
@@ -25,6 +25,12 @@ public:
 
     /* Gets the stored camera */
     virtual StateDrawableVulkan& GetVulkanState() = 0;
+
+    /* Draws the drawable using the vulkan context */
+    void DrawFromStateModel(Game::VulkanContext& context) const;
+
+    /* Updates the drawable state */
+    void UpdateFromStateModel(Game::VulkanContext& context) const;
 };
 
-}
+} // namespace Rl::Providers
