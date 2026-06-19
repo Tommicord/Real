@@ -128,7 +128,7 @@ Providers::Texture2 *UnitDynamicTexture::GenDynamicTexture(Seed seed)
             int blockX = x / blockSize;
             int blockY = y / blockSize;
             const int blockIndex = blockY * blocksX + blockX;
-            BlendsPaseColorWithPalette(r, g, b, blockIndex, colorMap);
+            BlendsBaseColorWithPalette(r, g, b, blockIndex, colorMap);
             const int noiseIndex = y * width + x;
             ApplyNoiseVar(r, g, b, noiseIndex, noiseMap);
             // Write to new texture
@@ -160,7 +160,7 @@ Texture2* UnitDynamicTexture::GenTexture(
     return newTexture;
 }
 
-uint8_t UnitDynamicTexture::ClampNoiseVar(const int v, const float variation)
+uint8_t UnitDynamicTexture::ClampNoiseVar(const int v, const float variation) const
 {
     const auto vFloat = static_cast<float>(v);
     const uint8_t res = static_cast<uint8_t>(
@@ -183,7 +183,7 @@ void UnitDynamicTexture::ApplyNoiseVar(
         b = ClampNoiseVar(b, variation);
     }
 }
-void UnitDynamicTexture::BlendsPaseColorWithPalette(uint8_t& r, uint8_t& g, uint8_t& b, int index,
+void UnitDynamicTexture::BlendsBaseColorWithPalette(uint8_t& r, uint8_t& g, uint8_t& b, int index,
                                                     const std::vector<int>& colorMap) const
 {
     if (index < colorMap.size())

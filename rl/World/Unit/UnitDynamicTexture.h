@@ -81,14 +81,12 @@ public:
 protected:
     /* Creates a texture for the new data of the new generated texture bytes */
     [[nodiscard]]
-    static
     Providers::Texture2 *GenTexture(uint8_t* data,
                                     size_t width, size_t height,
                                     size_t channels);
     /* Clamps the noise variation to a range of 0-255 */
     [[nodiscard]]
-    static
-    uint8_t ClampNoiseVar(int v, float variation);
+    uint8_t ClampNoiseVar(int v, float variation) const;
 
     /* Applies the Noise variation to RGB color */
     void ApplyNoiseVar(
@@ -97,7 +95,7 @@ protected:
         const std::vector<float>& noiseMap
         ) const;
     /* Blends the base color with the most common palette color */
-    void BlendsPaseColorWithPalette(
+    void BlendsBaseColorWithPalette(
         uint8_t& r, uint8_t& g, uint8_t& b,
         int index,
         const std::vector<int>& colorMap
