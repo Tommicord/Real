@@ -5,7 +5,9 @@
 #include <optional>
 #include <vector>
 #include <vulkan/vulkan.h>
+
 #include "rl/Base/InputReceiver.h"
+#include "rl/Client/State/CameraState.h"
 
 // Forward declarations to avoid circular dependency
 namespace Rl::Providers {
@@ -54,7 +56,8 @@ struct VulkanContext
 };
 
 class Game : public Input::InputObserver {
-    Input::InputReceiver& inputReceiver_;
+    Input::InputReceiver& inputReceiver;
+    std::unique_ptr<Providers::CameraModel> camera;
 public:
     using Window = GLFWwindow;
     using Context = VulkanContext;
@@ -82,11 +85,15 @@ public:
     void OnMouseScrollEvent(const Input::MouseScrollEvent& event) override;
     ~Game() override;
 private:
+    /* Width of the window */
+    static constexpr int width = 1800;
+
+    /* Height of the window */
+    static constexpr int height = 900;
+
     Game();
     Window* vkWindow = nullptr;
     Context vkContext;
-    static constexpr int width = 1800;
-    static constexpr int height = 900;
     void CreateInstance();
     void CreateSurface();
     void CreateResources();

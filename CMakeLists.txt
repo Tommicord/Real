@@ -42,7 +42,7 @@ FetchContent_Declare(
 set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
 
-set(SOURCES 
+set(SOURCES
   rl/Base/Game.cpp
   rl/Base/Game.h
   rl/Base/ShaderFactory.cpp
@@ -53,6 +53,8 @@ set(SOURCES
   rl/Base/SimplexNoise.h
   rl/Base/Texture2.cpp
   rl/Base/Texture2.h
+  rl/Base/StateModel.h
+  rl/Base/IUpdatable.h
   rl/Client/Render/UnitRenderer.cpp
   rl/Client/Render/CameraRenderer.cpp
   rl/Client/State/CameraState.cpp
@@ -61,14 +63,13 @@ set(SOURCES
   rl/World/Camera.cpp
   rl/World/Unit/Unit.cpp
   rl/World/Unit/Unit.h
+  rl/World/Unit/UnitRegistry.h
   rl/World/Unit/UnitResourceName.h
   rl/World/Unit/UnitGrass.cpp
   rl/World/Unit/UnitGrass.h
   rl/World/Unit/UnitDynamicTexture.cpp
   rl/World/Unit/UnitDynamicTexture.h
-  rl/Base/StateModel.h
-  rl/Base/StateModel.cpp
-  rl/Base/IUpdatable.h
+  rl/World/Unit/UnitRegistry.h
 )
 
 add_subdirectory(Deps/glfw)

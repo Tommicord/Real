@@ -1,5 +1,6 @@
 #include "rl/Client/State/CameraState.h"
 #include "rl/World/Camera.h"
+#include "rl/Base/Game.h"
 
 #include <algorithm>
 #include <cmath>
@@ -9,10 +10,11 @@
 
 namespace Rl::Providers {
 
-CameraModel::CameraModel(Game::VulkanContext& context) : StateModel(context)
+CameraModel::CameraModel(Game::VulkanContext& context)
+    : StateModel(context)
 {
     // Create camera
-    camera = std::make_unique<Camera>();
+    camera = std::make_unique<World::Camera>();
     // Set aspect ratio based on swap chain extent
     const float aspect = static_cast<float>(context.swapChainExtent.width) /
                          static_cast<float>(context.swapChainExtent.height);
@@ -23,7 +25,7 @@ CameraModel::CameraModel(Game::VulkanContext& context) : StateModel(context)
     cameraDrawable->OnCreate(*cameraResource, *cameraVk, context);
 }
 
-Camera& CameraModel::GetCamera() const {
+World::Camera& CameraModel::GetObject() {
     return *camera;
 }
 

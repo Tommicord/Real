@@ -12,7 +12,7 @@ class UnitDynamicTextureTest : public ::testing::Test {
 protected:
     void SetUp() override {
         testTexture = new Texture2();
-        bool loaded = testTexture->LoadFromFile("grass.png");
+        bool loaded = testTexture->LoadFromFile("dirt.png");
         ASSERT_TRUE(loaded) << "Failed to load test texture data";
         
         options.noiseSc = 0.1f;
@@ -111,8 +111,8 @@ TEST_F(UnitDynamicTextureTest, GenDynamicTextureReturnsValidTexture) {
 }
 
 TEST_F(UnitDynamicTextureTest, GenDynamicTextureDifferentSeeds) {
-    Texture2* texture1 = generator->GenDynamicTexture(12345);
-    Texture2* texture2 = generator->GenDynamicTexture(54321);
+    Texture2* texture1 = generator->GenDynamicTexture(12342233252);
+    Texture2* texture2 = generator->GenDynamicTexture(54323939931);
     
     ASSERT_NE(texture1, nullptr);
     ASSERT_NE(texture2, nullptr);

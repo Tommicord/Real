@@ -7,7 +7,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
+#include "rl/Base/IUpdatable.h"
+
 namespace Rl::World {
+
+using namespace Rl::Providers;
 
 class AbstractCamera
 {

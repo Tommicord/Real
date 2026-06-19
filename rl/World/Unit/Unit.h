@@ -4,8 +4,9 @@
 #include <array>
 #include <memory>
 
-#include "UnitDynamicTexture.h"
-#include "UnitResourceName.h"
+#include "rl/World/Unit/UnitDynamicTexture.h"
+#include "rl/World/Unit/UnitResourceName.h"
+#include "rl/World/Unit/UnitRegistry.h"
 #include "rl/Base/Texture2.h"
 
 namespace Rl::World {
@@ -30,13 +31,14 @@ struct UnitTextureMaterial
     ~UnitTextureMaterial();
 };
 
-template<class K, class V>
-class UnitRegistryKVPair;
-
 class AbstractUnit
 {
     /* Internal Field: Stores the count of registered world units */
-    static UnitRegistryKVPair<UnitResourceName, AbstractUnit*>& registry;
+    using Registry = UnitRegistryKVPair<UnitResourceName, AbstractUnit*>;
+    inline static auto
+        defaultName = std::vector( { "Unknown" } );
+    inline static auto
+        registry = Registry(UnitResourceName(defaultName));
 public:
     /* Stores the properties of the world unit */
     struct
@@ -48,7 +50,33 @@ public:
     /* Creates a basic WorldUnit, automatically registers the unit */
     template<typename T>
         requires(std::is_base_of_v<AbstractUnit, std::decay_t<T>>)
-    explicit AbstractUnit(T* type) noexcept;
+    AbstractUnit(T* type) noexcept : AbstractUnit()
+    {
+        using pair = UnitRegistryKVPair<UnitResourceName, AbstractUnit*>;
+        int id = 1;
+        if (pair::GetObjectById(id)
+            .has_value())
+        {
+            while (
+                pair::GetObjectById(id)
+                    .has_value()
+                )
+            {
+                id++;
+            }
+        }
+        if (!
+            pair::GetObjectById(id)
+                .has_value())
+        {
+            std::vector<const char*> v;
+            v.reserve(1);
+            v.push_back(typeid(T).name());
+            UnitResourceName resourceName(v);
+            AbstractUnit* base = type;
+            registry.Register(id, resourceName, base);
+        };
+    }
 
     /* Delete a world unit */
     virtual ~AbstractUnit();
@@ -132,54 +160,6 @@ protected:
     bool translucent;
 private:
     AbstractUnit() = default;
-};
-
-template<class K, class V>
-class UnitRegisters
-{
-    static std::vector<UnitRegistryKVPair<K, V>> registry;
-public:
-    /* Puts a Key-Value pair of Unit register */
-    static void PutKV(UnitRegistryKVPair<K, V>& reg) noexcept;
-
-    /* Returns the registry size */
-    [[nodiscard]]
-    size_t GetRegistrySize();
-
-    /* Returns the current registry */
-    [[nodiscard]]
-    std::vector<UnitRegistryKVPair<K, V>>& GetRegistry();
-
-    /* This is only to the KV Pair access the PutKV method
-     * When a register is created, automatically
-     * Adds the KV pair to the registry */
-    friend class UnitRegistryKVPair<K, V>;
-};
-
-template<class K, class V>
-class UnitRegistryKVPair
-{
-protected:
-    K& regKey;
-    V& regValue;
-public:
-    /* Creates a basic register of world unit */
-    explicit UnitRegistryKVPair(K& defaultRegKey);
-
-    /* Registers a Unit into the registry */
-    void Register(int id, K& key, V& value);
-
-    /* Gets the name we use to identify the object */
-    [[nodiscard]]
-    static std::optional<K> GetNameForObject(V& value);
-
-    /* Gets the object from the name identifier */
-    [[nodiscard]]
-    static std::optional<K> GetObject(K name);
-
-    /* Gets the object from the id identifier */
-    [[nodiscard]]
-    static std::optional<V> GetObjectById(int id);
 };
 
 } // namespace Rl::World

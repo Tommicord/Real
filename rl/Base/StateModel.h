@@ -4,7 +4,7 @@
 
 namespace Rl::Providers {
 
-template<class T, class D>
+template<class T, class D, class R, class DV>
 class StateModel
 {
 public:
@@ -18,19 +18,37 @@ public:
     virtual T& GetObject() = 0;
 
     /* Gets the stored camera */
-    virtual StateResource& GetResource() = 0;
+    virtual R& GetResource() = 0;
 
     /* Gets the stored camera */
     virtual D& GetDrawable() = 0;
 
     /* Gets the stored camera */
-    virtual StateDrawableVulkan& GetVulkanState() = 0;
+    virtual DV& GetVulkanState() = 0;
 
     /* Draws the drawable using the vulkan context */
-    void DrawFromStateModel(Game::VulkanContext& context) const;
+    void DrawFromStateModel(Game::VulkanContext& context)
+    {
+        GetDrawable()
+            .OnDraw(
+                GetResource(),
+                GetVulkanState(),
+                context
+            );
+    }
 
     /* Updates the drawable state */
-    void UpdateFromStateModel(Game::VulkanContext& context) const;
+    void UpdateFromStateModel(Game::VulkanContext& context)
+    {
+        GetObject()
+            .Update(),
+        GetDrawable()
+            .OnUpdate(
+                GetResource(),
+                GetVulkanState(),
+                context
+            );
+    }
 };
 
 } // namespace Rl::Providers

@@ -1,28 +1,24 @@
 #pragma once
 
-#include "rl/Base/Game.h"
 #include "rl/Base/InputReceiver.h"
 #include "rl/Base/StateDrawable.h"
+#include "rl/Base/IUpdatable.h"
+#include "rl/Base/StateModel.h"
+#include "rl/World/Camera.h"
 
-#include <array>
-#include <vulkan/vulkan.hpp>
 #include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-
-#include "rl/Base/IUpdatable.h"
-#include "rl/Base/StateModel.h"
+#include <vulkan/vulkan.hpp>
 
 namespace Rl::Providers {
 
 // Just for data interchange between classes
 struct CameraStateResource : StateResource {
-    Camera* cam;
-    explicit CameraStateResource(Camera& camera) :
-        cam(&camera)
+    World::Camera* cam;
+    explicit CameraStateResource(World::Camera& camera) :
+        StateResource(), cam(&camera)
     {
     }
 };
@@ -37,13 +33,14 @@ struct CameraStateDrawableVulkan : StateDrawableVulkan {
 };
 
 class CameraStateDrawable :
-    StateDrawable<CameraStateResource, CameraStateDrawableVulkan>
+    public StateDrawable<CameraStateResource, CameraStateDrawableVulkan>
 {
 public:
     /* Stores the base class type */
-    using Base = StateDrawable;
+    using Base = StateDrawable<CameraStateResource, CameraStateDrawableVulkan>;
 
-    void OnDraw(const CameraStateResource& resource, CameraStateDrawableVulkan& vk,
+    void OnDraw(CameraStateResource& resource,
+                CameraStateDrawableVulkan& vk,
                 Game::VulkanContext& context) override;
     void OnUpdate(CameraStateResource& resource,
                   CameraStateDrawableVulkan& vk,
@@ -59,18 +56,25 @@ public:
 };
 
 class CameraModel :
-    public StateModel<Camera, CameraStateDrawable>
+    public StateModel<
+        World::Camera,
+        CameraStateDrawable,
+        CameraStateResource, CameraStateDrawableVulkan
+    >
 {
-    std::shared_ptr<CameraStateDrawable> cameraDrawable;
-    std::unique_ptr<Camera> camera;
-    std::unique_ptr<CameraStateResource> cameraResource;
-    std::unique_ptr<CameraStateDrawableVulkan> cameraVk;
+    std::shared_ptr<Providers::CameraStateDrawable> cameraDrawable;
+    std::unique_ptr<Providers::CameraStateResource> cameraResource;
+    std::unique_ptr<Providers::CameraStateDrawableVulkan> cameraVk;
+    std::unique_ptr<World::Camera> camera;
 public:
     /* Constructs a model of the Camera class */
     explicit CameraModel(Game::VulkanContext& context);
 
+    /* Destructs a CameraModel */
+    ~CameraModel() override = default;
+
     /* Gets the stored camera */
-    Camera& GetCamera() const;
+    World::Camera& GetObject() override;
 
     /* Gets the stored camera */
     CameraStateResource& GetResource() override;

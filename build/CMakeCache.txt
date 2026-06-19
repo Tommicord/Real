@@ -14,6 +14,9 @@
 # EXTERNAL cache entries
 ########################
 
+//Builds the googlemock subproject
+BUILD_GMOCK:BOOL=ON
+
 //Build shared libraries
 BUILD_SHARED_LIBS:BOOL=OFF
 
@@ -274,11 +277,25 @@ FETCHCONTENT_QUIET:BOOL=ON
 // for glm
 FETCHCONTENT_SOURCE_DIR_GLM:PATH=
 
+//When not empty, overrides where to find pre-populated content
+// for googletest
+FETCHCONTENT_SOURCE_DIR_GOOGLETEST:PATH=
+
+//When not empty, overrides where to find pre-populated content
+// for stb
+FETCHCONTENT_SOURCE_DIR_STB:PATH=
+
 //Enables UPDATE_DISCONNECTED behavior for all content population
 FETCHCONTENT_UPDATES_DISCONNECTED:BOOL=OFF
 
 //Enables UPDATE_DISCONNECTED behavior just for population of glm
 FETCHCONTENT_UPDATES_DISCONNECTED_GLM:BOOL=OFF
+
+//Enables UPDATE_DISCONNECTED behavior just for population of googletest
+FETCHCONTENT_UPDATES_DISCONNECTED_GOOGLETEST:BOOL=OFF
+
+//Enables UPDATE_DISCONNECTED behavior just for population of stb
+FETCHCONTENT_UPDATES_DISCONNECTED_STB:BOOL=OFF
 
 //Git command line client
 GIT_EXECUTABLE:FILEPATH=C:/Program Files/Git/cmd/git.exe
@@ -371,6 +388,10 @@ GLM_ENABLE_SIMD_SSSE3:BOOL=OFF
 //Force 'pure' instructions
 GLM_FORCE_PURE:BOOL=OFF
 
+//Enable installation of googletest. (Projects embedding googletest
+// may want to turn this OFF.)
+INSTALL_GTEST:BOOL=ON
+
 //Use MSVC runtime library DLL
 USE_MSVC_RUNTIME_LIBRARY_DLL:BOOL=ON
 
@@ -394,6 +415,55 @@ glm_IS_TOP_LEVEL:STATIC=OFF
 
 //Value Computed by CMake
 glm_SOURCE_DIR:STATIC=C:/Users/USUARIO/IdeaProjects/RL/build/_deps/glm-src
+
+//Value Computed by CMake
+gmock_BINARY_DIR:STATIC=C:/Users/USUARIO/IdeaProjects/RL/build/_deps/googletest-build/googlemock
+
+//Value Computed by CMake
+gmock_IS_TOP_LEVEL:STATIC=OFF
+
+//Value Computed by CMake
+gmock_SOURCE_DIR:STATIC=C:/Users/USUARIO/IdeaProjects/RL/build/_deps/googletest-src/googlemock
+
+//Build all of Google Mock's own tests.
+gmock_build_tests:BOOL=OFF
+
+//Value Computed by CMake
+googletest-distribution_BINARY_DIR:STATIC=C:/Users/USUARIO/IdeaProjects/RL/build/_deps/googletest-build
+
+//Value Computed by CMake
+googletest-distribution_IS_TOP_LEVEL:STATIC=OFF
+
+//Value Computed by CMake
+googletest-distribution_SOURCE_DIR:STATIC=C:/Users/USUARIO/IdeaProjects/RL/build/_deps/googletest-src
+
+//Value Computed by CMake
+gtest_BINARY_DIR:STATIC=C:/Users/USUARIO/IdeaProjects/RL/build/_deps/googletest-build/googletest
+
+//Value Computed by CMake
+gtest_IS_TOP_LEVEL:STATIC=OFF
+
+//Value Computed by CMake
+gtest_SOURCE_DIR:STATIC=C:/Users/USUARIO/IdeaProjects/RL/build/_deps/googletest-src/googletest
+
+//Build gtest's sample programs.
+gtest_build_samples:BOOL=OFF
+
+//Build all of gtest's own tests.
+gtest_build_tests:BOOL=OFF
+
+//Disable uses of pthreads in gtest.
+gtest_disable_pthreads:BOOL=OFF
+
+//Use shared (DLL) run-time lib even when Google Test is built
+// as static lib.
+gtest_force_shared_crt:BOOL=ON
+
+//Build gtest with internal symbols hidden in shared libraries.
+gtest_hide_internal_symbols:BOOL=OFF
+
+//Dependencies for the target
+gtest_main_LIB_DEPENDS:STATIC=general;gtest;
 
 //Value Computed by CMake
 rl_BINARY_DIR:STATIC=C:/Users/USUARIO/IdeaProjects/RL/build
@@ -529,7 +599,7 @@ CMAKE_MODULE_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: CMAKE_MT
 CMAKE_MT-ADVANCED:INTERNAL=1
 //number of local generators
-CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=6
+CMAKE_NUMBER_OF_MAKEFILES:INTERNAL=9
 //Platform information initialized
 CMAKE_PLATFORM_INFO_INITIALIZED:INTERNAL=1
 //noop for ranlib
@@ -577,6 +647,8 @@ CMAKE_STATIC_LINKER_FLAGS_RELWITHDEBINFO-ADVANCED:INTERNAL=1
 CMAKE_VERBOSE_MAKEFILE-ADVANCED:INTERNAL=1
 //ADVANCED property for variable: DOXYGEN_EXECUTABLE
 DOXYGEN_EXECUTABLE-ADVANCED:INTERNAL=1
+//Details about finding Python
+FIND_PACKAGE_MESSAGE_DETAILS_Python:INTERNAL=[C:/Program Files/Python312/python.exe][found components: Interpreter ][v3.12.7()]
 //Details about finding Threads
 FIND_PACKAGE_MESSAGE_DETAILS_Threads:INTERNAL=[TRUE][v()]
 //Details about finding Vulkan
@@ -597,4 +669,32 @@ Vulkan_INCLUDE_DIR-ADVANCED:INTERNAL=1
 Vulkan_LIBRARY-ADVANCED:INTERNAL=1
 //CMAKE_INSTALL_PREFIX during last run
 _GNUInstallDirs_LAST_CMAKE_INSTALL_PREFIX:INTERNAL=C:/Program Files (x86)/rl
+//Compiler reason failure
+_Python_Compiler_REASON_FAILURE:INTERNAL=
+//Development reason failure
+_Python_Development_REASON_FAILURE:INTERNAL=
+//Path to a program.
+_Python_EXECUTABLE:INTERNAL=C:/Program Files/Python312/python.exe
+//Path to a program.
+_Python_EXECUTABLE_DEBUG:INTERNAL=_Python_EXECUTABLE_DEBUG-NOTFOUND
+//Python Properties
+_Python_INTERPRETER_PROPERTIES:INTERNAL=Python;3;12;7;64;32;<none>;cp312-win_amd64;;C:\Program Files\Python312\Lib;C:\Program Files\Python312\Lib;C:\Program Files\Python312\Lib\site-packages;C:\Program Files\Python312\Lib\site-packages
+_Python_INTERPRETER_SIGNATURE:INTERNAL=3559b0dce956e3cda37195b0c98c2ed7
+//NumPy reason failure
+_Python_NumPy_REASON_FAILURE:INTERNAL=
+cmake_package_name:INTERNAL=GTest
+generated_dir:INTERNAL=C:/Users/USUARIO/IdeaProjects/RL/build/_deps/googletest-build/googletest/generated
+//ADVANCED property for variable: gmock_build_tests
+gmock_build_tests-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: gtest_build_samples
+gtest_build_samples-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: gtest_build_tests
+gtest_build_tests-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: gtest_disable_pthreads
+gtest_disable_pthreads-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: gtest_force_shared_crt
+gtest_force_shared_crt-ADVANCED:INTERNAL=1
+//ADVANCED property for variable: gtest_hide_internal_symbols
+gtest_hide_internal_symbols-ADVANCED:INTERNAL=1
+targets_export_name:INTERNAL=GTestTargets
 

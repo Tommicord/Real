@@ -22,6 +22,7 @@ C:/Program Files/CMake/share/cmake-4.3/Modules/FindGit.cmake
 C:/Program Files/CMake/share/cmake-4.3/Modules/FindPackageHandleStandardArgs.cmake
 C:/Program Files/CMake/share/cmake-4.3/Modules/FindPackageMessage.cmake
 C:/Program Files/CMake/share/cmake-4.3/Modules/FindVulkan.cmake
+C:/Program Files/CMake/share/cmake-4.3/Modules/GoogleTest.cmake
 C:/Program Files/CMake/share/cmake-4.3/Modules/Internal/CMakeCXXLinkerInformation.cmake
 C:/Program Files/CMake/share/cmake-4.3/Modules/Internal/CMakeCommonLinkerInformation.cmake
 C:/Program Files/CMake/share/cmake-4.3/Modules/Linker/MSVC-CXX.cmake

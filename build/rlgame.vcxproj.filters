@@ -7,13 +7,34 @@
     <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\ShaderFactory.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\DeviceInputReceiver.cpp">
+    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\InputReceiver.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\CameraProvider.cpp">
+    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\SimplexNoise.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Ui\GuiCamera.cpp">
+    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\Texture2.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Client\Render\UnitRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Client\Render\CameraRenderer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Client\State\CameraState.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\World\Camera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\World\Unit\Unit.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\World\Unit\UnitGrass.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\World\Unit\UnitDynamicTexture.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -24,10 +45,37 @@
     <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\ShaderFactory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\DeviceInputReceiver.h">
+    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\InputReceiver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\CameraProvider.h">
+    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\SimplexNoise.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\Texture2.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\StateModel.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\IUpdatable.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Client\State\CameraState.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\World\Camera.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\World\Unit\Unit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\World\Unit\UnitResourceName.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\World\Unit\UnitGrass.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\World\Unit\UnitDynamicTexture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

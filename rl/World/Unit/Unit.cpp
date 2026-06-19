@@ -1,4 +1,5 @@
 #include "rl/World/Unit/Unit.h"
+#include "rl/World/Unit/UnitRegistry.h"
 #include "rl/World/Unit/UnitResourceName.h"
 
 #include <algorithm>
@@ -129,7 +130,7 @@ std::vector<UnitRegistryKVPair<K, V>>& UnitRegisters<K, V>::GetRegistry()
 }
 
 template <class K, class V>
-UnitRegistryKVPair<K, V>::UnitRegistryKVPair(K& defaultRegKey) :
+UnitRegistryKVPair<K, V>::UnitRegistryKVPair(const K& defaultRegKey) :
     regKey(defaultRegKey), regValue()
 {
 }
@@ -137,7 +138,7 @@ UnitRegistryKVPair<K, V>::UnitRegistryKVPair(K& defaultRegKey) :
 template <class K, class V>
 void UnitRegistryKVPair<K, V>::Register(int id, K& key, V& value)
 {
-    if (&key == this->regKey)
+    if (&key == &this->regKey)
     {
         this->regValue = value;
     }
@@ -157,23 +158,23 @@ std::optional<K> UnitRegistryKVPair<K, V>::GetNameForObject(V& value)
             return pair.regKey;
         }
     }
-    return;
+    return std::nullopt;
 }
 
 template <class K, class V>
-std::optional<K> UnitRegistryKVPair<K, V>::GetObject(K name)
+std::optional<V> UnitRegistryKVPair<K, V>::GetObject(K name)
 {
     // Access the static registry through UnitRegisters
     auto& registry = UnitRegisters<K, V>::GetRegistry();
     
     for (const auto& pair : registry)
     {
-        if (pair.regKey == name)
+        if (&pair.regKey == &name)
         {
             return pair.regValue;
         }
     }
-    return;
+    return std::nullopt;
 }
 
 template <class K, class V>
@@ -185,7 +186,7 @@ std::optional<V> UnitRegistryKVPair<K, V>::GetObjectById(int id)
     {
         return registry[id].regValue;
     }
-    return;
+    return std::nullopt;
 }
 
 UnitTextureMaterial::~UnitTextureMaterial()
@@ -193,37 +194,6 @@ UnitTextureMaterial::~UnitTextureMaterial()
     top.release(), down.release();
     left.release(), right.release();
     front.release(), back.release();
-}
-
-template<typename T>
-    requires(std::is_base_of_v<AbstractUnit, std::decay_t<T>>)
-AbstractUnit::AbstractUnit(T *type) noexcept : AbstractUnit()
-{
-    using pair = UnitRegistryKVPair<
-        UnitResourceName, AbstractUnit*
-    >;
-    int id = 1;
-    if (pair::GetObjectById(id)
-        .has_value())
-    {
-        while (
-            pair::GetObjectById(id)
-                .has_value()
-            )
-        {
-            id++;
-        }
-    }
-    if (!
-        pair::GetObjectById(id)
-            .has_value())
-    {
-        std::vector<const char*> v;
-        v.reserve(1);
-        v.push_back(typeid(T).name());
-        UnitResourceName resourceName(v);
-        registry.Register(id, resourceName, type);
-    };
 }
 
 AbstractUnit::~AbstractUnit()

@@ -1,12 +1,14 @@
 #include "rl/Base/Game.h"
+#include "rl/Client/State/CameraState.h"
+#include "rl/Base/ShaderFactory.h"
+
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
 #include <iostream>
 #include <set>
 #include <stdexcept>
-#include "../Client/State/CameraState.h"
-#include "rl/Base/ShaderFactory.h"
+#include "glm/fwd.hpp"
 
 namespace Rl::Game {
 using namespace Rl::Providers;
@@ -20,13 +22,13 @@ constexpr bool enableValidationLayers = true;
 #endif
 
 Game::Game() :
-    inputReceiver_(Input::InputReceiver::GetInstance())
+    inputReceiver(Input::InputReceiver::GetInstance())
 {
 }
 
 Game::~Game() { 
-    inputReceiver_.Unsubscribe(this);
-    inputReceiver_.Stop();
+    inputReceiver.Unsubscribe(this);
+    inputReceiver.Stop();
     CleanupGraphics(); 
 }
 
@@ -78,42 +80,44 @@ void Game::CleanupGraphics()
 }
 void Game::CleanupResources()
 {
-    camera_.reset();
-    cameraDrawable_->OnDestroy(*cameraResource_, *cameraVk_, vkContext);
-    cameraDrawable_.reset();
+    camera.reset();
+    camera->GetDrawable().OnDestroy(
+        camera->GetResource(),
+        camera->GetVulkanState(),
+        vkContext);
 }
 
 void Game::InitInputReceiverObserver()
 {
-    inputReceiver_.Subscribe(this);
-    inputReceiver_.Start();
+    inputReceiver.Subscribe(this);
+    inputReceiver.Start();
 }
 
 void Game::OnKeyEvent(const Input::KeyEvent& event)
 {
-    if (camera_) {
-        camera_->OnKeyEvent(event);
+    if (camera) {
+        camera->GetObject().OnKeyEvent(event);
     }
 }
 
 void Game::OnMouseButtonEvent(const Input::MouseButtonEvent& event)
 {
-    if (camera_) {
-        camera_->OnMouseButtonEvent(event);
+    if (camera) {
+        camera->GetObject().OnMouseButtonEvent(event);
     }
 }
 
 void Game::OnMouseMoveEvent(const Input::MouseMoveEvent& event)
 {
-    if (camera_) {
-        camera_->OnMouseMoveEvent(event);
+    if (camera) {
+        camera->GetObject().OnMouseMoveEvent(event);
     }
 }
 
 void Game::OnMouseScrollEvent(const Input::MouseScrollEvent& event)
 {
-    if (camera_) {
-        camera_->OnMouseScrollEvent(event);
+    if (camera) {
+        camera->GetObject().OnMouseScrollEvent(event);
     }
 }
 
@@ -143,7 +147,7 @@ void Game::InitWindow()
     // Configure monitor and window
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-    // glfwSetInputMode(vkWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(vkWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetWindowPos(
         vkWindow,
         (mode->width - width) / 2,
@@ -165,8 +169,7 @@ void Game::UpdateAudio() {}
 
 void Game::UpdateUI()
 {
-    camera_->Update();
-    cameraDrawable_->OnUpdate(*cameraResource_, *cameraVk_, vkContext);
+    camera->UpdateFromStateModel(vkContext);
 }
 
 void Game::UpdateLogic() {}
@@ -228,8 +231,7 @@ void Game::CreateSurface()
         throw std::runtime_error("Failed to create window surface");
     }
 }
-void Game::CreateResources()
-{
+void Game::CreateResources() {
 
 }
 

@@ -1,4 +1,4 @@
-#include "Camera.h"
+#include "rl/World/Camera.h"
 #include "rl/Client/State/CameraState.h"
 
 #include <algorithm>
@@ -7,7 +7,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-namespace Rl::Providers {
+namespace Rl::World {
 
 Camera::Camera()
 {
