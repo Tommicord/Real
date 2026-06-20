@@ -1,14 +1,14 @@
 #version 450
 
-// Input from geometry shader
-layout (location = 0) flat in vec3 g_WorldPos;
-layout (location = 1) flat in vec2 g_TexCoords;
-layout (location = 2) flat in uint g_LightingEmit;
-layout (location = 3) flat in uint g_TransparencyLevel;
-layout (location = 4) flat in uint g_FaceIndex;
-layout (location = 5) flat in vec3 g_Albedo;
-layout (location = 6) flat in float g_Metallic;
-layout (location = 7) flat in float g_Roughness;
+// Input from vertex shader (after compute shader culling)
+layout (location = 0) flat in vec3 v_WorldPos;
+layout (location = 1) flat in vec2 v_TexCoords;
+layout (location = 2) flat in uint v_LightingEmit;
+layout (location = 3) flat in uint v_TransparencyLevel;
+layout (location = 4) flat in uint v_FaceIndex;
+layout (location = 5) flat in vec3 v_Albedo;
+layout (location = 6) flat in float v_Metallic;
+layout (location = 7) flat in float v_Roughness;
 
 // Output color
 layout (location = 0) out vec4 outColor;
@@ -171,19 +171,19 @@ const vec3 faceNormals[6] = vec3[](
 
 void main() {
     // Get face normal based on face index
-    vec3 normal = faceNormals[g_FaceIndex];
+    vec3 normal = faceNormals[v_FaceIndex];
     // Setup PBR material
     PBRMaterial material;
-    material.albedo = g_Albedo;
-    material.metallic = g_Metallic;
-    material.roughness = g_Roughness;
+    material.albedo = v_Albedo;
+    material.metallic = v_Metallic;
+    material.roughness = v_Roughness;
     
     // Sample ambient occlusion
-    float ao = texture(u_AOTexture, g_TexCoords).r;
+    float ao = texture(u_AOTexture, v_TexCoords).r;
     material.ao = ao;
     
     // Calculate view direction
-    vec3 viewDir = normalize(lighting.u_CameraPosition - g_WorldPos);
+    vec3 viewDir = normalize(lighting.u_CameraPosition - v_WorldPos);
     
     // Setup sun light
     Light sunLight;
@@ -195,10 +195,10 @@ void main() {
     vec3 ambientColor = lighting.u_AmbientStrength * lighting.u_SunColor;
     
     // Calculate PBR lighting
-    vec3 pbrColor = CalculatePBR(g_WorldPos, normal, viewDir, material, sunLight, ambientColor);
+    vec3 pbrColor = CalculatePBR(v_WorldPos, normal, viewDir, material, sunLight, ambientColor);
     
     // Calculate self-emission
-    float emission = float(g_LightingEmit) / 255.0;
+    float emission = float(v_LightingEmit) / 255.0;
     vec3 emitColor = emission * lighting.u_SunColor;
     
     // Combine PBR lighting with emission

@@ -32,10 +32,21 @@ struct UnitStateResource : StateResource {
 struct UnitStateDrawableVulkan : StateDrawableVulkan {
     VkBuffer vertexBuffer = VK_NULL_HANDLE;
     VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
-    VkBuffer uniformBuffer = VK_NULL_HANDLE;
-    VkDeviceMemory uniformBufferMemory = VK_NULL_HANDLE;
+    VkBuffer outputVertexBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory outputVertexBufferMemory = VK_NULL_HANDLE;
+    VkBuffer visibleCountBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory visibleCountBufferMemory = VK_NULL_HANDLE;
+    VkBuffer indirectDrawBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory indirectDrawBufferMemory = VK_NULL_HANDLE;
+    VkBuffer frustumBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory frustumBufferMemory = VK_NULL_HANDLE;
+    VkPipeline computePipeline = VK_NULL_HANDLE;
+    VkPipelineLayout computePipelineLayout = VK_NULL_HANDLE;
+    VkDescriptorSetLayout computeDescriptorSetLayout = VK_NULL_HANDLE;
+    VkDescriptorSet computeDescriptorSet = VK_NULL_HANDLE;
     VkPipeline pipeline = VK_NULL_HANDLE;
     VkPipelineLayout pipelineLayout = VK_NULL_HANDLE;
+    VkDescriptorSetLayout descriptorSetLayout = VK_NULL_HANDLE;
     VkDescriptorSet descriptorSet = VK_NULL_HANDLE;
     VkDescriptorPool descriptorPool = VK_NULL_HANDLE;
     UnitStateDrawableVulkan() = default;

@@ -3,6 +3,12 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <vulkan/vulkan.h>
+
+// Forward declaration
+namespace Rl::Game {
+    struct VulkanContext;
+}
 
 namespace Rl::Providers {
 
@@ -62,29 +68,29 @@ public:
     ~Texture2();
     // Texture data access
     [[nodiscard]]
-    uint8_t* GetData() const { return m_data; }
+    uint8_t* GetData() const { return data; }
     [[nodiscard]]
-    size_t GetDataSize() const { return m_dataSize; }
+    size_t GetDataSize() const { return dataSize; }
     // Texture properties
     [[nodiscard]]
-    int GetWidth() const { return m_width; }
+    int GetWidth() const { return width; }
     [[nodiscard]]
-    int GetHeight() const { return m_height; }
+    int GetHeight() const { return height; }
     [[nodiscard]]
-    int GetChannels() const { return m_channels; }
+    int GetChannels() const { return channels; }
     [[nodiscard]]
-    TextureFormat GetFormat() const { return m_properties.format; }
+    TextureFormat GetFormat() const { return properties.format; }
     [[nodiscard]]
-    int GetMipmapLevels() const { return m_mipmapLevels; }
+    int GetMipmapLevels() const { return mipmapLevels; }
     // Texture configuration
-    void SetProperties(const TextureProperties& properties) { m_properties = properties; }
+    void SetProperties(const TextureProperties& properties) { this->properties = properties; }
     [[nodiscard]]
-    const TextureProperties& GetProperties() const { return m_properties; }
+    const TextureProperties& GetProperties() const { return properties; }
     // Texture state
     [[nodiscard]]
-    bool IsLoaded() const { return m_loaded; }
+    bool IsLoaded() const { return loaded; }
     [[nodiscard]]
-    bool HasMipmaps() const { return m_mipmapLevels > 1; }
+    bool HasMipmaps() const { return mipmapLevels > 1; }
     // Utility functions
     static bool IsFormatSupported(TextureFormat format);
     static int GetFormatSize(TextureFormat format);
@@ -101,26 +107,47 @@ public:
     static bool IsMobilePlatform();
     static bool IsDesktopPlatform();
     static std::string GetPlatformName();
+
+    void GenerateMipmaps();
+    void GetSampler(Game::VulkanContext& context);
+    void GetImageView(Game::VulkanContext& context);
 private:
     void Initialize();
     void Cleanup();
     bool LoadImage(const std::string& filepath);
     bool ProcessImageData(uint8_t* imageData, int width, int height, int channels);
-    void GenerateMipmaps();
+    void CreateVulkanImage(Game::VulkanContext& context);
+    void CreateVulkanSampler(Game::VulkanContext& context);
+    void UploadTextureData(Game::VulkanContext& context);
+    VkFormat GetVkFormat() const;
+    VkFilter GetVkFilter(TextureFilter filter) const;
+    VkSamplerMipmapMode GetVkMipmapMode(TextureFilter filter) const;
+    VkSamplerAddressMode GetVkWrapMode(TextureWrap wrap) const;
     
     /* Texture data */
-    uint8_t* m_data;
-    size_t m_dataSize;
-    int m_width;
-    int m_height;
-    int m_channels;
-    int m_mipmapLevels;
+    uint8_t* data;
+    size_t dataSize;
+    int width;
+    int height;
+    int channels;
+    int mipmapLevels;
     /* Texture properties */
 
-    TextureProperties m_properties;
+    TextureProperties properties;
     /* State */
-    bool m_loaded;
-    std::string m_filepath;
+    bool loaded;
+    std::string filepath;
+
+    /* Vulkan-specific resources */
+    struct VkBinding {
+        VkImage vkImage = VK_NULL_HANDLE;
+        VkDeviceMemory mvkImageMemory = VK_NULL_HANDLE;
+        VkSampler vkSampler = VK_NULL_HANDLE;
+        VkImageView vkImageView = VK_NULL_HANDLE;
+        VkBuffer vkStagingBuffer = VK_NULL_HANDLE;
+        VkDeviceMemory vkStagingBufferMemory = VK_NULL_HANDLE;
+    };
+    VkBinding binding;
 };
 
 } // namespace Rl::Providers

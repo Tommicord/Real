@@ -1,11 +1,11 @@
 #version 450
 
-// Input from geometry shader
-layout (location = 0) flat in vec3 g_WorldPos;
-layout (location = 1) flat in vec2 g_TexCoords;
-layout (location = 2) flat in uint g_LightingEmit;
-layout (location = 3) flat in uint g_TransparencyLevel;
-layout (location = 4) flat in uint g_FaceIndex;
+// Input from vertex shader (after compute shader culling)
+layout (location = 0) flat in vec3 v_WorldPos;
+layout (location = 1) flat in vec2 v_TexCoords;
+layout (location = 2) flat in uint v_LightingEmit;
+layout (location = 3) flat in uint v_TransparencyLevel;
+layout (location = 4) flat in uint v_FaceIndex;
 
 // Output color
 layout (location = 0) out vec4 outColor;
@@ -24,9 +24,9 @@ layout(set = 0, binding = 9) uniform SettingsBlock {
 
 void main() {
     // Sample texture based on face index
-    vec4 texColor = texture(u_Texture[g_FaceIndex], g_TexCoords);
+    vec4 texColor = texture(u_Texture[v_FaceIndex], v_TexCoords);
     // Apply transparency
-    float transparency = float(g_TransparencyLevel) / 255.0;
+    float transparency = float(v_TransparencyLevel) / 255.0;
     texColor.a = mix(texColor.a, 1.0 - transparency, transparency);
     
     // Apply lighting if using separate lighting pass

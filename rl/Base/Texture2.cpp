@@ -143,13 +143,13 @@ bool Texture2::IsFormatSupported(TextureFormat format)
 
 // Constructor/Destructor
 Texture2::Texture2()
-    : m_data(nullptr)
-    , m_dataSize(0)
-    , m_width(0)
-    , m_height(0)
-    , m_channels(0)
-    , m_mipmapLevels(1)
-    , m_loaded(false)
+    : data(nullptr)
+    , dataSize(0)
+    , width(0)
+    , height(0)
+    , channels(0)
+    , mipmapLevels(1)
+    , loaded(false)
 {
     Initialize();
 }
@@ -163,7 +163,7 @@ Texture2::Texture2(const std::string& filepath)
 Texture2::Texture2(const std::string& filepath, const TextureProperties& properties)
     : Texture2()
 {
-    m_properties = properties;
+    properties = properties;
     LoadFromFile(filepath);
 }
 
@@ -174,42 +174,42 @@ Texture2::~Texture2()
 
 void Texture2::Initialize()
 {
-    m_data = nullptr;
-    m_dataSize = 0;
-    m_width = 0;
-    m_height = 0;
-    m_channels = 0;
-    m_mipmapLevels = 1;
-    m_loaded = false;
+    data = nullptr;
+    dataSize = 0;
+    width = 0;
+    height = 0;
+    channels = 0;
+    mipmapLevels = 1;
+    loaded = false;
 }
 
 void Texture2::Cleanup()
 {
-    if (m_data) {
-        stbi_image_free(m_data);
-        m_data = nullptr;
+    if (data) {
+        stbi_image_free(data);
+        data = nullptr;
     }
-    m_dataSize = 0;
-    m_loaded = false;
+    dataSize = 0;
+    loaded = false;
 }
 
 // Loading functions
 bool Texture2::LoadFromFile(const std::string& filepath)
 {
-    return LoadFromFile(filepath, m_properties);
+    return LoadFromFile(filepath, properties);
 }
 
 bool Texture2::LoadFromFile(const std::string& filepath, const TextureProperties& properties)
 {
-    m_properties = properties;
-    m_filepath = filepath;
+    properties = properties;
+    filepath = filepath;
     
     return LoadImage(filepath);
 }
 
 bool Texture2::LoadFromMemory(const uint8_t* data, size_t size, const TextureProperties& properties)
 {
-    m_properties = properties;
+    properties = properties;
     
     int width, height, channels;
     stbi_uc* imageData = stbi_load_from_memory(data, static_cast<int>(size), &width, &height, &channels, 0);
@@ -223,19 +223,19 @@ bool Texture2::LoadFromMemory(const uint8_t* data, size_t size, const TexturePro
 
 bool Texture2::LoadFromData(const uint8_t* data, int width, int height, TextureFormat format, const TextureProperties& properties)
 {
-    m_properties = properties;
-    m_properties.format = format;
-    m_width = width;
-    m_height = height;
-    m_channels = GetFormatSize(format);
+    properties = properties;
+    properties.format = format;
+    width = width;
+    height = height;
+    channels = GetFormatSize(format);
     
-    m_dataSize = width * height * m_channels;
-    m_data = new uint8_t[m_dataSize];
-    memcpy(m_data, data, m_dataSize);
+    dataSize = width * height * channels;
+    data = new uint8_t[dataSize];
+    memcpy(data, data, dataSize);
     
-    m_loaded = true;
+    loaded = true;
     
-    if (m_properties.generateMipmaps) {
+    if (properties.generateMipmaps) {
         GenerateMipmaps();
     }
     
@@ -321,23 +321,23 @@ bool Texture2::LoadImage(const std::string& filepath)
 
 bool Texture2::ProcessImageData(uint8_t* imageData, int width, int height, int channels)
 {
-    m_width = width;
-    m_height = height;
-    m_channels = channels;
+    width = width;
+    height = height;
+    channels = channels;
     
     // Determine format based on channels
     switch (channels) {
         case 1:
-            m_properties.format = TextureFormat::R8;
+            properties.format = TextureFormat::R8;
             break;
         case 2:
-            m_properties.format = TextureFormat::RG8;
+            properties.format = TextureFormat::RG8;
             break;
         case 3:
-            m_properties.format = TextureFormat::RGB8;
+            properties.format = TextureFormat::RGB8;
             break;
         case 4:
-            m_properties.format = TextureFormat::RGBA8;
+            properties.format = TextureFormat::RGBA8;
             break;
         default:
             stbi_image_free(imageData);
@@ -345,14 +345,14 @@ bool Texture2::ProcessImageData(uint8_t* imageData, int width, int height, int c
     }
     
     // Calculate data size
-    m_dataSize = width * height * channels;
-    m_data = new uint8_t[m_dataSize];
-    memcpy(m_data, imageData, m_dataSize);
+    dataSize = width * height * channels;
+    data = new uint8_t[dataSize];
+    memcpy(data, imageData, dataSize);
     // Free stb_image data
     stbi_image_free(imageData);
-    m_loaded = true;
+    loaded = true;
     // Generate mipmaps if requested
-    if (m_properties.generateMipmaps) {
+    if (properties.generateMipmaps) {
         GenerateMipmaps();
     }
     
@@ -361,13 +361,91 @@ bool Texture2::ProcessImageData(uint8_t* imageData, int width, int height, int c
 
 void Texture2::GenerateMipmaps()
 {
-    if (!m_loaded || m_width == 0 || m_height == 0) {
+    if (!loaded || width == 0 || height == 0) {
         return;
     }
     
     // Calculate number of mipmap levels
-    int maxDimension = std::max(m_width, m_height);
-    m_mipmapLevels = static_cast<int>(std::floor(std::log2(maxDimension))) + 1;
+    int maxDimension = std::max(width, height);
+    mipmapLevels = static_cast<int>(std::floor(std::log2(maxDimension))) + 1;
+    
+    // Generate mipmap data from RGBA array
+    if (mipmapLevels > 1 && data) {
+        // Calculate total size needed for all mipmaps
+        size_t totalMipmapSize = 0;
+        int mipWidth = width;
+        int mipHeight = height;
+        
+        for (int level = 0; level < mipmapLevels; ++level) {
+            size_t levelSize = mipWidth * mipHeight * channels;
+            totalMipmapSize += levelSize;
+            if (mipWidth > 1) mipWidth /= 2;
+            if (mipHeight > 1) mipHeight /= 2;
+        }
+        
+        // Allocate new buffer for mipmapped data
+        uint8_t* mipmappedData = new uint8_t[totalMipmapSize];
+        uint8_t* dst = mipmappedData;
+        
+        // Copy base level
+        mipWidth = width;
+        mipHeight = height;
+        size_t baseSize = width * height * channels;
+        memcpy(dst, data, baseSize);
+        dst += baseSize;
+        
+        // Generate each subsequent mipmap level
+        for (int level = 1; level < mipmapLevels; ++level) {
+            int prevWidth = mipWidth;
+            int prevHeight = mipHeight;
+            
+            if (mipWidth > 1) mipWidth /= 2;
+            if (mipHeight > 1) mipHeight /= 2;
+            
+            // Downsample using box filter
+            for (int y = 0; y < mipHeight; ++y) {
+                for (int x = 0; x < mipWidth; ++x) {
+                    // Sample 2x2 pixels from previous level and average
+                    for (int c = 0; c < channels; ++c) {
+                        int sum = 0;
+                        int count = 0;
+                        
+                        for (int dy = 0; dy < 2; ++dy) {
+                            for (int dx = 0; dx < 2; ++dx) {
+                                int srcX = (x * 2 + dx) < prevWidth ? (x * 2 + dx) : prevWidth - 1;
+                                int srcY = (y * 2 + dy) < prevHeight ? (y * 2 + dy) : prevHeight - 1;
+                                
+                                size_t srcOffset = (srcY * prevWidth + srcX) * channels + c;
+                                // Find the offset in the previous level's data
+                                size_t prevLevelOffset = 0;
+                                int pw = width;
+                                int ph = height;
+                                for (int l = 0; l < level - 1; ++l) {
+                                    size_t levelSize = pw * ph * channels;
+                                    prevLevelOffset += levelSize;
+                                    if (pw > 1) pw /= 2;
+                                    if (ph > 1) ph /= 2;
+                                }
+                                prevLevelOffset += (srcY * prevWidth + srcX) * channels + c;
+                                
+                                sum += data[prevLevelOffset];
+                                count++;
+                            }
+                        }
+                        
+                        dst[(y * mipWidth + x) * channels + c] = static_cast<uint8_t>(sum / count);
+                    }
+                }
+            }
+            
+            dst += mipWidth * mipHeight * channels;
+        }
+        
+        // Replace old data with mipmapped data
+        delete[] data;
+        data = mipmappedData;
+        dataSize = totalMipmapSize;
+    }
 }
 
 } // namespace Rl

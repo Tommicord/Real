@@ -72,6 +72,7 @@ set(SOURCES
   rl/World/Unit/UnitDynamicTexture.cpp
   rl/World/Unit/UnitDynamicTexture.h
   rl/World/Unit/UnitRegistry.h
+  rl/Base/Texture2Vk.cpp
 )
 
 add_subdirectory(Deps/glfw)
@@ -152,7 +153,7 @@ target_compile_shaders(
   rlgame
   Public/Shaders/shader.frag
   Public/Shaders/shader.vert
-  Public/Shaders/unit.face.geom
+  Public/Shaders/unit.face.comp
   Public/Shaders/unit.lightning.frag
   Public/Shaders/unit.frag
   Public/Shaders/unit.vert

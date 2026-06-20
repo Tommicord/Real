@@ -135,20 +135,66 @@ void main() {
         return;
     }
     
-    // Get triangle vertices
-    Vertex v0 = vertices[vertexIndex];
-    Vertex v1 = vertices[vertexIndex + 1];
-    Vertex v2 = vertices[vertexIndex + 2];
+    // Get triangle vertices from input buffer (local space)
+    VertexInput v0 = vertices[vertexIndex];
+    VertexInput v1 = vertices[vertexIndex + 1];
+    VertexInput v2 = vertices[vertexIndex + 2];
     
-    // Perform frustum culling
-    if (IsTriangleVisible(v0.worldPos, v1.worldPos, v2.worldPos)) {
+    // Apply polygon fence offsets for non-cube geometry
+    vec3 modifiedPos0 = ApplyPolygonOffset(v0.position, v0.faceIndex, v0.polRight, v0.polLeft);
+    vec3 modifiedPos1 = ApplyPolygonOffset(v1.position, v1.faceIndex, v1.polRight, v1.polLeft);
+    vec3 modifiedPos2 = ApplyPolygonOffset(v2.position, v2.faceIndex, v2.polRight, v2.polLeft);
+    
+    // Transform to world space
+    vec4 worldPos0 = pc.model * vec4(modifiedPos0, 1.0);
+    vec4 worldPos1 = pc.model * vec4(modifiedPos1, 1.0);
+    vec4 worldPos2 = pc.model * vec4(modifiedPos2, 1.0);
+    
+    // Perform frustum culling in world space
+    if (IsTriangleVisible(worldPos0.xyz, worldPos1.xyz, worldPos2.xyz)) {
         // Atomically get and increment the output index
         uint outputIndex = atomicAdd(visibleVertexCount, 3);
         
-        // Write visible vertices to output buffer
-        visibleVertices[outputIndex] = v0;
-        visibleVertices[outputIndex + 1] = v1;
-        visibleVertices[outputIndex + 2] = v2;
+        // Check if we have space in output buffer
+        if (outputIndex + 2 < visibleVertices.length()) {
+            // Transform to clip space for output
+            vec4 clipPos0 = pc.projection * pc.view * worldPos0;
+            vec4 clipPos1 = pc.projection * pc.view * worldPos1;
+            vec4 clipPos2 = pc.projection * pc.view * worldPos2;
+            
+            // Write first vertex
+            visibleVertices[outputIndex].position = clipPos0;
+            visibleVertices[outputIndex].worldPos = worldPos0.xyz;
+            visibleVertices[outputIndex].texCoords = v0.texCoords;
+            visibleVertices[outputIndex].lightingEmit = v0.lightingEmit;
+            visibleVertices[outputIndex].transparencyLevel = v0.transparencyLevel;
+            visibleVertices[outputIndex].faceIndex = v0.faceIndex;
+            visibleVertices[outputIndex].albedo = v0.albedo;
+            visibleVertices[outputIndex].metallic = v0.metallic;
+            visibleVertices[outputIndex].roughness = v0.roughness;
+            
+            // Write second vertex
+            visibleVertices[outputIndex + 1].position = clipPos1;
+            visibleVertices[outputIndex + 1].worldPos = worldPos1.xyz;
+            visibleVertices[outputIndex + 1].texCoords = v1.texCoords;
+            visibleVertices[outputIndex + 1].lightingEmit = v1.lightingEmit;
+            visibleVertices[outputIndex + 1].transparencyLevel = v1.transparencyLevel;
+            visibleVertices[outputIndex + 1].faceIndex = v1.faceIndex;
+            visibleVertices[outputIndex + 1].albedo = v1.albedo;
+            visibleVertices[outputIndex + 1].metallic = v1.metallic;
+            visibleVertices[outputIndex + 1].roughness = v1.roughness;
+            
+            // Write third vertex
+            visibleVertices[outputIndex + 2].position = clipPos2;
+            visibleVertices[outputIndex + 2].worldPos = worldPos2.xyz;
+            visibleVertices[outputIndex + 2].texCoords = v2.texCoords;
+            visibleVertices[outputIndex + 2].lightingEmit = v2.lightingEmit;
+            visibleVertices[outputIndex + 2].transparencyLevel = v2.transparencyLevel;
+            visibleVertices[outputIndex + 2].faceIndex = v2.faceIndex;
+            visibleVertices[outputIndex + 2].albedo = v2.albedo;
+            visibleVertices[outputIndex + 2].metallic = v2.metallic;
+            visibleVertices[outputIndex + 2].roughness = v2.roughness;
+        }
     }
     
     // Ensure all workgroups finish before updating draw params
