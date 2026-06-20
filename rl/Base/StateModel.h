@@ -41,6 +41,17 @@ public:
             );
     }
 
+    /* Dispatches compute shader using the vulkan context */
+    void DrawComputeFromStateModel(Game::VulkanContext& context)
+    {
+        GetDrawable()
+            .OnDrawCompute(
+                GetResource(),
+                GetVulkanState(),
+                context
+            );
+    }
+
     /* Updates the drawable state */
     void UpdateFromStateModel(Game::VulkanContext& context)
     {

@@ -38,6 +38,9 @@ public:
     virtual void OnDraw(T& resource,
                         U& vk,
                         Game::VulkanContext& context) = 0;
+    virtual void OnDrawCompute(T& resource,
+                               U& vk,
+                               Game::VulkanContext& context) = 0;
     virtual void OnUpdate(T& resource,
                           U& vk,
                           Context& context) = 0;

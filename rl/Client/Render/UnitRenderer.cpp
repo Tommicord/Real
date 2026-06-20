@@ -203,7 +203,7 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     VkBufferCreateInfo countBufferInfo{};
     countBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     countBufferInfo.size = sizeof(uint32_t);
-    countBufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    countBufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     countBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     
     if (vkCreateBuffer(context.device, &countBufferInfo, nullptr, &vk.visibleCountBuffer) != VK_SUCCESS) {
@@ -235,7 +235,7 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     VkBufferCreateInfo indirectBufferInfo{};
     indirectBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
     indirectBufferInfo.size = sizeof(DrawParams);
-    indirectBufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+    indirectBufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     indirectBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     
     if (vkCreateBuffer(context.device, &indirectBufferInfo, nullptr, &vk.indirectDrawBuffer) != VK_SUCCESS) {
@@ -255,6 +255,18 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     }
     
     vkBindBufferMemory(context.device, vk.indirectDrawBuffer, vk.indirectDrawBufferMemory, 0);
+    
+    // Initialize indirect draw buffer with default values (draw all vertices)
+    DrawParams initialDrawParams{};
+    initialDrawParams.vertexCount = static_cast<uint32_t>(unitVertices.size());
+    initialDrawParams.instanceCount = 1;
+    initialDrawParams.firstVertex = 0;
+    initialDrawParams.firstInstance = 0;
+    
+    void* indirectData;
+    vkMapMemory(context.device, vk.indirectDrawBufferMemory, 0, sizeof(DrawParams), 0, &indirectData);
+    memcpy(indirectData, &initialDrawParams, sizeof(DrawParams));
+    vkUnmapMemory(context.device, vk.indirectDrawBufferMemory);
     
     // Create frustum planes uniform buffer
     VkBufferCreateInfo frustumBufferInfo{};
@@ -635,6 +647,13 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     }
 
     vkBindBufferMemory(context.device, vk.placeholderSettingsBuffer, vk.placeholderSettingsBufferMemory, 0);
+    
+    // Initialize settings buffer with lighting pass disabled
+    bool useLightingPass = false;
+    void* settingsData;
+    vkMapMemory(context.device, vk.placeholderSettingsBufferMemory, 0, sizeof(bool), 0, &settingsData);
+    memcpy(settingsData, &useLightingPass, sizeof(bool));
+    vkUnmapMemory(context.device, vk.placeholderSettingsBufferMemory);
 
     // Update graphics descriptor set with placeholder resources for bindings 8 and 9
     VkDescriptorImageInfo lightingImageInfo2{};
@@ -711,65 +730,70 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     fragShaderStageInfo.pName = "main";
     
     VkPipelineShaderStageCreateInfo graphicsShaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
-    // Vertex input for output buffer (VertexOutput structure)
-    VkVertexInputBindingDescription outputBindingDescription{};
-    outputBindingDescription.binding = 0;
-    outputBindingDescription.stride = sizeof(VertexOutput);
-    outputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+    // Vertex input for input buffer (UnitVertex structure)
+    VkVertexInputBindingDescription inputBindingDescription{};
+    inputBindingDescription.binding = 0;
+    inputBindingDescription.stride = sizeof(UnitVertex);
+    inputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     
-    std::array<VkVertexInputAttributeDescription, 9> outputAttributeDescriptions{};
-    // Position (vec4)
-    outputAttributeDescriptions[0].binding = 0;
-    outputAttributeDescriptions[0].location = 0;
-    outputAttributeDescriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    outputAttributeDescriptions[0].offset = offsetof(VertexOutput, position);
-    // WorldPos (vec3)
-    outputAttributeDescriptions[1].binding = 0;
-    outputAttributeDescriptions[1].location = 1;
-    outputAttributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-    outputAttributeDescriptions[1].offset = offsetof(VertexOutput, worldPos);
+    std::array<VkVertexInputAttributeDescription, 10> inputAttributeDescriptions{};
+    // Position (vec3)
+    inputAttributeDescriptions[0].binding = 0;
+    inputAttributeDescriptions[0].location = 0;
+    inputAttributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+    inputAttributeDescriptions[0].offset = offsetof(UnitVertex, position);
     // TexCoords (vec2)
-    outputAttributeDescriptions[2].binding = 0;
-    outputAttributeDescriptions[2].location = 2;
-    outputAttributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-    outputAttributeDescriptions[2].offset = offsetof(VertexOutput, texCoords);
+    inputAttributeDescriptions[1].binding = 0;
+    inputAttributeDescriptions[1].location = 1;
+    inputAttributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
+    inputAttributeDescriptions[1].offset = offsetof(UnitVertex, texCoords);
     // LightingEmit (uint)
-    outputAttributeDescriptions[3].binding = 0;
-    outputAttributeDescriptions[3].location = 3;
-    outputAttributeDescriptions[3].format = VK_FORMAT_R32_UINT;
-    outputAttributeDescriptions[3].offset = offsetof(VertexOutput, lightingEmit);
+    inputAttributeDescriptions[2].binding = 0;
+    inputAttributeDescriptions[2].location = 2;
+    inputAttributeDescriptions[2].format = VK_FORMAT_R32_UINT;
+    inputAttributeDescriptions[2].offset = offsetof(UnitVertex, lightingEmit);
     // TransparencyLevel (uint)
-    outputAttributeDescriptions[4].binding = 0;
-    outputAttributeDescriptions[4].location = 4;
-    outputAttributeDescriptions[4].format = VK_FORMAT_R32_UINT;
-    outputAttributeDescriptions[4].offset = offsetof(VertexOutput, transparencyLevel);
+    inputAttributeDescriptions[3].binding = 0;
+    inputAttributeDescriptions[3].location = 3;
+    inputAttributeDescriptions[3].format = VK_FORMAT_R32_UINT;
+    inputAttributeDescriptions[3].offset = offsetof(UnitVertex, transparencyLevel);
     // FaceIndex (uint)
-    outputAttributeDescriptions[5].binding = 0;
-    outputAttributeDescriptions[5].location = 5;
-    outputAttributeDescriptions[5].format = VK_FORMAT_R32_UINT;
-    outputAttributeDescriptions[5].offset = offsetof(VertexOutput, faceIndex);
+    inputAttributeDescriptions[4].binding = 0;
+    inputAttributeDescriptions[4].location = 4;
+    inputAttributeDescriptions[4].format = VK_FORMAT_R32_UINT;
+    inputAttributeDescriptions[4].offset = offsetof(UnitVertex, faceIndex);
+    // PolRight (vec4)
+    inputAttributeDescriptions[5].binding = 0;
+    inputAttributeDescriptions[5].location = 5;
+    inputAttributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    inputAttributeDescriptions[5].offset = offsetof(UnitVertex, polRight);
+    // PolLeft (vec4)
+    inputAttributeDescriptions[6].binding = 0;
+    inputAttributeDescriptions[6].location = 6;
+    inputAttributeDescriptions[6].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    inputAttributeDescriptions[6].offset = offsetof(UnitVertex, polLeft);
     // Albedo (vec3)
-    outputAttributeDescriptions[6].binding = 0;
-    outputAttributeDescriptions[6].location = 6;
-    outputAttributeDescriptions[6].format = VK_FORMAT_R32G32B32_SFLOAT;
-    outputAttributeDescriptions[6].offset = offsetof(VertexOutput, albedo);
+    inputAttributeDescriptions[7].binding = 0;
+    inputAttributeDescriptions[7].location = 7;
+    inputAttributeDescriptions[7].format = VK_FORMAT_R32G32B32_SFLOAT;
+    inputAttributeDescriptions[7].offset = offsetof(UnitVertex, albedo);
     // Metallic (float)
-    outputAttributeDescriptions[7].binding = 0;
-    outputAttributeDescriptions[7].location = 7;
-    outputAttributeDescriptions[7].format = VK_FORMAT_R32_SFLOAT;
-    outputAttributeDescriptions[7].offset = offsetof(VertexOutput, metallic);
+    inputAttributeDescriptions[8].binding = 0;
+    inputAttributeDescriptions[8].location = 8;
+    inputAttributeDescriptions[8].format = VK_FORMAT_R32_SFLOAT;
+    inputAttributeDescriptions[8].offset = offsetof(UnitVertex, metallic);
     // Roughness (float)
-    outputAttributeDescriptions[8].binding = 0;
-    outputAttributeDescriptions[8].location = 8;
-    outputAttributeDescriptions[8].format = VK_FORMAT_R32_SFLOAT;
-    outputAttributeDescriptions[8].offset = offsetof(VertexOutput, roughness);
+    inputAttributeDescriptions[9].binding = 0;
+    inputAttributeDescriptions[9].location = 9;
+    inputAttributeDescriptions[9].format = VK_FORMAT_R32_SFLOAT;
+    inputAttributeDescriptions[9].offset = offsetof(UnitVertex, roughness);
     
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
     vertexInputInfo.vertexBindingDescriptionCount = 1;
-    vertexInputInfo.pVertexBindingDescriptions = &outputBindingDescription;
-    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(outputAttributeDescriptions.size());
-    vertexInputInfo.pVertexAttributeDescriptions = outputAttributeDescriptions.data();
+    vertexInputInfo.pVertexBindingDescriptions = &inputBindingDescription;
+    vertexInputInfo.vertexAttributeDescriptionCount = static_cast<uint32_t>(inputAttributeDescriptions.size());
+    vertexInputInfo.pVertexAttributeDescriptions = inputAttributeDescriptions.data();
     
     // Input assembly
     VkPipelineInputAssemblyStateCreateInfo inputAssembly{};
@@ -855,14 +879,12 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     VkPushConstantRange graphicsPushConstantRange{};
     graphicsPushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
     graphicsPushConstantRange.offset = 0;
-    graphicsPushConstantRange.size = sizeof(UniformBufferObject);
+    graphicsPushConstantRange.size = 3 * sizeof(glm::mat4); // model, view, projection matrices
     graphicsPipelineLayoutInfo.pPushConstantRanges = &graphicsPushConstantRange;
     
     if (vkCreatePipelineLayout(context.device, &graphicsPipelineLayoutInfo, nullptr, &vk.pipelineLayout) != VK_SUCCESS) {
-        std::cerr << "Failed to create graphics pipeline layout" << std::endl;
         throw std::runtime_error("Failed to create graphics pipeline layout");
     }
-    std::cerr << "Graphics pipeline layout created successfully" << std::endl;
     
     // Graphics pipeline (no geometry shader)
     VkGraphicsPipelineCreateInfo pipelineInfo{};
@@ -973,18 +995,18 @@ void UnitStateDrawable::OnDraw(UnitStateResource& resource,
     if (!resource.cameraModel)
         return;
     // Get camera matrices for push constants
-    UniformBufferObject ubo{};
     World::Camera& cam = resource.cameraModel->GetObject();
-    ubo.model = cam.GetModelMatrix();
-    ubo.view = cam.GetViewMatrix();
-    ubo.projection = cam.GetProjectionMatrix();
+    glm::mat4 model = cam.GetModelMatrix();
+    glm::mat4 view = cam.GetViewMatrix();
+    glm::mat4 projection = cam.GetProjectionMatrix();
+    glm::mat4 matrices[3] = {model, view, projection};
     
     // Bind graphics pipeline
     if (vk.pipeline != VK_NULL_HANDLE && vk.pipelineLayout != VK_NULL_HANDLE) {
         vkCmdBindPipeline(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline);
     
         // Bind output vertex buffer (culled vertices from compute shader)
-        VkBuffer vertexBuffers[] = {vk.outputVertexBuffer};
+        VkBuffer vertexBuffers[] = {vk.vertexBuffer};
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(context.commandBuffers[0], 0, 1, vertexBuffers, offsets);
         
@@ -992,9 +1014,94 @@ void UnitStateDrawable::OnDraw(UnitStateResource& resource,
         vkCmdBindDescriptorSets(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS,
                                vk.pipelineLayout, 0, 1, &vk.descriptorSet, 0, nullptr);
         vkCmdPushConstants(context.commandBuffers[0], vk.pipelineLayout,
-                               VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(UniformBufferObject), &ubo);
+                               VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(matrices), matrices);
         // Draw using indirect draw parameters from compute shader
         vkCmdDrawIndirect(context.commandBuffers[0], vk.indirectDrawBuffer, 0, 1, 0);
+    }
+}
+
+void UnitStateDrawable::OnDrawCompute(UnitStateResource& resource,
+                                    UnitStateDrawableVulkan& vk,
+                                    Game::VulkanContext& context)
+{
+    if (!resource.cameraModel)
+        return;
+    
+    // Get camera matrices for push constants
+    UniformBufferObject ubo{};
+    World::Camera& cam = resource.cameraModel->GetObject();
+    ubo.model = cam.GetModelMatrix();
+    ubo.view = cam.GetViewMatrix();
+    ubo.projection = cam.GetProjectionMatrix();
+    
+    // Reset visible vertex counter using vkCmdFillBuffer (GPU-side operation)
+    vkCmdFillBuffer(context.commandBuffers[0], vk.visibleCountBuffer, 0, sizeof(uint32_t), 0);
+    
+    // Barrier to ensure fill operation completes before compute shader
+    VkMemoryBarrier fillBarrier{};
+    fillBarrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+    fillBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    fillBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+    vkCmdPipelineBarrier(context.commandBuffers[0], VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &fillBarrier, 0, nullptr, 0, nullptr);
+    
+    // Dispatch compute shader for frustum culling
+    if (vk.computePipeline != VK_NULL_HANDLE && vk.computePipelineLayout != VK_NULL_HANDLE) {
+        vkCmdBindPipeline(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_COMPUTE, vk.computePipeline);
+        vkCmdBindDescriptorSets(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_COMPUTE, vk.computePipelineLayout, 0, 1, &vk.computeDescriptorSet, 0, nullptr);
+        vkCmdPushConstants(context.commandBuffers[0], vk.computePipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(UniformBufferObject), &ubo);
+    
+        // Calculate workgroup count (each workgroup processes 64 triangles)
+        uint32_t triangleCount = unitVertices.size() / 3;
+        uint32_t workgroupCount = (triangleCount + 63) / 64;
+        vkCmdDispatch(context.commandBuffers[0], workgroupCount, 1, 1);
+        
+        // Memory barrier to ensure compute shader finishes before graphics
+        // Use buffer memory barriers for specific buffers
+        VkBufferMemoryBarrier barriers[3]{};
+        
+        // Barrier for output vertex buffer
+        barriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        barriers[0].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+        barriers[0].dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+        barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barriers[0].buffer = vk.outputVertexBuffer;
+        barriers[0].offset = 0;
+        barriers[0].size = VK_WHOLE_SIZE;
+        
+        // Barrier for indirect draw buffer
+        barriers[1].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        barriers[1].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+        barriers[1].dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+        barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barriers[1].buffer = vk.indirectDrawBuffer;
+        barriers[1].offset = 0;
+        barriers[1].size = VK_WHOLE_SIZE;
+        
+        // Barrier for visible count buffer
+        barriers[2].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+        barriers[2].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
+        barriers[2].dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
+        barriers[2].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barriers[2].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barriers[2].buffer = vk.visibleCountBuffer;
+        barriers[2].offset = 0;
+        barriers[2].size = VK_WHOLE_SIZE;
+        
+        // Use both vertex input and draw indirect stages to support all access types
+        vkCmdPipelineBarrier(
+            context.commandBuffers[0],
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 
+            VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 
+            0, 
+            0,
+            nullptr, 
+            3, 
+            barriers, 
+            0, 
+            nullptr
+        );
     }
 }
 

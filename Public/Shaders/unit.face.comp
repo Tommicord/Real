@@ -130,7 +130,7 @@ void main() {
     uint triangleIndex = globalID;
     uint vertexIndex = triangleIndex * 3;
     
-    // Check bounds
+    // Check bounds: return early if out of bounds
     if (vertexIndex + 2 >= totalVertices) {
         return;
     }
@@ -156,7 +156,7 @@ void main() {
         uint outputIndex = atomicAdd(visibleVertexCount, 3);
         
         // Check if we have space in output buffer
-        if (outputIndex + 2 < visibleVertices.length()) {
+        if (outputIndex + 3 <= visibleVertices.length()) {
             // Transform to clip space for output
             vec4 clipPos0 = pc.projection * pc.view * worldPos0;
             vec4 clipPos1 = pc.projection * pc.view * worldPos1;
@@ -195,17 +195,5 @@ void main() {
             visibleVertices[outputIndex + 2].metallic = v2.metallic;
             visibleVertices[outputIndex + 2].roughness = v2.roughness;
         }
-    }
-    
-    // Ensure all workgroups finish before updating draw params
-    memoryBarrierBuffer();
-    barrier();
-    
-    // First workgroup updates indirect draw parameters
-    if (globalID == 0) {
-        drawParams.vertexCount = visibleVertexCount;
-        drawParams.instanceCount = 1;
-        drawParams.firstVertex = 0;
-        drawParams.firstInstance = 0;
     }
 }

@@ -147,7 +147,7 @@ void Game::InitWindow()
     // Configure monitor and window
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-    // glfwSetInputMode(vkWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+    glfwSetInputMode(vkWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetWindowPos(
         vkWindow,
         (mode->width - width) / 2,
@@ -236,6 +236,14 @@ void Game::CreateSurface()
 void Game::CreateCameraModel()
 {
     cameraModel = std::make_unique<CameraModel>(vkContext);
+    // Set camera aspect ratio to match window dimensions
+    cameraModel->GetObject().SetAspectRatio(static_cast<float>(width) / static_cast<float>(height));
+    // Move camera back from origin to see the unit
+    World::AbstractCamera::Eye eyePosition;
+    eyePosition.x = 0.0;
+    eyePosition.y = 0.0;
+    eyePosition.z = 5.0;
+    cameraModel->GetObject().SetEyePosition(eyePosition);
 }
 
 void Game::CreateUnitModel()
@@ -531,6 +539,7 @@ void Game::CreateSyncObjects()
 
 void Game::DrawUI()
 {
+    // Only draw unit model, camera matrices are pushed in unit renderer
     unitModel->DrawFromStateModel(vkContext);
 }
 
@@ -574,6 +583,9 @@ void Game::DrawFrame()
         throw std::runtime_error("Failed to begin recording command buffer");
     }
 
+    // Dispatch compute shader for frustum culling (before render pass)
+    unitModel->DrawComputeFromStateModel(vkContext);
+
     VkRenderPassBeginInfo renderPassInfo{};
     renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
     renderPassInfo.renderPass = vkContext.renderPass;
@@ -581,7 +593,7 @@ void Game::DrawFrame()
     renderPassInfo.renderArea.offset = {0, 0};
     renderPassInfo.renderArea.extent = vkContext.swapChainExtent;
 
-    constexpr VkClearValue clearColor = {{{0.0f, 0.0f, 0.0f, 1.0f}}};
+    constexpr VkClearValue clearColor = {{{0.0f, 1.0f, 0.0f, 1.0f}}};
     renderPassInfo.clearValueCount = 1;
     renderPassInfo.pClearValues = &clearColor;
 
@@ -601,11 +613,8 @@ void Game::DrawFrame()
     scissor.offset = {0, 0};
     scissor.extent = vkContext.swapChainExtent;
     vkCmdSetScissor(vkContext.commandBuffers[0], 0, 1, &scissor);
-    // Update
     UpdateUI();
-    // Push camera matrices as push constants
     DrawUI();
-
     vkCmdEndRenderPass(vkContext.commandBuffers[0]);
 
     if (vkEndCommandBuffer(vkContext.commandBuffers[0]) != VK_SUCCESS)
@@ -617,14 +626,19 @@ void Game::DrawFrame()
     submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 
     const VkSemaphore waitSemaphores[] = { vkContext.imageAvailableSemaphore };
-    constexpr VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+    constexpr VkPipelineStageFlags waitStages[] = {
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+    };
     submitInfo.waitSemaphoreCount = 1;
     submitInfo.pWaitSemaphores = waitSemaphores;
     submitInfo.pWaitDstStageMask = waitStages;
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &vkContext.commandBuffers[0];
 
-    const VkSemaphore signalSemaphores[] = {vkContext.renderFinishedSemaphores[imageIndex]};
+    const VkSemaphore signalSemaphores[] = {
+        vkContext.renderFinishedSemaphores[imageIndex]
+    };
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 

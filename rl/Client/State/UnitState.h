@@ -70,6 +70,8 @@ public:
     void OnDraw(UnitStateResource& resource,
                 UnitStateDrawableVulkan& vk,
                 Game::VulkanContext& context) override;
+    void OnDrawCompute(UnitStateResource& resource, UnitStateDrawableVulkan& vk,
+                       Game::VulkanContext& context);
     void OnUpdate(UnitStateResource& resource,
                   UnitStateDrawableVulkan& vk,
                   Game::VulkanContext& context) override;

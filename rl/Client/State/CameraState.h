@@ -40,6 +40,8 @@ public:
     void OnDraw(CameraStateResource& resource,
                 CameraStateDrawableVulkan& vk,
                 Game::VulkanContext& context) override;
+    void OnDrawCompute(CameraStateResource& resource, CameraStateDrawableVulkan& vk,
+                       Game::VulkanContext& context);
     void OnUpdate(CameraStateResource& resource,
                   CameraStateDrawableVulkan& vk,
                   Game::VulkanContext& context) override;

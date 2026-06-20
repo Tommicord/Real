@@ -65,10 +65,8 @@ void Camera::UpdateMatrices()
     // Projection matrix
     float adjustedFov = fov / zoom;
     projectionMatrix = glm::perspective(glm::radians(adjustedFov), aspectRatio, static_cast<float>(near), static_cast<float>(far));
-    // Model matrix with rotation
-    static float rotationAngle = 0.0f;
-    rotationAngle += 0.5f; // Rotate over time
-    modelMatrix = glm::rotate(glm::mat4(1.0f), glm::radians(rotationAngle), glm::vec3(0.0f, 1.0f, 0.0f));
+    // Model matrix (identity for camera)
+    modelMatrix = glm::mat4(1.0f);
     // PVM matrix
     pvmMatrix = projectionMatrix * viewMatrix * modelMatrix;
 }
