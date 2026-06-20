@@ -6,36 +6,27 @@ layout(local_size_x = 64) in;
 // Vertex structure matching C++ UnitVertex
 struct VertexInput {
     vec4 position;
-    float worldX;
-    float worldY;
-    float worldZ;
+    vec4 polRight;         // Polygon fence right offsets
+    vec4 polLeft;          // Polygon fence left offsets
     vec2 texCoords;         // Texture coordinates
     uint lightingEmit;      // Lighting emit value
     uint transparencyLevel; // Transparency level (0-255)
     uint faceIndex;        // Face index (0-5)
-    vec4 polRight;         // Polygon fence right offsets
-    vec4 polLeft;          // Polygon fence left offsets
     float albR, albG, albB;
     float metallic;
     float roughness;
-
     float tanX, tanY, tanZ;
     float bitanX, bitanY, bitanZ;
 };
 
 // Output vertex structure for rendering
 struct VertexOutput {
-    vec4 position;                       // Clip space position
-    float worldX, worldY, worldZ;        // World space position
-    vec2 texCoords;                      // Texture coordinates
-    uint lightingEmit;                   // Lighting emit value
-    uint transparencyLevel;              // Transparency level (0-255)
-    uint faceIndex;                      // Face index (0-5)
-    float albR, albG, albB;
-    float metallic;                      // PBR metallic
-    float roughness;                     // PBR roughness
-    float tanX, tanY, tanZ;
-    float bitanX, bitanY, bitanZ;
+    vec4 position;
+    vec4 worldPosAndUV;
+    vec4 uvAndLighting;
+    vec4 material;
+    vec4 roughnessAndTan;
+    vec4 bitangent;
 };
 
 // Input buffer: all vertices from vertex buffer
@@ -114,7 +105,7 @@ bool IsInFrustum(vec3 point) {
     for (int i = 0; i < maxFaces; ++i) {
         vec4 plane = frustum.u_FrustumPlanes[i];
         float distance = dot(plane.xyz, point) + plane.w;
-        if (distance < -0.35) {
+        if (distance < -0.08) {
             return false;
         }
     }
@@ -147,9 +138,9 @@ void main() {
     VertexInput v1 = vertices[vertexIndex + 1];
     VertexInput v2 = vertices[vertexIndex + 2];
 
-    vec3 rawPos0 = vec3(v0.worldX, v0.worldY, v0.worldZ);
-    vec3 rawPos1 = vec3(v1.worldX, v1.worldY, v1.worldZ);
-    vec3 rawPos2 = vec3(v2.worldX, v2.worldY, v2.worldZ);
+    vec3 rawPos0 = v0.position.xyz;
+    vec3 rawPos1 = v1.position.xyz;
+    vec3 rawPos2 = v2.position.xyz;
 
     // Apply polygon fence offsets for non-cube geometry
     vec3 modifiedPos0 = ApplyPolygonOffset(rawPos0, v0.faceIndex, v0.polRight, v0.polLeft);
@@ -162,6 +153,7 @@ void main() {
     vec4 worldPos2 = pc.model * vec4(modifiedPos2, 1.0);
     
     // Perform frustum culling in world space
+    // Temporarily disable culling to test
     if (IsTriangleVisible(worldPos0.xyz, worldPos1.xyz, worldPos2.xyz)) {
         // Atomically get and increment the output index
         uint outputIndex = atomicAdd(visibleVertexCount, 3);
@@ -173,74 +165,30 @@ void main() {
             vec4 clipPos1 = pc.projection * pc.view * worldPos1;
             vec4 clipPos2 = pc.projection * pc.view * worldPos2;
 
+            // Pack data into vec4 structure
             visibleVertices[outputIndex].position = clipPos0;
-            visibleVertices[outputIndex].worldX = worldPos0.x;
-            visibleVertices[outputIndex].worldY = worldPos0.y;
-            visibleVertices[outputIndex].worldZ = worldPos0.z;
-            visibleVertices[outputIndex].texCoords = v0.texCoords;
-            visibleVertices[outputIndex].lightingEmit = v0.lightingEmit;
-            visibleVertices[outputIndex].transparencyLevel = v0.transparencyLevel;
-            visibleVertices[outputIndex].faceIndex = v0.faceIndex;
-            visibleVertices[outputIndex].albR = v0.albR;
-            visibleVertices[outputIndex].albG = v0.albG;
-            visibleVertices[outputIndex].albB = v0.albB;
-            visibleVertices[outputIndex].metallic = v0.metallic;
-            visibleVertices[outputIndex].roughness = v0.roughness;
-            visibleVertices[outputIndex].tanX = v0.tanX;
-            visibleVertices[outputIndex].tanY = v0.tanY;
-            visibleVertices[outputIndex].tanZ = v0.tanZ;
-            visibleVertices[outputIndex].bitanX = v0.bitanX;
-            visibleVertices[outputIndex].bitanY = v0.bitanY;
-            visibleVertices[outputIndex].bitanZ = v0.bitanZ;
+            visibleVertices[outputIndex].worldPosAndUV = vec4(worldPos0.xyz, v0.texCoords.x);
+            visibleVertices[outputIndex].uvAndLighting = vec4(v0.texCoords.y, float(v0.lightingEmit), float(v0.transparencyLevel), float(v0.faceIndex));
+            visibleVertices[outputIndex].material = vec4(v0.albR, v0.albG, v0.albB, v0.metallic);
+
+            visibleVertices[outputIndex].roughnessAndTan = vec4(v0.roughness, v0.tanX, v0.tanY, v0.tanZ);
+            visibleVertices[outputIndex].bitangent = vec4(v0.bitanX, v0.bitanY, v0.bitanZ, 0.0);
 
             visibleVertices[outputIndex + 1].position = clipPos1;
-            visibleVertices[outputIndex + 1].worldX = worldPos1.x;
-            visibleVertices[outputIndex + 1].worldY = worldPos1.y;
-            visibleVertices[outputIndex + 1].worldZ = worldPos1.z;
-            visibleVertices[outputIndex + 1].texCoords = v1.texCoords;
-            visibleVertices[outputIndex + 1].lightingEmit = v1.lightingEmit;
-            visibleVertices[outputIndex + 1].transparencyLevel = v1.transparencyLevel;
-            visibleVertices[outputIndex + 1].faceIndex = v1.faceIndex;
-            visibleVertices[outputIndex + 1].albR = v1.albR;
-            visibleVertices[outputIndex + 1].albG = v1.albG;
-            visibleVertices[outputIndex + 1].albB = v1.albB;
-            visibleVertices[outputIndex + 1].metallic = v1.metallic;
-            visibleVertices[outputIndex + 1].roughness = v1.roughness;
-            visibleVertices[outputIndex + 1].tanX = v1.tanX;
-            visibleVertices[outputIndex + 1].tanY = v1.tanY;
-            visibleVertices[outputIndex + 1].tanZ = v1.tanZ;
-            visibleVertices[outputIndex + 1].bitanX = v1.bitanX;
-            visibleVertices[outputIndex + 1].bitanY = v1.bitanY;
-            visibleVertices[outputIndex + 1].bitanZ = v1.bitanZ;
+            visibleVertices[outputIndex + 1].worldPosAndUV = vec4(worldPos1.xyz, v1.texCoords.x);
+            visibleVertices[outputIndex + 1].uvAndLighting = vec4(v1.texCoords.y, float(v1.lightingEmit), float(v1.transparencyLevel), float(v1.faceIndex));
+            visibleVertices[outputIndex + 1].material = vec4(v1.albR, v1.albG, v1.albB, v1.metallic);
+
+            visibleVertices[outputIndex + 1].roughnessAndTan = vec4(v1.roughness, v1.tanX, v1.tanY, v1.tanZ);
+            visibleVertices[outputIndex + 1].bitangent = vec4(v1.bitanX, v1.bitanY, v1.bitanZ, 0.0);
 
             visibleVertices[outputIndex + 2].position = clipPos2;
-            visibleVertices[outputIndex + 2].worldX = worldPos2.x;
-            visibleVertices[outputIndex + 2].worldY = worldPos2.y;
-            visibleVertices[outputIndex + 2].worldZ = worldPos2.z;
-            visibleVertices[outputIndex + 2].texCoords = v2.texCoords;
-            visibleVertices[outputIndex + 2].lightingEmit = v2.lightingEmit;
-            visibleVertices[outputIndex + 2].transparencyLevel = v2.transparencyLevel;
-            visibleVertices[outputIndex + 2].faceIndex = v2.faceIndex;
-            visibleVertices[outputIndex + 2].albR = v2.albR;
-            visibleVertices[outputIndex + 2].albG = v2.albG;
-            visibleVertices[outputIndex + 2].albB = v2.albB;
-            visibleVertices[outputIndex + 2].metallic = v2.metallic;
-            visibleVertices[outputIndex + 2].roughness = v2.roughness;
-            visibleVertices[outputIndex + 2].tanX = v2.tanX;
-            visibleVertices[outputIndex + 2].tanY = v2.tanY;
-            visibleVertices[outputIndex + 2].tanZ = v2.tanZ;
-            visibleVertices[outputIndex + 2].bitanX = v2.bitanX;
-            visibleVertices[outputIndex + 2].bitanY = v2.bitanY;
-            visibleVertices[outputIndex + 2].bitanZ = v2.bitanZ;
+            visibleVertices[outputIndex + 2].worldPosAndUV = vec4(worldPos2.xyz, v2.texCoords.x);
+            visibleVertices[outputIndex + 2].uvAndLighting = vec4(v2.texCoords.y, float(v2.lightingEmit), float(v2.transparencyLevel), float(v2.faceIndex));
+            visibleVertices[outputIndex + 2].material = vec4(v2.albR, v2.albG, v2.albB, v2.metallic);
+
+            visibleVertices[outputIndex + 2].roughnessAndTan = vec4(v2.roughness, v2.tanX, v2.tanY, v2.tanZ);
+            visibleVertices[outputIndex + 2].bitangent = vec4(v2.bitanX, v2.bitanY, v2.bitanZ, 0.0);
         }
-    }
-    
-    // Update indirect draw parameters (only by first workgroup)
-    if (globalID == 0) {
-        memoryBarrier();
-        drawParams.vertexCount = visibleVertexCount;
-        drawParams.instanceCount = 1;
-        drawParams.firstVertex = 0;
-        drawParams.firstInstance = 0;
     }
 }

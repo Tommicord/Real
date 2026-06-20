@@ -62,7 +62,6 @@ void Game::CleanupGraphics()
     vkDestroyCommandPool(vkContext.device, vkContext.commandPool, nullptr);
     vkDestroyPipelineLayout(vkContext.device, vkContext.pipelineLayout, nullptr);
     vkDestroyDescriptorSetLayout(vkContext.device, vkContext.descriptorSetLayout, nullptr);
-    vkDestroySurfaceKHR(vkContext.instance, vkContext.surface, nullptr);
     vkDestroyRenderPass(vkContext.device, vkContext.renderPass, nullptr);
     for (const auto framebuffer : vkContext.swapChainFramebuffers)
     {
@@ -73,6 +72,7 @@ void Game::CleanupGraphics()
         vkDestroyImageView(vkContext.device, imageView, nullptr);
     }
     vkDestroySwapchainKHR(vkContext.device, vkContext.swapChain, nullptr);
+    vkDestroySurfaceKHR(vkContext.instance, vkContext.surface, nullptr);
     vkDestroyDevice(vkContext.device, nullptr);
     vkDestroyInstance(vkContext.instance, nullptr);
     glfwDestroyWindow(vkWindow);
@@ -80,11 +80,11 @@ void Game::CleanupGraphics()
 }
 void Game::CleanupResources()
 {
-    cameraModel.reset();
     cameraModel->GetDrawable().OnDestroy(
         cameraModel->GetResource(),
         cameraModel->GetVulkanState(),
         vkContext);
+    cameraModel.reset();
 }
 
 void Game::InitInputReceiverObserver()
@@ -570,7 +570,7 @@ void Game::DrawFrame()
     uint32_t imageIndex;
     vkAcquireNextImageKHR(vkContext.device, vkContext.swapChain, UINT64_MAX,
                           vkContext.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-    
+
     vkResetFences(vkContext.device, 1, &vkContext.inFlightFence);
     vkResetCommandBuffer(vkContext.commandBuffers[0], 0);
 
@@ -626,6 +626,7 @@ void Game::DrawFrame()
 
     const VkSemaphore waitSemaphores[] = { vkContext.imageAvailableSemaphore };
     constexpr VkPipelineStageFlags waitStages[] = {
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
     };
     submitInfo.waitSemaphoreCount = 1;
@@ -634,9 +635,7 @@ void Game::DrawFrame()
     submitInfo.commandBufferCount = 1;
     submitInfo.pCommandBuffers = &vkContext.commandBuffers[0];
 
-    const VkSemaphore signalSemaphores[] = {
-        vkContext.renderFinishedSemaphores[imageIndex]
-    };
+    const VkSemaphore signalSemaphores[] = { vkContext.renderFinishedSemaphores[imageIndex] };
     submitInfo.signalSemaphoreCount = 1;
     submitInfo.pSignalSemaphores = signalSemaphores;
 

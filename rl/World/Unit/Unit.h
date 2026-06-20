@@ -67,7 +67,7 @@ public:
         // This is to prevent accidental bugs
         // If the textures is not initialized
         // DO NOT CHANGE THIS If not needed
-        static Texture2 texture("unk.png");
+        static Texture2 texture("dirt.png");
 
         using pair = UnitRegistryKVPair<UnitResourceName, BaseUnit*>;
         int id = 1;
