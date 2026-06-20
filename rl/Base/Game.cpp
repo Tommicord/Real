@@ -147,7 +147,6 @@ void Game::InitWindow()
     // Configure monitor and window
     GLFWmonitor* monitor = glfwGetPrimaryMonitor();
     const GLFWvidmode* mode = glfwGetVideoMode(monitor);
-    glfwSetInputMode(vkWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
     glfwSetWindowPos(
         vkWindow,
         (mode->width - width) / 2,
@@ -239,7 +238,7 @@ void Game::CreateCameraModel()
     // Set camera aspect ratio to match window dimensions
     cameraModel->GetObject().SetAspectRatio(static_cast<float>(width) / static_cast<float>(height));
     // Move camera back from origin to see the unit
-    World::AbstractCamera::Eye eyePosition;
+    World::AbstractCamera::Eye eyePosition {};
     eyePosition.x = 0.0;
     eyePosition.y = 0.0;
     eyePosition.z = 5.0;
@@ -627,7 +626,6 @@ void Game::DrawFrame()
 
     const VkSemaphore waitSemaphores[] = { vkContext.imageAvailableSemaphore };
     constexpr VkPipelineStageFlags waitStages[] = {
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
     };
     submitInfo.waitSemaphoreCount = 1;

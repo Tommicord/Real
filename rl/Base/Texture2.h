@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstdint>
 #include <vulkan/vulkan.h>
+#include <glm/glm.hpp>
 
 // Forward declaration
 namespace Rl::Game {
@@ -148,5 +149,9 @@ private:
     bool loaded;
     std::string filepath;
 };
+
+Texture2* GenerateLightningTexture(Texture2* baseTexture, const TextureProperties& properties);
+Texture2* GenerateDirectionalLightTexture(Texture2* baseTexture, const glm::vec3& lightDirection, const TextureProperties& properties);
+Texture2* GenerateNormalTexture(Texture2* baseTexture, const TextureProperties& properties);
 
 } // namespace Rl::Providers

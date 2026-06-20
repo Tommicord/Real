@@ -1,5 +1,4 @@
 #include "rl/Base/Texture2.h"
-
 #include "rl/Base/Game.h"
 
 #include <vulkan/vulkan.h>

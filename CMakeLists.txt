@@ -52,6 +52,9 @@ set(SOURCES
   rl/Base/SimplexNoise.cpp
   rl/Base/SimplexNoise.h
   rl/Base/Texture2.cpp
+  rl/Base/Texture2Lightning.cpp
+  rl/Base/Texture2Normal.cpp
+  rl/Base/Texture2Vk.cpp
   rl/Base/Texture2.h
   rl/Base/StateModel.h
   rl/Base/IUpdatable.h
@@ -72,7 +75,6 @@ set(SOURCES
   rl/World/Unit/UnitDynamicTexture.cpp
   rl/World/Unit/UnitDynamicTexture.h
   rl/World/Unit/UnitRegistry.h
-  rl/Base/Texture2Vk.cpp
 )
 
 add_subdirectory(Deps/glfw)
@@ -155,7 +157,6 @@ target_compile_shaders(
   Public/Shaders/shader.vert
   Public/Shaders/unit.face.comp
   Public/Shaders/unit.lightning.frag
-  Public/Shaders/unit.frag
   Public/Shaders/unit.vert
 )
 enable_testing()

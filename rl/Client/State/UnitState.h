@@ -57,6 +57,28 @@ struct UnitStateDrawableVulkan : StateDrawableVulkan {
     VkSampler placeholderLightingSampler = VK_NULL_HANDLE;
     VkBuffer placeholderSettingsBuffer = VK_NULL_HANDLE;
     VkDeviceMemory placeholderSettingsBufferMemory = VK_NULL_HANDLE;
+    
+    // PBR lighting resources (binding 4 and 10)
+    VkBuffer placeholderLightingBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory placeholderLightingBufferMemory = VK_NULL_HANDLE;
+    VkImage placeholderAOTexture = VK_NULL_HANDLE;
+    VkDeviceMemory placeholderAOTextureMemory = VK_NULL_HANDLE;
+    VkImageView placeholderAOTextureView = VK_NULL_HANDLE;
+    VkSampler placeholderAOSampler = VK_NULL_HANDLE;
+    
+    // Global sampler for all textures (to avoid sampler allocation limit)
+    VkSampler globalTextureSampler = VK_NULL_HANDLE;
+    
+    // Generated AO textures for each face
+    VkImage aoTextures[6] = {VK_NULL_HANDLE};
+    VkDeviceMemory aoTexturesMemory[6] = {VK_NULL_HANDLE};
+    VkImageView aoTexturesView[6] = {VK_NULL_HANDLE};
+    
+    // Generated normal textures for each face (binding 11)
+    VkImage normalTextures[6] = {VK_NULL_HANDLE};
+    VkDeviceMemory normalTexturesMemory[6] = {VK_NULL_HANDLE};
+    VkImageView normalTexturesView[6] = {VK_NULL_HANDLE};
+    
     UnitStateDrawableVulkan() = default;
 };
 

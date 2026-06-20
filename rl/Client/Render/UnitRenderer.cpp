@@ -1,19 +1,16 @@
-#include <cstdint>
-#include <cstring>
 #include <vector>
 #include <stdexcept>
-#include <iostream>
 
 #include "rl/Client/State/UnitState.h"
 #include "rl/World/Unit/Unit.h"
-#include "rl/World/Unit/UnitGrass.h"
 #include "rl/Base/ShaderFactory.h"
 #include "rl/Base/Texture2.h"
 #include "rl/Base/Game.h"
 
+#define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
-#include <vulkan/vulkan.h>
+#include <vulkan/vulkan.hpp>
 
 namespace Rl::Providers {
 
@@ -29,57 +26,59 @@ struct UnitVertex {
     glm::vec3 albedo;
     float metallic;
     float roughness;
+    glm::vec3 tangent;   // TBN for normal mapping
+    glm::vec3 bitangent; // TBN for normal mapping
 };
 
 // Unit cube vertices (6 faces, 2 triangles each, 3 vertices per triangle)
 static const std::vector<UnitVertex> unitVertices = {
-    // Top face (faceIndex = 0)
-    {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}, 0, 0, 0, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f, 0.5f, -0.5f}, {1.0f, 0.0f}, 0, 0, 0, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f, 0.5f,  0.5f}, {1.0f, 1.0f}, 0, 0, 0, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f, 0.5f,  0.5f}, {1.0f, 1.0f}, 0, 0, 0, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f, 0.5f,  0.5f}, {0.0f, 1.0f}, 0, 0, 0, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}, 0, 0, 0, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
+    // Top face (faceIndex = 0) - Normal: +Y, Tangent: +X, Bitangent: -Z
+    {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}, 0, 0, 0, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,0,-1}},
+    {{ 0.5f, 0.5f, -0.5f}, {1.0f, 0.0f}, 0, 0, 0, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,0,-1}},
+    {{ 0.5f, 0.5f,  0.5f}, {1.0f, 1.0f}, 0, 0, 0, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,0,-1}},
+    {{ 0.5f, 0.5f,  0.5f}, {1.0f, 1.0f}, 0, 0, 0, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,0,-1}},
+    {{-0.5f, 0.5f,  0.5f}, {0.0f, 1.0f}, 0, 0, 0, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,0,-1}},
+    {{-0.5f, 0.5f, -0.5f}, {0.0f, 0.0f}, 0, 0, 0, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,0,-1}},
     
-    // Bottom face (faceIndex = 1)
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, 0, 0, 1, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f, -0.5f,  0.5f}, {1.0f, 1.0f}, 0, 0, 1, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f, -0.5f, -0.5f}, {1.0f, 0.0f}, 0, 0, 1, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f, -0.5f,  0.5f}, {1.0f, 1.0f}, 0, 0, 1, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, 0, 0, 1, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f}, 0, 0, 1, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
+    // Bottom face (faceIndex = 1) - Normal: -Y, Tangent: +X, Bitangent: +Z
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, 0, 0, 1, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,0,1}},
+    {{ 0.5f, -0.5f,  0.5f}, {1.0f, 1.0f}, 0, 0, 1, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,0,1}},
+    {{ 0.5f, -0.5f, -0.5f}, {1.0f, 0.0f}, 0, 0, 1, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,0,1}},
+    {{ 0.5f, -0.5f,  0.5f}, {1.0f, 1.0f}, 0, 0, 1, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,0,1}},
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, 0.0f}, 0, 0, 1, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,0,1}},
+    {{-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f}, 0, 0, 1, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,0,1}},
     
-    // Left face (faceIndex = 2)
-    {{-0.5f,  0.5f,  0.5f}, {1.0f, 0.0f}, 0, 0, 2, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f}, 0, 0, 2, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, 0, 0, 2, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, 0, 0, 2, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f}, 0, 0, 2, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f,  0.5f,  0.5f}, {1.0f, 0.0f}, 0, 0, 2, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
+    // Left face (faceIndex = 2) - Normal: -X, Tangent: +Z, Bitangent: +Y
+    {{-0.5f,  0.5f,  0.5f}, {1.0f, 0.0f}, 0, 0, 2, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {0,0,1}, {0,1,0}},
+    {{-0.5f,  0.5f, -0.5f}, {1.0f, 1.0f}, 0, 0, 2, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {0,0,1}, {0,1,0}},
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, 0, 0, 2, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {0,0,1}, {0,1,0}},
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, 0, 0, 2, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {0,0,1}, {0,1,0}},
+    {{-0.5f, -0.5f,  0.5f}, {0.0f, 0.0f}, 0, 0, 2, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {0,0,1}, {0,1,0}},
+    {{-0.5f,  0.5f,  0.5f}, {1.0f, 0.0f}, 0, 0, 2, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {0,0,1}, {0,1,0}},
     
-    // Right face (faceIndex = 3)
-    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f}, 0, 0, 3, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, 0, 0, 3, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f}, 0, 0, 3, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, 0, 0, 3, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f}, 0, 0, 3, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f}, 0, 0, 3, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
+    // Right face (faceIndex = 3) - Normal: +X, Tangent: -Z, Bitangent: +Y
+    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f}, 0, 0, 3, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {0,0,-1}, {0,1,0}},
+    {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, 0, 0, 3, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {0,0,-1}, {0,1,0}},
+    {{ 0.5f,  0.5f, -0.5f}, {1.0f, 1.0f}, 0, 0, 3, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {0,0,-1}, {0,1,0}},
+    {{ 0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, 0, 0, 3, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {0,0,-1}, {0,1,0}},
+    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f}, 0, 0, 3, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {0,0,-1}, {0,1,0}},
+    {{ 0.5f, -0.5f,  0.5f}, {0.0f, 0.0f}, 0, 0, 3, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {0,0,-1}, {0,1,0}},
     
-    // Front face (faceIndex = 4)
-    {{-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f}, 0, 0, 4, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f, -0.5f,  0.5f}, {1.0f, 1.0f}, 0, 0, 4, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f}, 0, 0, 4, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f}, 0, 0, 4, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f,  0.5f,  0.5f}, {0.0f, 0.0f}, 0, 0, 4, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f}, 0, 0, 4, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
+    // Front face (faceIndex = 4) - Normal: +Z, Tangent: +X, Bitangent: +Y
+    {{-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f}, 0, 0, 4, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,1,0}},
+    {{ 0.5f, -0.5f,  0.5f}, {1.0f, 1.0f}, 0, 0, 4, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,1,0}},
+    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f}, 0, 0, 4, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,1,0}},
+    {{ 0.5f,  0.5f,  0.5f}, {1.0f, 0.0f}, 0, 0, 4, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,1,0}},
+    {{-0.5f,  0.5f,  0.5f}, {0.0f, 0.0f}, 0, 0, 4, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,1,0}},
+    {{-0.5f, -0.5f,  0.5f}, {0.0f, 1.0f}, 0, 0, 4, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {1,0,0}, {0,1,0}},
     
-    // Back face (faceIndex = 5)
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, 0, 0, 5, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f}, 0, 0, 5, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f,  0.5f, -0.5f}, {1.0f, 0.0f}, 0, 0, 5, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f,  0.5f, -0.5f}, {1.0f, 0.0f}, 0, 0, 5, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{ 0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}, 0, 0, 5, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
-    {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, 0, 0, 5, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f},
+    // Back face (faceIndex = 5) - Normal: -Z, Tangent: -X, Bitangent: +Y
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, 0, 0, 5, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {-1,0,0}, {0,1,0}},
+    {{-0.5f,  0.5f, -0.5f}, {0.0f, 0.0f}, 0, 0, 5, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {-1,0,0}, {0,1,0}},
+    {{ 0.5f,  0.5f, -0.5f}, {1.0f, 0.0f}, 0, 0, 5, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {-1,0,0}, {0,1,0}},
+    {{ 0.5f,  0.5f, -0.5f}, {1.0f, 0.0f}, 0, 0, 5, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {-1,0,0}, {0,1,0}},
+    {{ 0.5f, -0.5f, -0.5f}, {1.0f, 1.0f}, 0, 0, 5, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {-1,0,0}, {0,1,0}},
+    {{-0.5f, -0.5f, -0.5f}, {0.0f, 1.0f}, 0, 0, 5, {0,0,0,0}, {0,0,0,0}, {1,1,1}, 0.0f, 0.5f, {-1,0,0}, {0,1,0}},
 };
 
 // Uniform buffer structure
@@ -105,14 +104,16 @@ struct FrustumPlanes {
 // Vertex output structure matching compute shader
 struct VertexOutput {
     glm::vec4 position;
-    glm::vec3 worldPos;
+    float worldX, worldY, worldZ;
     glm::vec2 texCoords;
     uint32_t lightingEmit;
     uint32_t transparencyLevel;
     uint32_t faceIndex;
-    glm::vec3 albedo;
+    float albR, albG, albB;
     float metallic;
     float roughness;
+    float tanX, tanY, tanZ;
+    float bitanX, bitanY, bitanZ;
 };
 
 // Indirect draw parameters
@@ -347,26 +348,41 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     }
     
     // Create descriptor set layout for graphics pipeline (textures)
-    VkDescriptorSetLayoutBinding graphicsBindings[3]{};
+    VkDescriptorSetLayoutBinding graphicsBindings[6]{};
     // Texture array (binding 2)
     graphicsBindings[0].binding = 2;
     graphicsBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     graphicsBindings[0].descriptorCount = 6; // 6 textures for 6 faces
     graphicsBindings[0].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    // Lighting texture (binding 8)
-    graphicsBindings[1].binding = 8;
-    graphicsBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    // Lighting block uniform buffer (binding 4)
+    graphicsBindings[1].binding = 4;
+    graphicsBindings[1].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
     graphicsBindings[1].descriptorCount = 1;
     graphicsBindings[1].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-    // Settings uniform buffer (binding 9)
-    graphicsBindings[2].binding = 9;
-    graphicsBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    // Lighting texture (binding 8)
+    graphicsBindings[2].binding = 8;
+    graphicsBindings[2].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     graphicsBindings[2].descriptorCount = 1;
     graphicsBindings[2].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    // Settings uniform buffer (binding 9)
+    graphicsBindings[3].binding = 9;
+    graphicsBindings[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    graphicsBindings[3].descriptorCount = 1;
+    graphicsBindings[3].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    // AO texture (binding 10)
+    graphicsBindings[4].binding = 10;
+    graphicsBindings[4].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    graphicsBindings[4].descriptorCount = 1;
+    graphicsBindings[4].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    // Normal texture (binding 11)
+    graphicsBindings[5].binding = 11;
+    graphicsBindings[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    graphicsBindings[5].descriptorCount = 1;
+    graphicsBindings[5].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     
     VkDescriptorSetLayoutCreateInfo graphicsLayoutInfo{};
     graphicsLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    graphicsLayoutInfo.bindingCount = 3;
+    graphicsLayoutInfo.bindingCount = 6;
     graphicsLayoutInfo.pBindings = graphicsBindings;
     
     if (vkCreateDescriptorSetLayout(context.device, &graphicsLayoutInfo, nullptr, &vk.descriptorSetLayout) != VK_SUCCESS) {
@@ -378,9 +394,9 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     poolSizes[0].descriptorCount = 4; // 4 SSBOs for compute
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[1].descriptorCount = 7; // 6 textures + 1 lighting texture
+    poolSizes[1].descriptorCount = 9; // 6 textures + 1 lighting texture + 1 AO texture + 1 normal texture
     poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[2].descriptorCount = 4;
+    poolSizes[2].descriptorCount = 5; // 1 frustum + 1 lighting block + 1 settings + 2 extra
     
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -623,6 +639,29 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
         throw std::runtime_error("Failed to create placeholder lighting sampler");
     }
 
+    // Create global texture sampler (for all textures to avoid sampler allocation limit)
+    VkSamplerCreateInfo globalSamplerInfo{};
+    globalSamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    globalSamplerInfo.magFilter = VK_FILTER_LINEAR;
+    globalSamplerInfo.minFilter = VK_FILTER_LINEAR;
+    globalSamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    globalSamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    globalSamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    globalSamplerInfo.anisotropyEnable = VK_FALSE;
+    globalSamplerInfo.maxAnisotropy = 1.0f;
+    globalSamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    globalSamplerInfo.unnormalizedCoordinates = VK_FALSE;
+    globalSamplerInfo.compareEnable = VK_FALSE;
+    globalSamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    globalSamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    globalSamplerInfo.mipLodBias = 0.0f;
+    globalSamplerInfo.minLod = 0.0f;
+    globalSamplerInfo.maxLod = 16.0f;
+
+    if (vkCreateSampler(context.device, &globalSamplerInfo, nullptr, &vk.globalTextureSampler) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create global texture sampler");
+    }
+
     // Create placeholder settings buffer
     VkBufferCreateInfo settingsBufferInfo{};
     settingsBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
@@ -654,23 +693,350 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     vkMapMemory(context.device, vk.placeholderSettingsBufferMemory, 0, sizeof(bool), 0, &settingsData);
     memcpy(settingsData, &useLightingPass, sizeof(bool));
     vkUnmapMemory(context.device, vk.placeholderSettingsBufferMemory);
+    
+    // Create lighting uniform buffer for PBR shader
+    struct LightingBlock {
+        glm::vec3 sunDirection;
+        glm::vec3 sunColor;
+        float ambientStrength;
+        glm::vec3 cameraPosition;
+    };
+    
+    VkBufferCreateInfo lightingBufferInfo{};
+    lightingBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    lightingBufferInfo.size = sizeof(LightingBlock);
+    lightingBufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    lightingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    
+    if (vkCreateBuffer(context.device, &lightingBufferInfo, nullptr, &vk.placeholderLightingBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create lighting buffer");
+    }
+    
+    VkMemoryRequirements lightingMemRequirements2;
+    vkGetBufferMemoryRequirements(context.device, vk.placeholderLightingBuffer, &lightingMemRequirements);
+    
+    VkMemoryAllocateInfo lightingAllocInfo2{};
+    lightingAllocInfo2.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    lightingAllocInfo2.allocationSize = lightingMemRequirements.size;
+    lightingAllocInfo2.memoryTypeIndex = FindMemoryTypeIndex(context.physicalDevice, lightingMemRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    
+    if (vkAllocateMemory(context.device, &lightingAllocInfo2, nullptr, &vk.placeholderLightingBufferMemory) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate lighting buffer memory");
+    }
+    
+    vkBindBufferMemory(context.device, vk.placeholderLightingBuffer, vk.placeholderLightingBufferMemory, 0);
+    
+    // Initialize lighting buffer with default values
+    LightingBlock lightingData{};
+    lightingData.sunDirection = glm::normalize(glm::vec3(0.5f, 0.8f, 0.6f));
+    lightingData.sunColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    lightingData.ambientStrength = 0.2f;
+    lightingData.cameraPosition = glm::vec3(0.0f, 0.0f, 15.0f);
+    
+    void* lightingBufferData;
+    vkMapMemory(context.device, vk.placeholderLightingBufferMemory, 0, sizeof(LightingBlock), 0, &lightingBufferData);
+    memcpy(lightingBufferData, &lightingData, sizeof(LightingBlock));
+    vkUnmapMemory(context.device, vk.placeholderLightingBufferMemory);
+    
+    // Create placeholder AO texture (1x1 white texture)
+    VkImageCreateInfo aoImageInfo{};
+    aoImageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+    aoImageInfo.imageType = VK_IMAGE_TYPE_2D;
+    aoImageInfo.extent.width = 1;
+    aoImageInfo.extent.height = 1;
+    aoImageInfo.extent.depth = 1;
+    aoImageInfo.mipLevels = 1;
+    aoImageInfo.arrayLayers = 1;
+    aoImageInfo.format = VK_FORMAT_R8_UNORM;
+    aoImageInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    aoImageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    aoImageInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    aoImageInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    aoImageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    
+    if (vkCreateImage(context.device, &aoImageInfo, nullptr, &vk.placeholderAOTexture) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create AO texture");
+    }
+    
+    VkMemoryRequirements aoMemRequirements;
+    vkGetImageMemoryRequirements(context.device, vk.placeholderAOTexture, &aoMemRequirements);
+    
+    VkMemoryAllocateInfo aoAllocInfo{};
+    aoAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    aoAllocInfo.allocationSize = aoMemRequirements.size;
+    aoAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(context.physicalDevice, aoMemRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    
+    if (vkAllocateMemory(context.device, &aoAllocInfo, nullptr, &vk.placeholderAOTextureMemory) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate AO texture memory");
+    }
+    
+    vkBindImageMemory(context.device, vk.placeholderAOTexture, vk.placeholderAOTextureMemory, 0);
+    
+    // Fill AO texture with white (no occlusion)
+    VkBuffer aoStagingBuffer;
+    VkDeviceMemory aoStagingBufferMemory;
+    VkBufferCreateInfo aoStagingBufferInfo{};
+    aoStagingBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    aoStagingBufferInfo.size = 1; // 1 byte for 1x1 R8 texture
+    aoStagingBufferInfo.usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    aoStagingBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    
+    if (vkCreateBuffer(context.device, &aoStagingBufferInfo, nullptr, &aoStagingBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create AO staging buffer");
+    }
+    
+    VkMemoryRequirements aoStagingMemRequirements;
+    vkGetBufferMemoryRequirements(context.device, aoStagingBuffer, &aoStagingMemRequirements);
+    
+    VkMemoryAllocateInfo aoStagingAllocInfo{};
+    aoStagingAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    aoStagingAllocInfo.allocationSize = aoStagingMemRequirements.size;
+    aoStagingAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(context.physicalDevice, aoStagingMemRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    
+    if (vkAllocateMemory(context.device, &aoStagingAllocInfo, nullptr, &aoStagingBufferMemory) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate AO staging buffer memory");
+    }
+    
+    vkBindBufferMemory(context.device, aoStagingBuffer, aoStagingBufferMemory, 0);
+    
+    // Fill staging buffer with white (255)
+    uint8_t aoData = 255;
+    void* aoStagingData;
+    vkMapMemory(context.device, aoStagingBufferMemory, 0, sizeof(uint8_t), 0, &aoStagingData);
+    memcpy(aoStagingData, &aoData, sizeof(uint8_t));
+    vkUnmapMemory(context.device, aoStagingBufferMemory);
+    
+    // Copy staging buffer to AO texture
+    VkCommandPool aoCopyCommandPool;
+    VkCommandPoolCreateInfo aoCopyPoolInfo{};
+    aoCopyPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    aoCopyPoolInfo.queueFamilyIndex = context.queueFamilyIndices.graphicsFamily.value();
+    
+    if (vkCreateCommandPool(context.device, &aoCopyPoolInfo, nullptr, &aoCopyCommandPool) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create command pool for AO texture copy");
+    }
+    
+    VkCommandBuffer aoCopyCommandBuffer;
+    VkCommandBufferAllocateInfo aoCopyAllocInfo{};
+    aoCopyAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    aoCopyAllocInfo.commandPool = aoCopyCommandPool;
+    aoCopyAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    aoCopyAllocInfo.commandBufferCount = 1;
+    
+    vkAllocateCommandBuffers(context.device, &aoCopyAllocInfo, &aoCopyCommandBuffer);
+    
+    VkCommandBufferBeginInfo aoCopyBeginInfo{};
+    aoCopyBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    aoCopyBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    
+    vkBeginCommandBuffer(aoCopyCommandBuffer, &aoCopyBeginInfo);
+    
+    // Transition AO texture to transfer dst
+    VkImageMemoryBarrier aoCopyBarrier1{};
+    aoCopyBarrier1.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    aoCopyBarrier1.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    aoCopyBarrier1.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    aoCopyBarrier1.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    aoCopyBarrier1.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    aoCopyBarrier1.image = vk.placeholderAOTexture;
+    aoCopyBarrier1.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    aoCopyBarrier1.subresourceRange.baseMipLevel = 0;
+    aoCopyBarrier1.subresourceRange.levelCount = 1;
+    aoCopyBarrier1.subresourceRange.baseArrayLayer = 0;
+    aoCopyBarrier1.subresourceRange.layerCount = 1;
+    aoCopyBarrier1.srcAccessMask = 0;
+    aoCopyBarrier1.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    
+    vkCmdPipelineBarrier(aoCopyCommandBuffer,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &aoCopyBarrier1);
+    
+    // Copy buffer to image
+    VkBufferImageCopy aoRegion{};
+    aoRegion.bufferOffset = 0;
+    aoRegion.bufferRowLength = 0;
+    aoRegion.bufferImageHeight = 0;
+    aoRegion.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    aoRegion.imageSubresource.mipLevel = 0;
+    aoRegion.imageSubresource.baseArrayLayer = 0;
+    aoRegion.imageSubresource.layerCount = 1;
+    aoRegion.imageOffset = {0, 0, 0};
+    aoRegion.imageExtent = {1, 1, 1};
+    
+    vkCmdCopyBufferToImage(aoCopyCommandBuffer, aoStagingBuffer, vk.placeholderAOTexture, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &aoRegion);
+    
+    // Transition AO texture to shader read only
+    VkImageMemoryBarrier aoCopyBarrier2{};
+    aoCopyBarrier2.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    aoCopyBarrier2.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    aoCopyBarrier2.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    aoCopyBarrier2.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    aoCopyBarrier2.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    aoCopyBarrier2.image = vk.placeholderAOTexture;
+    aoCopyBarrier2.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    aoCopyBarrier2.subresourceRange.baseMipLevel = 0;
+    aoCopyBarrier2.subresourceRange.levelCount = 1;
+    aoCopyBarrier2.subresourceRange.baseArrayLayer = 0;
+    aoCopyBarrier2.subresourceRange.layerCount = 1;
+    aoCopyBarrier2.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    aoCopyBarrier2.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    
+    vkCmdPipelineBarrier(aoCopyCommandBuffer,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &aoCopyBarrier2);
+    
+    vkEndCommandBuffer(aoCopyCommandBuffer);
+    
+    VkSubmitInfo aoCopySubmitInfo{};
+    aoCopySubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    aoCopySubmitInfo.commandBufferCount = 1;
+    aoCopySubmitInfo.pCommandBuffers = &aoCopyCommandBuffer;
+    
+    vkQueueSubmit(context.graphicsQueue, 1, &aoCopySubmitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(context.graphicsQueue);
+    
+    vkFreeCommandBuffers(context.device, aoCopyCommandPool, 1, &aoCopyCommandBuffer);
+    vkDestroyCommandPool(context.device, aoCopyCommandPool, nullptr);
+    
+    vkDestroyBuffer(context.device, aoStagingBuffer, nullptr);
+    vkFreeMemory(context.device, aoStagingBufferMemory, nullptr);
+    
+    // Create AO texture view
+    VkImageViewCreateInfo aoViewInfo{};
+    aoViewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+    aoViewInfo.image = vk.placeholderAOTexture;
+    aoViewInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    aoViewInfo.format = VK_FORMAT_R8_UNORM;
+    aoViewInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    aoViewInfo.subresourceRange.baseMipLevel = 0;
+    aoViewInfo.subresourceRange.levelCount = 1;
+    aoViewInfo.subresourceRange.baseArrayLayer = 0;
+    aoViewInfo.subresourceRange.layerCount = 1;
+    
+    if (vkCreateImageView(context.device, &aoViewInfo, nullptr, &vk.placeholderAOTextureView) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create AO texture view");
+    }
+    
+    // Create AO sampler
+    VkSamplerCreateInfo aoSamplerInfo{};
+    aoSamplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    aoSamplerInfo.magFilter = VK_FILTER_LINEAR;
+    aoSamplerInfo.minFilter = VK_FILTER_LINEAR;
+    aoSamplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    aoSamplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    aoSamplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    aoSamplerInfo.anisotropyEnable = VK_FALSE;
+    aoSamplerInfo.maxAnisotropy = 1.0f;
+    aoSamplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    aoSamplerInfo.unnormalizedCoordinates = VK_FALSE;
+    aoSamplerInfo.compareEnable = VK_FALSE;
+    aoSamplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    aoSamplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    aoSamplerInfo.mipLodBias = 0.0f;
+    aoSamplerInfo.minLod = 0.0f;
+    aoSamplerInfo.maxLod = 1.0f;
+    
+    if (vkCreateSampler(context.device, &aoSamplerInfo, nullptr, &vk.placeholderAOSampler) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create AO sampler");
+    }
+    
+    // Transition AO texture layout
+    VkCommandPool aoTempCommandPool;
+    VkCommandPoolCreateInfo aoPoolInfo{};
+    aoPoolInfo.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+    aoPoolInfo.queueFamilyIndex = context.queueFamilyIndices.graphicsFamily.value();
+    
+    if (vkCreateCommandPool(context.device, &aoPoolInfo, nullptr, &aoTempCommandPool) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create temporary command pool for AO texture");
+    }
+    
+    VkCommandBuffer aoTransitionCommandBuffer;
+    VkCommandBufferAllocateInfo aoTransitionAllocInfo{};
+    aoTransitionAllocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    aoTransitionAllocInfo.commandPool = aoTempCommandPool;
+    aoTransitionAllocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    aoTransitionAllocInfo.commandBufferCount = 1;
+    
+    vkAllocateCommandBuffers(context.device, &aoTransitionAllocInfo, &aoTransitionCommandBuffer);
+    
+    VkCommandBufferBeginInfo aoTransitionBeginInfo{};
+    aoTransitionBeginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    aoTransitionBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    
+    vkBeginCommandBuffer(aoTransitionCommandBuffer, &aoTransitionBeginInfo);
+    
+    VkImageMemoryBarrier aoTransitionBarrier{};
+    aoTransitionBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    aoTransitionBarrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    aoTransitionBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    aoTransitionBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    aoTransitionBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    aoTransitionBarrier.image = vk.placeholderAOTexture;
+    aoTransitionBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    aoTransitionBarrier.subresourceRange.baseMipLevel = 0;
+    aoTransitionBarrier.subresourceRange.levelCount = 1;
+    aoTransitionBarrier.subresourceRange.baseArrayLayer = 0;
+    aoTransitionBarrier.subresourceRange.layerCount = 1;
+    aoTransitionBarrier.srcAccessMask = 0;
+    aoTransitionBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+    
+    vkCmdPipelineBarrier(aoTransitionCommandBuffer,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &aoTransitionBarrier);
+    
+    vkEndCommandBuffer(aoTransitionCommandBuffer);
+    
+    VkSubmitInfo aoTransitionSubmitInfo{};
+    aoTransitionSubmitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    aoTransitionSubmitInfo.commandBufferCount = 1;
+    aoTransitionSubmitInfo.pCommandBuffers = &aoTransitionCommandBuffer;
+    
+    vkQueueSubmit(context.graphicsQueue, 1, &aoTransitionSubmitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(context.graphicsQueue);
+    
+    vkFreeCommandBuffers(context.device, aoTempCommandPool, 1, &aoTransitionCommandBuffer);
+    vkDestroyCommandPool(context.device, aoTempCommandPool, nullptr);
 
-    // Update graphics descriptor set with placeholder resources for bindings 8 and 9
+    // Update graphics descriptor set with placeholder resources for bindings 4, 8, 9, and 10
+    VkDescriptorBufferInfo lightingBufferInfo2{};
+    lightingBufferInfo2.buffer = vk.placeholderLightingBuffer;
+    lightingBufferInfo2.offset = 0;
+    lightingBufferInfo2.range = sizeof(LightingBlock);
+    
+    VkWriteDescriptorSet lightingBufferWrite{};
+    lightingBufferWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    lightingBufferWrite.dstSet = vk.descriptorSet;
+    lightingBufferWrite.dstBinding = 4;
+    lightingBufferWrite.dstArrayElement = 0;
+    lightingBufferWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    lightingBufferWrite.descriptorCount = 1;
+    lightingBufferWrite.pBufferInfo = &lightingBufferInfo2;
+    
     VkDescriptorImageInfo lightingImageInfo2{};
     lightingImageInfo2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     lightingImageInfo2.imageView = vk.placeholderLightingTextureView;
     lightingImageInfo2.sampler = vk.placeholderLightingSampler;
     
-    VkWriteDescriptorSet lightingWrite{};
-    lightingWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-    lightingWrite.dstSet = vk.descriptorSet;
-    lightingWrite.dstBinding = 8;
-    lightingWrite.dstArrayElement = 0;
-    lightingWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    lightingWrite.descriptorCount = 1;
-    lightingWrite.pImageInfo = &lightingImageInfo2;
-
-    vkUpdateDescriptorSets(context.device, 1, &lightingWrite, 0, nullptr);
+    VkWriteDescriptorSet lightingTextureWrite{};
+    lightingTextureWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    lightingTextureWrite.dstSet = vk.descriptorSet;
+    lightingTextureWrite.dstBinding = 8;
+    lightingTextureWrite.dstArrayElement = 0;
+    lightingTextureWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    lightingTextureWrite.descriptorCount = 1;
+    lightingTextureWrite.pImageInfo = &lightingImageInfo2;
     
     VkDescriptorBufferInfo settingsBufferInfo2{};
     settingsBufferInfo2.buffer = vk.placeholderSettingsBuffer;
@@ -686,7 +1052,28 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     settingsWrite.descriptorCount = 1;
     settingsWrite.pBufferInfo = &settingsBufferInfo2;
     
-    vkUpdateDescriptorSets(context.device, 1, &settingsWrite, 0, nullptr);
+    VkDescriptorImageInfo aoImageInfo2{};
+    aoImageInfo2.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    aoImageInfo2.imageView = vk.placeholderAOTextureView;
+    aoImageInfo2.sampler = vk.placeholderAOSampler;
+    
+    VkWriteDescriptorSet aoTextureWrite{};
+    aoTextureWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    aoTextureWrite.dstSet = vk.descriptorSet;
+    aoTextureWrite.dstBinding = 10;
+    aoTextureWrite.dstArrayElement = 0;
+    aoTextureWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    aoTextureWrite.descriptorCount = 1;
+    aoTextureWrite.pImageInfo = &aoImageInfo2;
+    
+    std::array<VkWriteDescriptorSet, 4> descriptorWrites = {
+        lightingBufferWrite,
+        lightingTextureWrite,
+        settingsWrite,
+        aoTextureWrite
+    };
+    
+    vkUpdateDescriptorSets(context.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     
     // Pipeline layout for compute shader
     VkPipelineLayoutCreateInfo computePipelineLayoutInfo{};
@@ -712,7 +1099,7 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     ShaderObject::DestroyShaderModule(context.device, computeShaderModule);
     // Load graphics shaders (no geometry shader)
     auto vertShaderCode = ShaderObject::Shader("unit.vert.spv");
-    auto fragShaderCode = ShaderObject::Shader("unit.frag.spv");
+    auto fragShaderCode = ShaderObject::Shader("unit.lightning.frag.spv");
     auto vertShaderModule = ShaderObject::CreateShaderModule(context.device, vertShaderCode);
     auto fragShaderModule = ShaderObject::CreateShaderModule(context.device, fragShaderCode);
     
@@ -730,63 +1117,68 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     fragShaderStageInfo.pName = "main";
     
     VkPipelineShaderStageCreateInfo graphicsShaderStages[] = {vertShaderStageInfo, fragShaderStageInfo};
-    // Vertex input for input buffer (UnitVertex structure)
+    // Vertex input for output buffer (VertexOutput structure from compute shader)
     VkVertexInputBindingDescription inputBindingDescription{};
     inputBindingDescription.binding = 0;
-    inputBindingDescription.stride = sizeof(UnitVertex);
+    inputBindingDescription.stride = sizeof(VertexOutput);
     inputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     
-    std::array<VkVertexInputAttributeDescription, 10> inputAttributeDescriptions{};
-    // Position (vec3)
+    std::array<VkVertexInputAttributeDescription, 11> inputAttributeDescriptions{};
+    // Position (vec4) - Clip space from compute shader
     inputAttributeDescriptions[0].binding = 0;
     inputAttributeDescriptions[0].location = 0;
-    inputAttributeDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-    inputAttributeDescriptions[0].offset = offsetof(UnitVertex, position);
+    inputAttributeDescriptions[0].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    inputAttributeDescriptions[0].offset = offsetof(VertexOutput, position);
     // TexCoords (vec2)
     inputAttributeDescriptions[1].binding = 0;
     inputAttributeDescriptions[1].location = 1;
     inputAttributeDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT;
-    inputAttributeDescriptions[1].offset = offsetof(UnitVertex, texCoords);
+    inputAttributeDescriptions[1].offset = offsetof(VertexOutput, texCoords);
     // LightingEmit (uint)
     inputAttributeDescriptions[2].binding = 0;
     inputAttributeDescriptions[2].location = 2;
     inputAttributeDescriptions[2].format = VK_FORMAT_R32_UINT;
-    inputAttributeDescriptions[2].offset = offsetof(UnitVertex, lightingEmit);
+    inputAttributeDescriptions[2].offset = offsetof(VertexOutput, lightingEmit);
     // TransparencyLevel (uint)
     inputAttributeDescriptions[3].binding = 0;
     inputAttributeDescriptions[3].location = 3;
     inputAttributeDescriptions[3].format = VK_FORMAT_R32_UINT;
-    inputAttributeDescriptions[3].offset = offsetof(UnitVertex, transparencyLevel);
+    inputAttributeDescriptions[3].offset = offsetof(VertexOutput, transparencyLevel);
     // FaceIndex (uint)
     inputAttributeDescriptions[4].binding = 0;
     inputAttributeDescriptions[4].location = 4;
     inputAttributeDescriptions[4].format = VK_FORMAT_R32_UINT;
-    inputAttributeDescriptions[4].offset = offsetof(UnitVertex, faceIndex);
-    // PolRight (vec4)
+    inputAttributeDescriptions[4].offset = offsetof(VertexOutput, faceIndex);
+    // WorldPos (vec3) - worldX, worldY, worldZ
     inputAttributeDescriptions[5].binding = 0;
     inputAttributeDescriptions[5].location = 5;
-    inputAttributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    inputAttributeDescriptions[5].offset = offsetof(UnitVertex, polRight);
-    // PolLeft (vec4)
+    inputAttributeDescriptions[5].format = VK_FORMAT_R32G32B32_SFLOAT;
+    inputAttributeDescriptions[5].offset = offsetof(VertexOutput, worldX);
+    // Albedo (vec3) - albR, albG, albB
     inputAttributeDescriptions[6].binding = 0;
     inputAttributeDescriptions[6].location = 6;
-    inputAttributeDescriptions[6].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-    inputAttributeDescriptions[6].offset = offsetof(UnitVertex, polLeft);
-    // Albedo (vec3)
+    inputAttributeDescriptions[6].format = VK_FORMAT_R32G32B32_SFLOAT;
+    inputAttributeDescriptions[6].offset = offsetof(VertexOutput, albR);
+    // Metallic (float)
     inputAttributeDescriptions[7].binding = 0;
     inputAttributeDescriptions[7].location = 7;
-    inputAttributeDescriptions[7].format = VK_FORMAT_R32G32B32_SFLOAT;
-    inputAttributeDescriptions[7].offset = offsetof(UnitVertex, albedo);
-    // Metallic (float)
+    inputAttributeDescriptions[7].format = VK_FORMAT_R32_SFLOAT;
+    inputAttributeDescriptions[7].offset = offsetof(VertexOutput, metallic);
+    // Roughness (float)
     inputAttributeDescriptions[8].binding = 0;
     inputAttributeDescriptions[8].location = 8;
     inputAttributeDescriptions[8].format = VK_FORMAT_R32_SFLOAT;
-    inputAttributeDescriptions[8].offset = offsetof(UnitVertex, metallic);
-    // Roughness (float)
+    inputAttributeDescriptions[8].offset = offsetof(VertexOutput, roughness);
+    // Tangent (vec3) - tanX, tanY, tanZ
     inputAttributeDescriptions[9].binding = 0;
     inputAttributeDescriptions[9].location = 9;
-    inputAttributeDescriptions[9].format = VK_FORMAT_R32_SFLOAT;
-    inputAttributeDescriptions[9].offset = offsetof(UnitVertex, roughness);
+    inputAttributeDescriptions[9].format = VK_FORMAT_R32G32B32_SFLOAT;
+    inputAttributeDescriptions[9].offset = offsetof(VertexOutput, tanX);
+    // Bitangent (vec3) - bitanX, bitanY, bitanZ
+    inputAttributeDescriptions[10].binding = 0;
+    inputAttributeDescriptions[10].location = 10;
+    inputAttributeDescriptions[10].format = VK_FORMAT_R32G32B32_SFLOAT;
+    inputAttributeDescriptions[10].offset = offsetof(VertexOutput, bitanX);
     
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -905,23 +1297,29 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     pipelineInfo.basePipelineHandle = VK_NULL_HANDLE;
     
     if (vkCreateGraphicsPipelines(context.device, VK_NULL_HANDLE, 1, &pipelineInfo, nullptr, &vk.pipeline) != VK_SUCCESS) {
-        std::cerr << "Failed to create graphics pipeline" << std::endl;
         throw std::runtime_error("Failed to create graphics pipeline");
     }
-    std::cerr << "Graphics pipeline created successfully" << std::endl;
     // Cleanup shader modules
     ShaderObject::DestroyShaderModule(context.device, vertShaderModule);
     ShaderObject::DestroyShaderModule(context.device, fragShaderModule);
 }
 
 void CameraPVMToFrustumPlanes(FrustumPlanes& frustum, World::Camera& cam) {
-    glm::mat4 vp = cam.GetViewMatrix() * cam.GetProjectionMatrix();
+    glm::mat4 vp = cam.GetProjectionMatrix() * cam.GetViewMatrix();
     glm::mat4 m = glm::transpose(vp);
+    
+    // Extract frustum planes from the combined view-projection matrix
+    // Left plane
     frustum.planes[0] = m[3] + m[0];
+    // Right plane
     frustum.planes[1] = m[3] - m[0];
+    // Bottom plane
     frustum.planes[2] = m[3] - m[1];
+    // Top plane
     frustum.planes[3] = m[3] + m[1];
+    // Near plane
     frustum.planes[4] = m[2];
+    // Far plane
     frustum.planes[5] = m[3] - m[2];
 
     for (int i = 0; i < 6; ++i) {
@@ -985,6 +1383,111 @@ void UnitStateDrawable::OnUpdate(UnitStateResource& resource,
         textureWrite.descriptorCount = 6;
         textureWrite.pImageInfo = imageInfos;
         vkUpdateDescriptorSets(context.device, 1, &textureWrite, 0, nullptr);
+        
+        // Generate AO textures from unit textures using lightning texture generator
+        TextureProperties aoProperties;
+        aoProperties.format = TextureFormat::R8;
+        aoProperties.generateMipmaps = true;
+        aoProperties.minFilter = TextureFilter::LINEAR_MIPMAP_LINEAR;
+        aoProperties.magFilter = TextureFilter::LINEAR;
+        
+        Texture2* aoTextures[6] = {
+            GenerateLightningTexture(textures.top, aoProperties),
+            GenerateLightningTexture(textures.down, aoProperties),
+            GenerateLightningTexture(textures.left, aoProperties),
+            GenerateLightningTexture(textures.right, aoProperties),
+            GenerateLightningTexture(textures.front, aoProperties),
+            GenerateLightningTexture(textures.back, aoProperties)
+        };
+        
+        // Create Vulkan resources for generated AO textures
+        for (int i = 0; i < 6; ++i) {
+            if (aoTextures[i] && aoTextures[i]->IsLoaded()) {
+                aoTextures[i]->GetImageView(context);
+                // Use global sampler instead of creating individual samplers
+                
+                vk.aoTextures[i] = aoTextures[i]->binding.vkImage;
+                vk.aoTexturesMemory[i] = aoTextures[i]->binding.vkImageMemory;
+                vk.aoTexturesView[i] = aoTextures[i]->binding.vkImageView;
+            }
+        }
+        
+        // Update AO texture descriptor
+        VkDescriptorImageInfo aoImageInfo{};
+        aoImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        aoImageInfo.imageView = vk.aoTexturesView[0];
+        aoImageInfo.sampler = vk.globalTextureSampler;
+        
+        VkWriteDescriptorSet aoTextureWrite{};
+        aoTextureWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        aoTextureWrite.dstSet = vk.descriptorSet;
+        aoTextureWrite.dstBinding = 10;
+        aoTextureWrite.dstArrayElement = 0;
+        aoTextureWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        aoTextureWrite.descriptorCount = 1;
+        aoTextureWrite.pImageInfo = &aoImageInfo;
+        vkUpdateDescriptorSets(context.device, 1, &aoTextureWrite, 0, nullptr);
+        
+        // Generate normal textures from unit textures (only if not already generated)
+        if (vk.normalTexturesView[0] == VK_NULL_HANDLE) {
+            TextureProperties normalProperties;
+            normalProperties.format = TextureFormat::RGBA8; // Use RGBA8 for blit support
+            normalProperties.generateMipmaps = true;
+            normalProperties.minFilter = TextureFilter::LINEAR_MIPMAP_LINEAR;
+            normalProperties.magFilter = TextureFilter::LINEAR;
+            normalProperties.sRGB = false; // Normal maps should not be in sRGB space
+            
+            Texture2* normalTextures[6] = {
+                GenerateNormalTexture(textures.top, normalProperties),
+                GenerateNormalTexture(textures.down, normalProperties),
+                GenerateNormalTexture(textures.left, normalProperties),
+                GenerateNormalTexture(textures.right, normalProperties),
+                GenerateNormalTexture(textures.front, normalProperties),
+                GenerateNormalTexture(textures.back, normalProperties)
+            };
+            
+            // Create Vulkan resources for generated normal textures
+            for (int i = 0; i < 6; ++i) {
+                if (normalTextures[i] && normalTextures[i]->IsLoaded()) {
+                    normalTextures[i]->GetImageView(context);
+                    // Use global sampler instead of creating individual samplers
+                    
+                    vk.normalTextures[i] = normalTextures[i]->binding.vkImage;
+                    vk.normalTexturesMemory[i] = normalTextures[i]->binding.vkImageMemory;
+                    vk.normalTexturesView[i] = normalTextures[i]->binding.vkImageView;
+                }
+            }
+            
+            // Update normal texture descriptor (binding 11)
+            VkDescriptorImageInfo normalImageInfo{};
+            normalImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            normalImageInfo.imageView = vk.normalTexturesView[0];
+            normalImageInfo.sampler = vk.globalTextureSampler;
+            
+            VkWriteDescriptorSet normalTextureWrite{};
+            normalTextureWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            normalTextureWrite.dstSet = vk.descriptorSet;
+            normalTextureWrite.dstBinding = 11;
+            normalTextureWrite.dstArrayElement = 0;
+            normalTextureWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            normalTextureWrite.descriptorCount = 1;
+            normalTextureWrite.pImageInfo = &normalImageInfo;
+            vkUpdateDescriptorSets(context.device, 1, &normalTextureWrite, 0, nullptr);
+            
+            // Clean up generated textures
+            for (int i = 0; i < 6; ++i) {
+                if (normalTextures[i]) {
+                    delete normalTextures[i];
+                }
+            }
+        }
+        
+        // Clean up generated AO textures
+        for (int i = 0; i < 6; ++i) {
+            if (aoTextures[i]) {
+                delete aoTextures[i];
+            }
+        }
     }
 }
 
@@ -1001,12 +1504,32 @@ void UnitStateDrawable::OnDraw(UnitStateResource& resource,
     glm::mat4 projection = cam.GetProjectionMatrix();
     glm::mat4 matrices[3] = {model, view, projection};
     
+    // Update lighting buffer with current camera position
+    struct LightingBlock {
+        glm::vec3 sunDirection;
+        glm::vec3 sunColor;
+        float ambientStrength;
+        glm::vec3 cameraPosition;
+    };
+    
+    LightingBlock lightingData{};
+    lightingData.sunDirection = glm::normalize(glm::vec3(0.5f, 0.8f, 0.6f));
+    lightingData.sunColor = glm::vec3(0.6f, 0.7f, 1.0f); // Test values
+    lightingData.ambientStrength = 0.3f;
+    World::AbstractCamera::Eye eyePos = cam.eye;
+    lightingData.cameraPosition = glm::vec3(eyePos.x, eyePos.y, eyePos.z);
+    
+    void* lightingBufferData;
+    vkMapMemory(context.device, vk.placeholderLightingBufferMemory, 0, sizeof(LightingBlock), 0, &lightingBufferData);
+    memcpy(lightingBufferData, &lightingData, sizeof(LightingBlock));
+    vkUnmapMemory(context.device, vk.placeholderLightingBufferMemory);
+    
     // Bind graphics pipeline
     if (vk.pipeline != VK_NULL_HANDLE && vk.pipelineLayout != VK_NULL_HANDLE) {
         vkCmdBindPipeline(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline);
     
         // Bind output vertex buffer (culled vertices from compute shader)
-        VkBuffer vertexBuffers[] = {vk.vertexBuffer};
+        VkBuffer vertexBuffers[] = {vk.outputVertexBuffer};
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(context.commandBuffers[0], 0, 1, vertexBuffers, offsets);
         
@@ -1029,13 +1552,15 @@ void UnitStateDrawable::OnDrawCompute(UnitStateResource& resource,
     
     // Get camera matrices for push constants
     UniformBufferObject ubo{};
-    World::Camera& cam = resource.cameraModel->GetObject();
+    const World::Camera& cam = resource.cameraModel->GetObject();
     ubo.model = cam.GetModelMatrix();
     ubo.view = cam.GetViewMatrix();
     ubo.projection = cam.GetProjectionMatrix();
     
-    // Reset visible vertex counter using vkCmdFillBuffer (GPU-side operation)
+    // Reset visible vertex counter and indirect draw buffer
+    // using vkCmdFillBuffer (GPU-side operation)
     vkCmdFillBuffer(context.commandBuffers[0], vk.visibleCountBuffer, 0, sizeof(uint32_t), 0);
+    vkCmdFillBuffer(context.commandBuffers[0], vk.indirectDrawBuffer, 0, sizeof(uint32_t), 0);
     
     // Barrier to ensure fill operation completes before compute shader
     VkMemoryBarrier fillBarrier{};
@@ -1059,7 +1584,7 @@ void UnitStateDrawable::OnDrawCompute(UnitStateResource& resource,
         // Use buffer memory barriers for specific buffers
         VkBufferMemoryBarrier barriers[3]{};
         
-        // Barrier for output vertex buffer
+        // Barrier for output vertex buffer (to vertex input stage)
         barriers[0].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
         barriers[0].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
         barriers[0].dstAccessMask = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
@@ -1069,7 +1594,7 @@ void UnitStateDrawable::OnDrawCompute(UnitStateResource& resource,
         barriers[0].offset = 0;
         barriers[0].size = VK_WHOLE_SIZE;
         
-        // Barrier for indirect draw buffer
+        // Barrier for indirect draw buffer (to draw indirect stage)
         barriers[1].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
         barriers[1].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
         barriers[1].dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
@@ -1079,7 +1604,7 @@ void UnitStateDrawable::OnDrawCompute(UnitStateResource& resource,
         barriers[1].offset = 0;
         barriers[1].size = VK_WHOLE_SIZE;
         
-        // Barrier for visible count buffer
+        // Barrier for visible count buffer (to draw indirect stage)
         barriers[2].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
         barriers[2].srcAccessMask = VK_ACCESS_SHADER_WRITE_BIT;
         barriers[2].dstAccessMask = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
@@ -1089,16 +1614,30 @@ void UnitStateDrawable::OnDrawCompute(UnitStateResource& resource,
         barriers[2].offset = 0;
         barriers[2].size = VK_WHOLE_SIZE;
         
-        // Use both vertex input and draw indirect stages to support all access types
+        // Barrier from compute to vertex input (for vertex buffer only)
         vkCmdPipelineBarrier(
             context.commandBuffers[0],
             VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 
-            VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 
+            VK_PIPELINE_STAGE_VERTEX_INPUT_BIT,
             0, 
             0,
             nullptr, 
-            3, 
-            barriers, 
+            1, 
+            &barriers[0], 
+            0, 
+            nullptr
+        );
+        
+        // Barrier from compute to draw indirect (for indirect draw buffers)
+        vkCmdPipelineBarrier(
+            context.commandBuffers[0],
+            VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 
+            VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 
+            0, 
+            0,
+            nullptr, 
+            2, 
+            &barriers[1], 
             0, 
             nullptr
         );
@@ -1125,6 +1664,46 @@ void UnitStateDrawable::OnDestroy(UnitStateResource& resource,
     vkFreeMemory(context.device, vk.placeholderLightingTextureMemory, nullptr);
     vkDestroyBuffer(context.device, vk.placeholderSettingsBuffer, nullptr);
     vkFreeMemory(context.device, vk.placeholderSettingsBufferMemory, nullptr);
+    
+    // Cleanup PBR lighting resources
+    vkDestroyBuffer(context.device, vk.placeholderLightingBuffer, nullptr);
+    vkFreeMemory(context.device, vk.placeholderLightingBufferMemory, nullptr);
+    vkDestroySampler(context.device, vk.placeholderAOSampler, nullptr);
+    vkDestroyImageView(context.device, vk.placeholderAOTextureView, nullptr);
+    vkDestroyImage(context.device, vk.placeholderAOTexture, nullptr);
+    vkFreeMemory(context.device, vk.placeholderAOTextureMemory, nullptr);
+    
+    // Cleanup AO textures
+    for (int i = 0; i < 6; ++i) {
+        if (vk.aoTexturesView[i] != VK_NULL_HANDLE) {
+            vkDestroyImageView(context.device, vk.aoTexturesView[i], nullptr);
+        }
+        if (vk.aoTextures[i] != VK_NULL_HANDLE) {
+            vkDestroyImage(context.device, vk.aoTextures[i], nullptr);
+        }
+        if (vk.aoTexturesMemory[i] != VK_NULL_HANDLE) {
+            vkFreeMemory(context.device, vk.aoTexturesMemory[i], nullptr);
+        }
+    }
+    
+    // Cleanup normal textures
+    for (int i = 0; i < 6; ++i) {
+        if (vk.normalTexturesView[i] != VK_NULL_HANDLE) {
+            vkDestroyImageView(context.device, vk.normalTexturesView[i], nullptr);
+        }
+        if (vk.normalTextures[i] != VK_NULL_HANDLE) {
+            vkDestroyImage(context.device, vk.normalTextures[i], nullptr);
+        }
+        if (vk.normalTexturesMemory[i] != VK_NULL_HANDLE) {
+            vkFreeMemory(context.device, vk.normalTexturesMemory[i], nullptr);
+        }
+    }
+    
+    // Cleanup global sampler
+    if (vk.globalTextureSampler != VK_NULL_HANDLE) {
+        vkDestroySampler(context.device, vk.globalTextureSampler, nullptr);
+    }
+    
     vkDestroyPipeline(context.device, vk.computePipeline, nullptr);
     vkDestroyPipelineLayout(context.device, vk.computePipelineLayout, nullptr);
     vkDestroyDescriptorSetLayout(context.device, vk.computeDescriptorSetLayout, nullptr);

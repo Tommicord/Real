@@ -224,13 +224,13 @@ bool Texture2::LoadFromData(const uint8_t* data, int width, int height, TextureF
 {
     this->properties = properties;
     this->properties.format = format;
-    width = width;
-    height = height;
-    channels = GetFormatSize(format);
+    this->width = width;
+    this->height = height;
+    this->channels = GetFormatSize(format);
     
-    dataSize = width * height * channels;
-    data = new uint8_t[dataSize];
-    memcpy(this->data, data, dataSize);
+    this->dataSize = width * height * this->channels;
+    this->data = new uint8_t[this->dataSize];
+    memcpy(this->data, data, this->dataSize);
     loaded = true;
     if (properties.generateMipmaps) {
         GenerateMipmaps();
@@ -427,7 +427,6 @@ void Texture2::GenerateMipmaps()
                                 count++;
                             }
                         }
-                        
                         dst[(y * mipWidth + x) * channels + c] = static_cast<uint8_t>(sum / count);
                     }
                 }

@@ -2,13 +2,14 @@
 
 // Input from vertex shader (after compute shader culling)
 layout (location = 0) flat in vec3 v_WorldPos;
-layout (location = 1) flat in vec2 v_TexCoords;
+layout (location = 1) in vec2 v_TexCoords;
 layout (location = 2) flat in uint v_LightingEmit;
 layout (location = 3) flat in uint v_TransparencyLevel;
 layout (location = 4) flat in uint v_FaceIndex;
 layout (location = 5) flat in vec3 v_Albedo;
 layout (location = 6) flat in float v_Metallic;
 layout (location = 7) flat in float v_Roughness;
+layout (location = 8) flat in mat3 v_TBN;
 
 // Output color
 layout (location = 0) out vec4 outColor;
@@ -23,6 +24,11 @@ layout(set = 0, binding = 4) uniform LightingBlock {
 
 // Ambient occlusion texture
 layout (binding = 10) uniform sampler2D u_AOTexture;
+layout (binding = 11) uniform sampler2D u_NormalTexture;
+
+// The texture of the Unit
+// The unit has 6 faces
+layout (binding = 2) uniform sampler2D u_Texture[6];
 
 // PBR Constants
 const float PI = 3.14159265359;
@@ -90,13 +96,12 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness) {
 
 // Calculate PBR lighting for a single light
 vec3 CalculatePBRLight(vec3 N, vec3 V, vec3 F0, PBRMaterial material, Light light) {
-    vec3 L = normalize(light.position - N);
+    // For directional light, L is just the normalized light direction
+    vec3 L = normalize(light.position);
     vec3 H = normalize(V + L);
     
-    // Calculate radiance
-    float distance = length(light.position - N);
-    float attenuation = 1.0 / (distance * distance);
-    vec3 radiance = light.color * light.intensity * attenuation;
+    // Calculate radiance (no attenuation for directional light)
+    vec3 radiance = light.color * light.intensity;
     
     // Cook-Torrance BRDF
     float NDF = DistributionGGX(N, H, material.roughness);
@@ -143,38 +148,47 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
     
     // Calculate ambient lighting
     vec3 ambient = CalculateAmbient(N, V, F0, material, ambientColor);
+
+    vec3 L = normalize(-sunLight.position);
+    vec3 H = normalize(V + L);
+
+    vec3 radiance = sunLight.color * sunLight.intensity;
+    float NDF = DistributionGGX(N, H, material.roughness);
+    float G = GeometrySmith(N, V, L, material.roughness);
+    vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
+
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - material.metallic;
+
+    vec3 numerator = NDF * G * F;
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + EPSILON;
+    vec3 specular = numerator / denominator;
+
+    float NdotL = max(dot(N, L), 0.0);
+    vec3 Lo = (kD * material.albedo / PI + specular) * radiance * NdotL;
+
+    vec3 colorFinal = ambient + Lo;
     
-    // Calculate direct lighting from sun
-    vec3 Lo = CalculatePBRLight(N, V, F0, material, sunLight);
-    
-    // Combine ambient and direct lighting
-    vec3 color = ambient + Lo;
-    
-    // HDR tonemapping (Reinhard)
-    color = color / (color + vec3(1.0));
-    
-    // Gamma correction
-    color = pow(color, vec3(1.0 / 2.2));
-    
-    return color;
+    return colorFinal;
 }
 
-// Face normals for lighting calculation
-const vec3 faceNormals[6] = vec3[](
-    vec3( 0.0,  1.0,  0.0 ),  // Top
-    vec3( 0.0, -1.0,  0.0 ), // Bottom
-    vec3(-1.0,  0.0,  0.0 ), // Left
-    vec3( 1.0,  0.0,  0.0 ),  // Right
-    vec3( 0.0,  0.0,  1.0 ),  // Front
-    vec3( 0.0,  0.0, -1.0 )  // Back
-);
-
 void main() {
-    // Get face normal based on face index
-    vec3 normal = faceNormals[v_FaceIndex];
-    // Setup PBR material
+    // Normal maps
+    vec3 normalMapSample = texture(u_NormalTexture, v_TexCoords).rgb;
+    vec3 tangentNormal = normalMapSample * 2.0 - 1.0;
+    vec3 normal = normalize(v_TBN * tangentNormal);
+
+    // Sample texture based on face index
+    vec4 texColor = texture(u_Texture[v_FaceIndex], v_TexCoords);
+    
+    // Apply transparency
+    float transparency = float(v_TransparencyLevel) / 255.0;
+    texColor.a = mix(texColor.a, 1.0 - transparency, transparency);
+    
+    // Setup PBR material with texture albedo
     PBRMaterial material;
-    material.albedo = v_Albedo;
+    material.albedo = texColor.rgb;
     material.metallic = v_Metallic;
     material.roughness = v_Roughness;
     
@@ -187,12 +201,12 @@ void main() {
     
     // Setup sun light
     Light sunLight;
-    sunLight.position = lighting.u_SunDirection * 1000.0; // Directional light at distance
+    sunLight.position = lighting.u_SunDirection; // Directional light direction
     sunLight.color = lighting.u_SunColor;
     sunLight.intensity = 1.0;
     
     // Calculate ambient color
-    vec3 ambientColor = lighting.u_AmbientStrength * lighting.u_SunColor;
+    vec3 ambientColor = clamp(lighting.u_AmbientStrength, 0.0, 1.0) * lighting.u_SunColor;
     
     // Calculate PBR lighting
     vec3 pbrColor = CalculatePBR(v_WorldPos, normal, viewDir, material, sunLight, ambientColor);
@@ -204,6 +218,6 @@ void main() {
     // Combine PBR lighting with emission
     vec3 finalColor = pbrColor + emitColor;
     
-    // Output lighting result (will be multiplied with texture in unit.frag)
-    outColor = vec4(finalColor, 1.0);
+    // Output final color with texture alpha
+    outColor = vec4(finalColor, texColor.a);
 }
