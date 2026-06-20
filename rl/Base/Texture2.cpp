@@ -426,7 +426,7 @@ void Texture2::GenerateMipmaps()
                                     if (pw > 1) pw /= 2;
                                     if (ph > 1) ph /= 2;
                                 }
-                                prevLevelOffset += (srcY * prevWidth + srcX) * channels + c;
+                                prevLevelOffset += srcOffset + c;
                                 
                                 sum += data[prevLevelOffset];
                                 count++;

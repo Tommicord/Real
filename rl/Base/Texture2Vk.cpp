@@ -165,15 +165,199 @@ void Texture2::UploadTextureData(Game::VulkanContext& context)
     }
 
     vkBindBufferMemory(context.device, binding.vkStagingBuffer, binding.vkStagingBufferMemory, 0);
-
+    
     // Copy texture data to staging buffer
-    void* data;
-    vkMapMemory(context.device, binding.vkStagingBufferMemory, 0, dataSize, 0, &data);
-    memcpy(data, data, dataSize);
+    void* mappedData;
+    vkMapMemory(context.device, binding.vkStagingBufferMemory, 0, dataSize, 0, &mappedData);
+    memcpy(mappedData, data, dataSize);
     vkUnmapMemory(context.device, binding.vkStagingBufferMemory);
 
-    // TODO: Transition image layout and copy buffer to image
-    // This requires command buffer recording which needs a command pool
+    // Create command buffer for image layout transitions and copy
+    VkCommandBufferAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+    allocInfo.commandPool = context.commandPool;
+    allocInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+    allocInfo.commandBufferCount = 1;
+
+    VkCommandBuffer commandBuffer;
+    vkAllocateCommandBuffers(context.device, &allocInfo, &commandBuffer);
+
+    VkCommandBufferBeginInfo beginInfo{};
+    beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+    vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+    // Transition image layout from UNDEFINED to TRANSFER_DST_OPTIMAL
+    VkImageMemoryBarrier barrier{};
+    barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+    barrier.oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    barrier.image = binding.vkImage;
+    barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    barrier.subresourceRange.baseMipLevel = 0;
+    barrier.subresourceRange.levelCount = static_cast<uint32_t>(mipmapLevels);
+    barrier.subresourceRange.baseArrayLayer = 0;
+    barrier.subresourceRange.layerCount = 1;
+    barrier.srcAccessMask = 0;
+    barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+    vkCmdPipelineBarrier(commandBuffer,
+        VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+        VK_PIPELINE_STAGE_TRANSFER_BIT,
+        0,
+        0, nullptr,
+        0, nullptr,
+        1, &barrier);
+
+    // Copy buffer to image
+    VkBufferImageCopy region{};
+    region.bufferOffset = 0;
+    region.bufferRowLength = 0;
+    region.bufferImageHeight = 0;
+    region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    region.imageSubresource.mipLevel = 0;
+    region.imageSubresource.baseArrayLayer = 0;
+    region.imageSubresource.layerCount = 1;
+    region.imageOffset = {0, 0, 0};
+    region.imageExtent = {
+        static_cast<uint32_t>(width),
+        static_cast<uint32_t>(height),
+        1
+    };
+
+    vkCmdCopyBufferToImage(commandBuffer,
+        binding.vkStagingBuffer,
+        binding.vkImage,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        1,
+        &region);
+
+    // Generate mipmaps if enabled
+    if (mipmapLevels > 1) {
+        VkImageMemoryBarrier mipBarrier{};
+        mipBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        mipBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        mipBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        mipBarrier.image = binding.vkImage;
+        mipBarrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        mipBarrier.subresourceRange.baseArrayLayer = 0;
+        mipBarrier.subresourceRange.layerCount = 1;
+        mipBarrier.subresourceRange.levelCount = 1;
+
+        int32_t mipWidth = width;
+        int32_t mipHeight = height;
+
+        for (uint32_t i = 1; i < static_cast<uint32_t>(mipmapLevels); i++) {
+            // Transition previous mip level to TRANSFER_SRC
+            mipBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            mipBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            mipBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            mipBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            mipBarrier.subresourceRange.baseMipLevel = i - 1;
+
+            vkCmdPipelineBarrier(commandBuffer,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &mipBarrier);
+
+            // Blit to generate next mip level
+            VkImageBlit blit{};
+            blit.srcOffsets[0] = {0, 0, 0};
+            blit.srcOffsets[1] = {mipWidth, mipHeight, 1};
+            blit.srcSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blit.srcSubresource.mipLevel = i - 1;
+            blit.srcSubresource.baseArrayLayer = 0;
+            blit.srcSubresource.layerCount = 1;
+            blit.dstOffsets[0] = {0, 0, 0};
+            blit.dstOffsets[1] = {mipWidth > 1 ? mipWidth / 2 : 1, mipHeight > 1 ? mipHeight / 2 : 1, 1};
+            blit.dstSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+            blit.dstSubresource.mipLevel = i;
+            blit.dstSubresource.baseArrayLayer = 0;
+            blit.dstSubresource.layerCount = 1;
+
+            vkCmdBlitImage(commandBuffer,
+                binding.vkImage,
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                binding.vkImage,
+                VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                1,
+                &blit,
+                VK_FILTER_LINEAR);
+
+            // Transition current mip level to TRANSFER_SRC for next iteration
+            mipBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+            mipBarrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            mipBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            mipBarrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+            mipBarrier.subresourceRange.baseMipLevel = i;
+
+            vkCmdPipelineBarrier(commandBuffer,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &mipBarrier);
+
+            if (mipWidth > 1) mipWidth /= 2;
+            if (mipHeight > 1) mipHeight /= 2;
+        }
+
+        // Transition last mip level to SHADER_READ_ONLY
+        mipBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        mipBarrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        mipBarrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        mipBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+        mipBarrier.subresourceRange.baseMipLevel = static_cast<uint32_t>(mipmapLevels) - 1;
+
+        vkCmdPipelineBarrier(commandBuffer,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &mipBarrier);
+    } else {
+        // Transition image layout from TRANSFER_DST_OPTIMAL to SHADER_READ_ONLY_OPTIMAL
+        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        vkCmdPipelineBarrier(commandBuffer,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier);
+    }
+
+    vkEndCommandBuffer(commandBuffer);
+
+    // Submit command buffer and wait for completion
+    VkSubmitInfo submitInfo{};
+    submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+
+    vkQueueSubmit(context.graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE);
+    vkQueueWaitIdle(context.graphicsQueue);
+
+    // Free command buffer
+    vkFreeCommandBuffers(context.device, context.commandPool, 1, &commandBuffer);
+
+    // Cleanup staging buffer
+    vkDestroyBuffer(context.device, binding.vkStagingBuffer, nullptr);
+    vkFreeMemory(context.device, binding.vkStagingBufferMemory, nullptr);
+    binding.vkStagingBuffer = VK_NULL_HANDLE;
+    binding.vkStagingBufferMemory = VK_NULL_HANDLE;
 }
 
 void Texture2::CreateVulkanSampler(Game::VulkanContext& context)

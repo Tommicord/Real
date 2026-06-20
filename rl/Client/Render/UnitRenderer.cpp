@@ -123,10 +123,17 @@ struct DrawParams {
     uint32_t firstInstance;
 };
 
+void UnitTextureConfigures(UnitStateResource& resource)
+{
+    resource.
+}
+
 void UnitStateDrawable::OnCreate(UnitStateResource& resource,
                                  UnitStateDrawableVulkan& vk,
                                  Game::VulkanContext& context)
 {
+    // Generate mipmaps and configure the texture
+    UnitTextureConfigures(resource);
     // Create input vertex buffer (SSBO for compute shader)
     VkDeviceSize inputBufferSize = sizeof(unitVertices[0]) * unitVertices.size();
     
