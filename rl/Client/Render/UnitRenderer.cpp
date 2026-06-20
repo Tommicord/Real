@@ -16,7 +16,7 @@ namespace Rl::Providers {
 
 // Vertex structure for Unit rendering (must match compute shader VertexInput with std430 layout)
 struct UnitVertex {
-    glm::vec4 position;     // vec4 in shader (x, y, z, w) - local position
+    glm::vec4 position;     // vec4 in shader (x, y, z, w) local position
     glm::vec4 polRight;      // Polygon fence right offsets (16-byte aligned)
     glm::vec4 polLeft;       // Polygon fence left offsets (16-byte aligned)
     glm::vec2 texCoords;
@@ -94,6 +94,12 @@ struct LightingUniforms {
     alignas(16) glm::vec3 sunColor;
     alignas(4)  float ambientStrength;
     alignas(16) glm::vec3 cameraPosition;
+};
+
+// Triplanar mapping settings
+struct TriplanarSettings {
+    alignas(4) float scale;
+    alignas(4) float sharpness;
 };
 
 // Frustum planes for culling
@@ -290,6 +296,41 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     
     vkBindBufferMemory(context.device, vk.frustumBuffer, vk.frustumBufferMemory, 0);
     
+    // Create triplanar settings uniform buffer
+    VkBufferCreateInfo triplanarBufferInfo{};
+    triplanarBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    triplanarBufferInfo.size = sizeof(TriplanarSettings);
+    triplanarBufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    triplanarBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    
+    if (vkCreateBuffer(context.device, &triplanarBufferInfo, nullptr, &vk.triplanarSettingsBuffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create triplanar settings buffer");
+    }
+    
+    VkMemoryRequirements triplanarMemRequirements;
+    vkGetBufferMemoryRequirements(context.device, vk.triplanarSettingsBuffer, &triplanarMemRequirements);
+    
+    VkMemoryAllocateInfo triplanarAllocInfo{};
+    triplanarAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    triplanarAllocInfo.allocationSize = triplanarMemRequirements.size;
+    triplanarAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(context.physicalDevice, triplanarMemRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    
+    if (vkAllocateMemory(context.device, &triplanarAllocInfo, nullptr, &vk.triplanarSettingsBufferMemory) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate triplanar settings buffer memory");
+    }
+    
+    vkBindBufferMemory(context.device, vk.triplanarSettingsBuffer, vk.triplanarSettingsBufferMemory, 0);
+    
+    // Initialize triplanar settings with default values
+    TriplanarSettings initialTriplanar{};
+    initialTriplanar.scale = 1.0f;
+    initialTriplanar.sharpness = 2.0f;
+    
+    void* triplanarData;
+    vkMapMemory(context.device, vk.triplanarSettingsBufferMemory, 0, sizeof(TriplanarSettings), 0, &triplanarData);
+    memcpy(triplanarData, &initialTriplanar, sizeof(TriplanarSettings));
+    vkUnmapMemory(context.device, vk.triplanarSettingsBufferMemory);
+    
     // Load compute shader
     auto computeShaderCode = ShaderObject::Shader("unit.face.comp.spv");
     auto computeShaderModule = ShaderObject::CreateShaderModule(context.device, computeShaderCode);
@@ -344,7 +385,7 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     }
     
     // Create descriptor set layout for graphics pipeline (textures)
-    VkDescriptorSetLayoutBinding graphicsBindings[6]{};
+    VkDescriptorSetLayoutBinding graphicsBindings[7]{};
     // Texture array (binding 2)
     graphicsBindings[0].binding = 2;
     graphicsBindings[0].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -375,10 +416,15 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     graphicsBindings[5].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     graphicsBindings[5].descriptorCount = 1;
     graphicsBindings[5].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+    // Triplanar settings uniform buffer (binding 12)
+    graphicsBindings[6].binding = 12;
+    graphicsBindings[6].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    graphicsBindings[6].descriptorCount = 1;
+    graphicsBindings[6].stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
     
     VkDescriptorSetLayoutCreateInfo graphicsLayoutInfo{};
     graphicsLayoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-    graphicsLayoutInfo.bindingCount = 6;
+    graphicsLayoutInfo.bindingCount = 7;
     graphicsLayoutInfo.pBindings = graphicsBindings;
     
     if (vkCreateDescriptorSetLayout(context.device, &graphicsLayoutInfo, nullptr, &vk.descriptorSetLayout) != VK_SUCCESS) {
@@ -392,7 +438,7 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     poolSizes[1].descriptorCount = 9; // 6 textures + 1 lighting texture + 1 AO texture + 1 normal texture
     poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-    poolSizes[2].descriptorCount = 5; // 1 frustum + 1 lighting block + 1 settings + 2 extra
+    poolSizes[2].descriptorCount = 6; // 1 frustum + 1 lighting block + 1 settings + 1 triplanar + 2 extra
     
     VkDescriptorPoolCreateInfo poolInfo{};
     poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
@@ -1062,11 +1108,27 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     aoTextureWrite.descriptorCount = 1;
     aoTextureWrite.pImageInfo = &aoImageInfo2;
     
-    std::array<VkWriteDescriptorSet, 4> descriptorWrites = {
+    // Triplanar settings buffer descriptor (binding 12)
+    VkDescriptorBufferInfo triplanarBufferInfo{};
+    triplanarBufferInfo.buffer = vk.triplanarSettingsBuffer;
+    triplanarBufferInfo.offset = 0;
+    triplanarBufferInfo.range = sizeof(TriplanarSettings);
+    
+    VkWriteDescriptorSet triplanarSettingsWrite{};
+    triplanarSettingsWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+    triplanarSettingsWrite.dstSet = vk.descriptorSet;
+    triplanarSettingsWrite.dstBinding = 12;
+    triplanarSettingsWrite.dstArrayElement = 0;
+    triplanarSettingsWrite.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    triplanarSettingsWrite.descriptorCount = 1;
+    triplanarSettingsWrite.pBufferInfo = &triplanarBufferInfo;
+    
+    std::array<VkWriteDescriptorSet, 5> descriptorWrites = {
         lightingBufferWrite,
         lightingTextureWrite,
         settingsWrite,
-        aoTextureWrite
+        aoTextureWrite,
+        triplanarSettingsWrite
     };
     
     vkUpdateDescriptorSets(context.device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
@@ -1680,6 +1742,8 @@ void UnitStateDrawable::OnDestroy(UnitStateResource& resource,
     vkFreeMemory(context.device, vk.indirectDrawBufferMemory, nullptr);
     vkDestroyBuffer(context.device, vk.frustumBuffer, nullptr);
     vkFreeMemory(context.device, vk.frustumBufferMemory, nullptr);
+    vkDestroyBuffer(context.device, vk.triplanarSettingsBuffer, nullptr);
+    vkFreeMemory(context.device, vk.triplanarSettingsBufferMemory, nullptr);
     vkDestroySampler(context.device, vk.placeholderLightingSampler, nullptr);
     vkDestroyImageView(context.device, vk.placeholderLightingTextureView, nullptr);
     vkDestroyImage(context.device, vk.placeholderLightingTexture, nullptr);

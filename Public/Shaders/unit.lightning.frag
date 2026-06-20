@@ -22,6 +22,12 @@ layout(set = 0, binding = 4) uniform LightingBlock {
     vec3 u_CameraPosition;
 } lighting;
 
+// Triplanar mapping settings
+layout(set = 0, binding = 12) uniform TriplanarSettings {
+    float u_TriplanarScale;
+    float u_TriplanarSharpness;
+} triplanar;
+
 // Ambient occlusion texture
 layout (binding = 10) uniform sampler2D u_AOTexture;
 layout (binding = 11) uniform sampler2D u_NormalTexture;
@@ -136,6 +142,28 @@ vec3 CalculateAmbient(vec3 N, vec3 V, vec3 F0, PBRMaterial material, vec3 ambien
     return ambient;
 }
 
+// Triplanar mapping function
+vec4 SampleTriplanar(sampler2D tex, vec3 worldPos, vec3 normal) {
+    // Calculate blend weights based on normal
+    vec3 blendWeights = abs(normal);
+    blendWeights = pow(blendWeights, vec3(triplanar.u_TriplanarSharpness));
+    blendWeights /= dot(blendWeights, vec3(1.0));
+    
+    // Sample from three planes
+    vec2 uvX = worldPos.zy * triplanar.u_TriplanarScale;
+    vec2 uvY = worldPos.xz * triplanar.u_TriplanarScale;
+    vec2 uvZ = worldPos.xy * triplanar.u_TriplanarScale;
+    
+    vec4 colX = texture(tex, uvX);
+    vec4 colY = texture(tex, uvY);
+    vec4 colZ = texture(tex, uvZ);
+    
+    // Blend based on normal
+    vec4 result = colX * blendWeights.x + colY * blendWeights.y + colZ * blendWeights.z;
+    
+    return result;
+}
+
 // Main PBR calculation
 vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material, 
                    Light sunLight, vec3 ambientColor) {
@@ -174,13 +202,13 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
 }
 
 void main() {
-    // Normal maps
-    vec3 normalMapSample = texture(u_NormalTexture, v_TexCoords).rgb;
-    vec3 tangentNormal = normalMapSample * 2.0 - 1.0;
+    // Normal maps: use triplanar mapping for normal texture as well
+    vec4 normalMapTriplanar = SampleTriplanar(u_NormalTexture, v_WorldPos, normalize(v_TBN * vec3(0.0, 0.0, 1.0)));
+    vec3 tangentNormal = normalMapTriplanar.rgb * 2.0 - 1.0;
     vec3 normal = normalize(v_TBN * tangentNormal);
 
-    // Sample texture based on face index
-    vec4 texColor = texture(u_Texture[v_FaceIndex], v_TexCoords);
+    // Sample texture using triplanar mapping based on face index
+    vec4 texColor = SampleTriplanar(u_Texture[v_FaceIndex], v_WorldPos, normal);
     
     // Apply transparency
     float transparency = float(v_TransparencyLevel) / 255.0;
@@ -192,8 +220,9 @@ void main() {
     material.metallic = v_Metallic;
     material.roughness = v_Roughness;
     
-    // Sample ambient occlusion
-    float ao = texture(u_AOTexture, v_TexCoords).r;
+    // Sample ambient occlusion using triplanar mapping
+    vec4 aoTriplanar = SampleTriplanar(u_AOTexture, v_WorldPos, normal);
+    float ao = aoTriplanar.r;
     material.ao = ao;
     
     // Calculate view direction

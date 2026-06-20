@@ -79,6 +79,10 @@ struct UnitStateDrawableVulkan : StateDrawableVulkan {
     VkDeviceMemory normalTexturesMemory[6] = {VK_NULL_HANDLE};
     VkImageView normalTexturesView[6] = {VK_NULL_HANDLE};
     
+    // Triplanar mapping settings buffer (binding 12)
+    VkBuffer triplanarSettingsBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory triplanarSettingsBufferMemory = VK_NULL_HANDLE;
+    
     UnitStateDrawableVulkan() = default;
 };
 

@@ -67,7 +67,7 @@ public:
         // This is to prevent accidental bugs
         // If the textures is not initialized
         // DO NOT CHANGE THIS If not needed
-        static Texture2 texture("dirt.png");
+        static Texture2 texture("unknown.png");
 
         using pair = UnitRegistryKVPair<UnitResourceName, BaseUnit*>;
         int id = 1;
@@ -126,6 +126,9 @@ public:
     /* Sets the left Polygon Fence, the polygons for the rendering of the Unit */
     void SetPolFenceLeft(PolFence& fence);
 
+    /* Returns the BaseUnit registry id */
+    int GetUnitId();
+
     /* Enables the collision of this unit */
     void EnableCollision();
 
@@ -140,7 +143,7 @@ public:
     [[nodiscard]]
     bool IsVisible() const;
 
-    /* Updates the Base Unit, like a tick */
+    /* Updates the Base Unit properties */
     void Update() override;
 protected:
     /* Texture of the unit, back, front, left, right, bottom, top */

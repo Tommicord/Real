@@ -208,11 +208,17 @@ endif()
 
 include(GoogleTest)
 
-add_custom_command(
-  TARGET rlgame_tests POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy_directory
-  "${CMAKE_CURRENT_SOURCE_DIR}/Public/Resources/Textures/"
-  "$<TARGET_FILE_DIR:rlgame_tests>/"
-  COMMENT "Copying test assets to the build directory"
-)
+function(target_add_resources TARGET)
+  add_custom_command(
+    TARGET ${TARGET} POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    "${CMAKE_CURRENT_SOURCE_DIR}/Public/Resources/Textures/"
+    "$<TARGET_FILE_DIR:rlgame_tests>/"
+    COMMENT "Copying test assets to the build directory"
+  )
+endfunction()
+
+target_add_resources(rlgame)
+target_add_resources(rlgame_tests)
+
 gtest_discover_tests(rlgame_tests)
