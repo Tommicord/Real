@@ -18,6 +18,7 @@ struct VertexInput {
     float tanX, tanY, tanZ;
     float bitanX, bitanY, bitanZ;
     float normX, normY, normZ; // Geometric normal for smooth rim lighting
+    float padding; // Pad to 16-byte alignment for std430
 };
 
 // Output vertex structure for rendering

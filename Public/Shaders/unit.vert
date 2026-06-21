@@ -26,7 +26,7 @@ layout (location = 5) flat out vec3 v_Albedo;
 layout (location = 6) flat out float v_Metallic;
 layout (location = 7) flat out float v_Roughness;
 layout (location = 8) out mat3 v_TBN;
-layout (location = 9) smooth out vec3 v_GeometricNormal;
+layout (location = 11) smooth out vec3 v_GeometricNormal;
 
 void main() {
     vec3 worldPos = a_WorldPosAndUV.xyz;
@@ -65,5 +65,5 @@ void main() {
     v_Metallic = metallic;
     v_Roughness = roughness;
     v_TBN = mat3(T, B, N);
-    v_GeometricNormal = normalize(geometricNormal);
+    v_GeometricNormal = geometricNormal;
 }

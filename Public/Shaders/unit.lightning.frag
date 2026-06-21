@@ -10,7 +10,7 @@ layout (location = 5) flat in vec3 v_Albedo;
 layout (location = 6) flat in float v_Metallic;
 layout (location = 7) flat in float v_Roughness;
 layout (location = 8) flat in mat3 v_TBN;
-layout (location = 9) smooth in vec3 v_GeometricNormal;
+layout (location = 11) smooth in vec3 v_GeometricNormal;
 
 // Output color
 layout (location = 0) out vec4 outColor;

@@ -29,61 +29,77 @@ struct UnitVertex {
     float tanX, tanY, tanZ;
     float bitanX, bitanY, bitanZ;
     float normX, normY, normZ; // Geometric normal for smooth rim lighting
+    float padding; // Pad to 16-byte alignment for std430
 };
 
-// Unit cube vertices (6 faces, 2 triangles each, 3 vertices per triangle)
+// Unit cube vertices (6 faces, 4 vertices per face for indexed drawing)
 // Varied material properties per face for realistic PBR lighting testing
-// Smooth normals at edges for better rim lighting interpolation
+// Face normals for rim lighting - smooth interpolation happens at edges
+// Vertices are ordered counter-clockwise for each face
 static const std::vector<UnitVertex> unitVertices = {
     // Top face (faceIndex = 0) - High metallic, low roughness (shiny metal)
-    {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, -0.58f, 0.58f, -0.58f},
-    {glm::vec4(-0.5f, 0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, -0.58f, 0.58f, 0.58f},
-    {glm::vec4( 0.5f, 0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.58f, 0.58f, 0.58f},
-    {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, -0.58f, 0.58f, -0.58f},
-    {glm::vec4( 0.5f, 0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.58f, 0.58f, 0.58f},
-    {glm::vec4( 0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.58f, 0.58f, -0.58f},
+    // Vertices: 0=TLB, 1=TLF, 2=TRF, 3=TRB
+    {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f},
+    {glm::vec4(-0.5f, 0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f},
+    {glm::vec4( 0.5f, 0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f},
+    {glm::vec4( 0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.0f, 0.0f},
 
     // Bottom face (faceIndex = 1) - Low metallic, high roughness (matte)
-    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, -0.58f, -0.58f, -0.58f},
-    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.58f, -0.58f, -0.58f},
-    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.58f, -0.58f, 0.58f},
-    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, -0.58f, -0.58f, -0.58f},
-    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.58f, -0.58f, 0.58f},
-    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, -0.58f, -0.58f, 0.58f},
+    // Vertices: 4=BLB, 5=BLF, 6=BRF, 7=BRB
+    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f},
+    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f},
+    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f},
+    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, -1.0f, 0.0f, 0.0f},
 
     // Left face (faceIndex = 2) - Medium metallic, medium roughness (plastic-like)
-    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, -0.58f, -0.58f, -0.58f},
-    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, -0.58f, -0.58f, 0.58f},
-    {glm::vec4(-0.5f,  0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, -0.58f, 0.58f, 0.58f},
-
-    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, -0.58f, -0.58f, -0.58f},
-    {glm::vec4(-0.5f,  0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, -0.58f, 0.58f, 0.58f},
-    {glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, -0.58f, 0.58f, -0.58f},
+    // Vertices: 8=TLB, 9=BLB, 10=BLF, 11=TLF
+    {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f},
+    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f},
+    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f},
+    {glm::vec4(-0.5f, 0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f, -1.0f, 0.0f, 0.0f, 0.0f},
 
     // Right face (faceIndex = 3) - High metallic, medium roughness (brushed metal)
-    {glm::vec4( 0.5f,  0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.58f, 0.58f, 0.58f},
-    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.58f, -0.58f, -0.58f},
-    {glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.58f, 0.58f, -0.58f},
-    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.58f, -0.58f, -0.58f},
-    {glm::vec4( 0.5f,  0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.58f, 0.58f, 0.58f},
-    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 0.58f, -0.58f, 0.58f},
+    // Vertices: 12=TRF, 13=BRF, 14=BRB, 15=TRB
+    {glm::vec4( 0.5f, 0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f},
+    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f},
+    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f},
+    {glm::vec4( 0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f},
 
     // Front face (faceIndex = 4) - Low metallic, low roughness (shiny plastic)
-    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, -0.58f, -0.58f, 0.58f},
-    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.58f, -0.58f, 0.58f},
-    {glm::vec4( 0.5f,  0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.58f, 0.58f, 0.58f},
-    {glm::vec4( 0.5f,  0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.58f, 0.58f, 0.58f},
-    {glm::vec4(-0.5f,  0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, -0.58f, 0.58f, 0.58f},
-    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, -0.58f, -0.58f, 0.58f},
+    // Vertices: 16=TLF, 17=BLF, 18=BRF, 19=TRF
+    {glm::vec4(-0.5f, 0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f},
+    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f},
+    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f},
+    {glm::vec4( 0.5f, 0.5f,  0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0.0f},
 
     // Back face (faceIndex = 5) - Medium metallic, high roughness (ceramic-like)
-    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, -0.58f, -0.58f, -0.58f},
-    {glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, -0.58f, 0.58f, -0.58f},
-    {glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.58f, 0.58f, -0.58f},
-    {glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.58f, 0.58f, -0.58f},
-    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.58f, -0.58f, -0.58f},
-    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, -0.58f, -0.58f, -0.58f},
+    // Vertices: 20=TRB, 21=BRB, 22=BLB, 23=TLB
+    {glm::vec4( 0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 0.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f},
+    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(0.0f, 1.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f},
+    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 1.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f},
+    {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0,0,0,0), glm::vec4(0,0,0,0), glm::vec2(1.0f, 0.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, -1.0f, 0.0f},
 };
+
+// Generate cube indices dynamically for indexed drawing
+// Each face uses 4 vertices to form 2 triangles in counter-clockwise order
+static std::vector<uint16_t> GenerateCubeIndices(uint32_t verticesPerFace, uint32_t faceCount) {
+    std::vector<uint16_t> indices;
+    indices.reserve(faceCount * 6); // 6 indices per face (2 triangles × 3 vertices)
+    
+    for (uint32_t face = 0; face < faceCount; ++face) {
+        uint16_t baseIndex = static_cast<uint16_t>(face * verticesPerFace);
+        // Triangle 1: baseIndex, baseIndex+1, baseIndex+2
+        indices.push_back(baseIndex);
+        indices.push_back(baseIndex + 1);
+        indices.push_back(baseIndex + 2);
+        // Triangle 2: baseIndex, baseIndex+2, baseIndex+3
+        indices.push_back(baseIndex);
+        indices.push_back(baseIndex + 2);
+        indices.push_back(baseIndex + 3);
+    }
+    
+    return indices;
+}
 
 // Uniform buffer structure
 struct UniformBufferObject {
@@ -119,13 +135,15 @@ struct VertexOutput {
     glm::vec4 material;
     glm::vec4 roughnessAndTan;
     glm::vec4 bitangent;
+    glm::vec4 geometricNormal;
 };
 
-// Indirect draw parameters
-struct DrawParams {
-    uint32_t vertexCount;
+// Indirect draw parameters for indexed drawing
+struct DrawIndexedParams {
+    uint32_t indexCount;
     uint32_t instanceCount;
-    uint32_t firstVertex;
+    uint32_t firstIndex;
+    int32_t vertexOffset;
     uint32_t firstInstance;
 };
 
@@ -141,199 +159,174 @@ uint32_t FindMemoryTypeIndex(VkPhysicalDevice physicalDevice, VkMemoryRequiremen
     throw std::runtime_error("Failed to find suitable memory type");
 }
 
+// Helper function to create a buffer with specified properties
+static void CreateBuffer(VkDevice device, VkPhysicalDevice physicalDevice, 
+                        VkDeviceSize size, VkBufferUsageFlags usage,
+                        VkMemoryPropertyFlags properties,
+                        VkBuffer& buffer, VkDeviceMemory& bufferMemory) {
+    VkBufferCreateInfo bufferInfo{};
+    bufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
+    bufferInfo.size = size;
+    bufferInfo.usage = usage;
+    bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    
+    if (vkCreateBuffer(device, &bufferInfo, nullptr, &buffer) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to create buffer");
+    }
+    
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+    
+    VkMemoryAllocateInfo allocInfo{};
+    allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+    allocInfo.allocationSize = memRequirements.size;
+    allocInfo.memoryTypeIndex = FindMemoryTypeIndex(physicalDevice, memRequirements, properties);
+    
+    if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS) {
+        throw std::runtime_error("Failed to allocate buffer memory");
+    }
+    
+    vkBindBufferMemory(device, buffer, bufferMemory, 0);
+}
+
+// Helper function to copy data to a buffer
+static void CopyDataToBuffer(VkDevice device, VkDeviceMemory bufferMemory, 
+                            VkDeviceSize offset, VkDeviceSize size, const void* data) {
+    void* mappedData;
+    vkMapMemory(device, bufferMemory, offset, size, 0, &mappedData);
+    memcpy(mappedData, data, size);
+    vkUnmapMemory(device, bufferMemory);
+}
+
+// Create index buffer for the cube
+static void CreateIndexBuffer(VkDevice device, VkPhysicalDevice physicalDevice,
+                             const std::vector<uint16_t>& indices,
+                             VkBuffer& indexBuffer, VkDeviceMemory& indexBufferMemory) {
+    VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
+    
+    CreateBuffer(device, physicalDevice, bufferSize,
+                VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                indexBuffer, indexBufferMemory);
+    
+    // Create staging buffer for copying
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+    CreateBuffer(device, physicalDevice, bufferSize,
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                stagingBuffer, stagingBufferMemory);
+    
+    CopyDataToBuffer(device, stagingBufferMemory, 0, bufferSize, indices.data());
+    
+    // Copy from staging to device local buffer
+    // Note: In a real implementation, you'd need to use a command buffer for this transfer
+    // For simplicity, we'll use host-visible memory for now
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
+    
+    // Re-create with host-visible memory for simplicity (should use staging in production)
+    vkDestroyBuffer(device, indexBuffer, nullptr);
+    vkFreeMemory(device, indexBufferMemory, nullptr);
+    
+    CreateBuffer(device, physicalDevice, bufferSize,
+                VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                indexBuffer, indexBufferMemory);
+    
+    CopyDataToBuffer(device, indexBufferMemory, 0, bufferSize, indices.data());
+}
+
+// Create vertex buffer for the cube
+static void CreateVertexBuffer(VkDevice device, VkPhysicalDevice physicalDevice,
+                              const std::vector<UnitVertex>& vertices,
+                              VkBuffer& vertexBuffer, VkDeviceMemory& vertexBufferMemory) {
+    VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
+    
+    CreateBuffer(device, physicalDevice, bufferSize,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                vertexBuffer, vertexBufferMemory);
+    
+    CopyDataToBuffer(device, vertexBufferMemory, 0, bufferSize, vertices.data());
+}
+
+// Create SSBO buffers for compute shader
+static void CreateSSBOBuffers(VkDevice device, VkPhysicalDevice physicalDevice,
+                             size_t vertexCount, UnitStateDrawableVulkan& vk) {
+    // Create output vertex buffer
+    VkDeviceSize outputBufferSize = sizeof(VertexOutput) * vertexCount;
+    CreateBuffer(device, physicalDevice, outputBufferSize,
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+                vk.outputVertexBuffer, vk.outputVertexBufferMemory);
+    
+    // Create visible count buffer
+    CreateBuffer(device, physicalDevice, sizeof(uint32_t),
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                vk.visibleCountBuffer, vk.visibleCountBufferMemory);
+    
+    // Initialize visible count to 0
+    uint32_t initialCount = 0;
+    CopyDataToBuffer(device, vk.visibleCountBufferMemory, 0, sizeof(uint32_t), &initialCount);
+    
+    // Create indirect draw buffer
+    CreateBuffer(device, physicalDevice, sizeof(DrawIndexedParams),
+                VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                vk.indirectDrawBuffer, vk.indirectDrawBufferMemory);
+    
+    // Initialize indirect draw buffer for indexed drawing
+    DrawIndexedParams initialDrawParams{};
+    initialDrawParams.indexCount = 36; // 6 faces × 6 indices per face
+    initialDrawParams.instanceCount = 1;
+    initialDrawParams.firstIndex = 0;
+    initialDrawParams.vertexOffset = 0;
+    initialDrawParams.firstInstance = 0;
+    CopyDataToBuffer(device, vk.indirectDrawBufferMemory, 0, sizeof(DrawIndexedParams), &initialDrawParams);
+    
+    // Create frustum buffer
+    CreateBuffer(device, physicalDevice, sizeof(FrustumPlanes),
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                vk.frustumBuffer, vk.frustumBufferMemory);
+}
+
+// Create uniform buffers
+static void CreateUniformBuffers(VkDevice device, VkPhysicalDevice physicalDevice,
+                                UnitStateDrawableVulkan& vk) {
+    // Create triplanar settings buffer
+    CreateBuffer(device, physicalDevice, sizeof(TriplanarSettings),
+                VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+                vk.triplanarSettingsBuffer, vk.triplanarSettingsBufferMemory);
+    
+    // Initialize triplanar settings
+    TriplanarSettings initialTriplanar{};
+    initialTriplanar.scale = 1.0f;
+    initialTriplanar.sharpness = 2.0f;
+    CopyDataToBuffer(device, vk.triplanarSettingsBufferMemory, 0, sizeof(TriplanarSettings), &initialTriplanar);
+}
+
 void UnitStateDrawable::OnCreate(UnitStateResource& resource,
                                  UnitStateDrawableVulkan& vk,
                                  Game::VulkanContext& context)
 {
     // Create input vertex buffer (SSBO for compute shader)
-    VkDeviceSize inputBufferSize = sizeof(unitVertices[0]) * unitVertices.size();
-    VkBufferCreateInfo inputBufferInfo{};
-    inputBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    inputBufferInfo.size = inputBufferSize;
-    inputBufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    inputBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    CreateVertexBuffer(context.device, context.physicalDevice, unitVertices, 
+                      vk.vertexBuffer, vk.vertexBufferMemory);
     
-    if (vkCreateBuffer(context.device, &inputBufferInfo, nullptr, &vk.vertexBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create input vertex buffer");
-    }
+    // Create index buffer for indexed drawing
+    std::vector<uint16_t> indices = GenerateCubeIndices(4, 6); // 4 vertices per face, 6 faces
+    CreateIndexBuffer(context.device, context.physicalDevice, indices,
+                     vk.indexBuffer, vk.indexBufferMemory);
     
-    VkMemoryRequirements inputMemRequirements;
-    vkGetBufferMemoryRequirements(context.device, vk.vertexBuffer, &inputMemRequirements);
+    // Create SSBO buffers for compute shader
+    CreateSSBOBuffers(context.device, context.physicalDevice, unitVertices.size(), vk);
     
-    VkMemoryAllocateInfo inputAllocInfo{};
-    inputAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    inputAllocInfo.allocationSize = inputMemRequirements.size;
-    inputAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(context.physicalDevice, inputMemRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    
-    if (vkAllocateMemory(context.device, &inputAllocInfo, nullptr, &vk.vertexBufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to allocate input vertex buffer memory");
-    }
-    
-    vkBindBufferMemory(context.device, vk.vertexBuffer, vk.vertexBufferMemory, 0);
-    
-    // Copy vertex data to input buffer
-    void* inputData;
-    vkMapMemory(context.device, vk.vertexBufferMemory, 0, inputBufferSize, 0, &inputData);
-    memcpy(inputData, unitVertices.data(), inputBufferSize);
-    vkUnmapMemory(context.device, vk.vertexBufferMemory);
-    
-    // Create output vertex buffer (SSBO for compute shader, vertex buffer for graphics)
-    VkDeviceSize outputBufferSize = sizeof(VertexOutput) * unitVertices.size(); // Same size as input
-    
-    VkBufferCreateInfo outputBufferInfo{};
-    outputBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    outputBufferInfo.size = outputBufferSize;
-    outputBufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-    outputBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    
-    if (vkCreateBuffer(context.device, &outputBufferInfo, nullptr, &vk.outputVertexBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create output vertex buffer");
-    }
-    
-    VkMemoryRequirements outputMemRequirements;
-    vkGetBufferMemoryRequirements(context.device, vk.outputVertexBuffer, &outputMemRequirements);
-    
-    VkMemoryAllocateInfo outputAllocInfo{};
-    outputAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    outputAllocInfo.allocationSize = outputMemRequirements.size;
-    outputAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(context.physicalDevice, outputMemRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    
-    if (vkAllocateMemory(context.device, &outputAllocInfo, nullptr, &vk.outputVertexBufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to allocate output vertex buffer memory");
-    }
-    
-    vkBindBufferMemory(context.device, vk.outputVertexBuffer, vk.outputVertexBufferMemory, 0);
-    
-    // Create visible count buffer (atomic counter)
-    VkBufferCreateInfo countBufferInfo{};
-    countBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    countBufferInfo.size = sizeof(uint32_t);
-    countBufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                            VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                            VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    countBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    
-    if (vkCreateBuffer(context.device, &countBufferInfo, nullptr, &vk.visibleCountBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create visible count buffer");
-    }
-    
-    VkMemoryRequirements countMemRequirements;
-    vkGetBufferMemoryRequirements(context.device, vk.visibleCountBuffer, &countMemRequirements);
-    
-    VkMemoryAllocateInfo countAllocInfo{};
-    countAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    countAllocInfo.allocationSize = countMemRequirements.size;
-    countAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(context.physicalDevice, countMemRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    
-    if (vkAllocateMemory(context.device, &countAllocInfo, nullptr, &vk.visibleCountBufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to allocate visible count buffer memory");
-    }
-    
-    vkBindBufferMemory(context.device, vk.visibleCountBuffer, vk.visibleCountBufferMemory, 0);
-    
-    // Initialize visible count to 0
-    uint32_t initialCount = 0;
-    void* countData;
-    vkMapMemory(context.device, vk.visibleCountBufferMemory, 0, sizeof(uint32_t), 0, &countData);
-    memcpy(countData, &initialCount, sizeof(uint32_t));
-    vkUnmapMemory(context.device, vk.visibleCountBufferMemory);
-    
-    // Create indirect draw buffer
-    VkBufferCreateInfo indirectBufferInfo{};
-    indirectBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    indirectBufferInfo.size = sizeof(DrawParams);
-    indirectBufferInfo.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    indirectBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    
-    if (vkCreateBuffer(context.device, &indirectBufferInfo, nullptr, &vk.indirectDrawBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create indirect draw buffer");
-    }
-    
-    VkMemoryRequirements indirectMemRequirements;
-    vkGetBufferMemoryRequirements(context.device, vk.indirectDrawBuffer, &indirectMemRequirements);
-    
-    VkMemoryAllocateInfo indirectAllocInfo{};
-    indirectAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    indirectAllocInfo.allocationSize = indirectMemRequirements.size;
-    indirectAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(context.physicalDevice, indirectMemRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    
-    if (vkAllocateMemory(context.device, &indirectAllocInfo, nullptr, &vk.indirectDrawBufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to allocate indirect draw buffer memory");
-    }
-    
-    vkBindBufferMemory(context.device, vk.indirectDrawBuffer, vk.indirectDrawBufferMemory, 0);
-    
-    // Initialize indirect draw buffer with default values (draw all vertices)
-    DrawParams initialDrawParams{};
-    initialDrawParams.vertexCount = static_cast<uint32_t>(unitVertices.size());
-    initialDrawParams.instanceCount = 1;
-    initialDrawParams.firstVertex = 0;
-    initialDrawParams.firstInstance = 0;
-    
-    void* indirectData;
-    vkMapMemory(context.device, vk.indirectDrawBufferMemory, 0, sizeof(DrawParams), 0, &indirectData);
-    memcpy(indirectData, &initialDrawParams, sizeof(DrawParams));
-    vkUnmapMemory(context.device, vk.indirectDrawBufferMemory);
-    
-    // Create frustum planes uniform buffer
-    VkBufferCreateInfo frustumBufferInfo{};
-    frustumBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    frustumBufferInfo.size = sizeof(FrustumPlanes);
-    frustumBufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    frustumBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    
-    if (vkCreateBuffer(context.device, &frustumBufferInfo, nullptr, &vk.frustumBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create frustum buffer");
-    }
-    
-    VkMemoryRequirements frustumMemRequirements;
-    vkGetBufferMemoryRequirements(context.device, vk.frustumBuffer, &frustumMemRequirements);
-    
-    VkMemoryAllocateInfo frustumAllocInfo{};
-    frustumAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    frustumAllocInfo.allocationSize = frustumMemRequirements.size;
-    frustumAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(context.physicalDevice, frustumMemRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    
-    if (vkAllocateMemory(context.device, &frustumAllocInfo, nullptr, &vk.frustumBufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to allocate frustum buffer memory");
-    }
-    
-    vkBindBufferMemory(context.device, vk.frustumBuffer, vk.frustumBufferMemory, 0);
-    
-    // Create triplanar settings uniform buffer
-    VkBufferCreateInfo triplanarBufferInfo{};
-    triplanarBufferInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-    triplanarBufferInfo.size = sizeof(TriplanarSettings);
-    triplanarBufferInfo.usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-    triplanarBufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    
-    if (vkCreateBuffer(context.device, &triplanarBufferInfo, nullptr, &vk.triplanarSettingsBuffer) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to create triplanar settings buffer");
-    }
-    
-    VkMemoryRequirements triplanarMemRequirements;
-    vkGetBufferMemoryRequirements(context.device, vk.triplanarSettingsBuffer, &triplanarMemRequirements);
-    
-    VkMemoryAllocateInfo triplanarAllocInfo{};
-    triplanarAllocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-    triplanarAllocInfo.allocationSize = triplanarMemRequirements.size;
-    triplanarAllocInfo.memoryTypeIndex = FindMemoryTypeIndex(context.physicalDevice, triplanarMemRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-    
-    if (vkAllocateMemory(context.device, &triplanarAllocInfo, nullptr, &vk.triplanarSettingsBufferMemory) != VK_SUCCESS) {
-        throw std::runtime_error("Failed to allocate triplanar settings buffer memory");
-    }
-    
-    vkBindBufferMemory(context.device, vk.triplanarSettingsBuffer, vk.triplanarSettingsBufferMemory, 0);
-    
-    // Initialize triplanar settings with default values
-    TriplanarSettings initialTriplanar{};
-    initialTriplanar.scale = 1.0f;
-    initialTriplanar.sharpness = 2.0f;
-    
-    void* triplanarData;
-    vkMapMemory(context.device, vk.triplanarSettingsBufferMemory, 0, sizeof(TriplanarSettings), 0, &triplanarData);
-    memcpy(triplanarData, &initialTriplanar, sizeof(TriplanarSettings));
-    vkUnmapMemory(context.device, vk.triplanarSettingsBufferMemory);
+    // Create uniform buffers
+    CreateUniformBuffers(context.device, context.physicalDevice, vk);
     
     // Load compute shader
     auto computeShaderCode = ShaderObject::Shader("unit.face.comp.spv");
@@ -484,7 +477,7 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     VkDescriptorBufferInfo indirectBufferInfo2{};
     indirectBufferInfo2.buffer = vk.indirectDrawBuffer;
     indirectBufferInfo2.offset = 0;
-    indirectBufferInfo2.range = sizeof(DrawParams);
+    indirectBufferInfo2.range = sizeof(DrawIndexedParams);
     
     VkDescriptorBufferInfo frustumBufferInfo2{};
     frustumBufferInfo2.buffer = vk.frustumBuffer;
@@ -1187,7 +1180,7 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     inputBindingDescription.stride = sizeof(VertexOutput);
     inputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
     
-    std::array<VkVertexInputAttributeDescription, 6> inputAttributeDescriptions{};
+    std::array<VkVertexInputAttributeDescription, 7> inputAttributeDescriptions{};
     // Position (vec4) - Clip space from compute shader
     inputAttributeDescriptions[0].binding = 0;
     inputAttributeDescriptions[0].location = 0;
@@ -1218,6 +1211,11 @@ void UnitStateDrawable::OnCreate(UnitStateResource& resource,
     inputAttributeDescriptions[5].location = 5;
     inputAttributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
     inputAttributeDescriptions[5].offset = offsetof(VertexOutput, bitangent);
+    // GeometricNormal (vec4) - normX, normY, normZ, padding
+    inputAttributeDescriptions[6].binding = 0;
+    inputAttributeDescriptions[6].location = 6;
+    inputAttributeDescriptions[6].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+    inputAttributeDescriptions[6].offset = offsetof(VertexOutput, geometricNormal);
     
     VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
     vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -1573,19 +1571,22 @@ void UnitStateDrawable::OnDraw(UnitStateResource& resource,
         VkDeviceSize offsets[] = {0};
         vkCmdBindVertexBuffers(context.commandBuffers[0], 0, 1, vertexBuffers, offsets);
         
+        // Bind index buffer for indexed drawing
+        vkCmdBindIndexBuffer(context.commandBuffers[0], vk.indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        
         // Bind graphics descriptor set for textures
         vkCmdBindDescriptorSets(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS,
                                vk.pipelineLayout, 0, 1, &vk.descriptorSet, 0, nullptr);
         // Push camera matrices for vertex shader
         vkCmdPushConstants(context.commandBuffers[0], vk.pipelineLayout,
                                VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(matrices), matrices);
-        // Draw using indirect draw parameters from compute shader
-        vkCmdDrawIndirect(
+        // Draw using indexed indirect draw parameters from compute shader
+        vkCmdDrawIndexedIndirect(
             context.commandBuffers[0],
             vk.indirectDrawBuffer,
             0,
             1,
-            sizeof(VkDrawIndirectCommand)
+            sizeof(VkDrawIndexedIndirectCommand)
         );
     }
 }
@@ -1774,6 +1775,8 @@ void UnitStateDrawable::OnDestroy(UnitStateResource& resource,
 {
     vkDestroyBuffer(context.device, vk.vertexBuffer, nullptr);
     vkFreeMemory(context.device, vk.vertexBufferMemory, nullptr);
+    vkDestroyBuffer(context.device, vk.indexBuffer, nullptr);
+    vkFreeMemory(context.device, vk.indexBufferMemory, nullptr);
     vkDestroyBuffer(context.device, vk.outputVertexBuffer, nullptr);
     vkFreeMemory(context.device, vk.outputVertexBufferMemory, nullptr);
     vkDestroyBuffer(context.device, vk.visibleCountBuffer, nullptr);

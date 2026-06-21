@@ -32,6 +32,8 @@ struct UnitStateResource : StateResource {
 struct UnitStateDrawableVulkan : StateDrawableVulkan {
     VkBuffer vertexBuffer = VK_NULL_HANDLE;
     VkDeviceMemory vertexBufferMemory = VK_NULL_HANDLE;
+    VkBuffer indexBuffer = VK_NULL_HANDLE;
+    VkDeviceMemory indexBufferMemory = VK_NULL_HANDLE;
     VkBuffer outputVertexBuffer = VK_NULL_HANDLE;
     VkDeviceMemory outputVertexBufferMemory = VK_NULL_HANDLE;
     VkBuffer visibleCountBuffer = VK_NULL_HANDLE;
