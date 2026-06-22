@@ -54,9 +54,15 @@ void main() {
 
     // Apply polygon curvature to local position
     // Positive polCurve curves outward, negative curves inward
-    // The curvature is applied along the normal direction
+    // The curvature is applied as a parabolic displacement based on position within the face
     if (polCurve != 0.0) {
-        float curvatureAmount = polCurve * 0.5; // Scale factor for curvature
+        // Use texture coordinates to determine position within the face (0-1 range)
+        vec2 faceUV = a_TexCoords;
+        // Calculate distance from center of face (0.5, 0.5)
+        vec2 centerOffset = faceUV - vec2(0.5);
+        float distanceFromCenter = length(centerOffset);
+        // Parabolic displacement: maximum at edges, zero at center
+        float curvatureAmount = polCurve * (distanceFromCenter * distanceFromCenter * 2.0);
         localPos += geometricNormal * curvatureAmount;
     }
 

@@ -27,6 +27,12 @@ layout(set = 0, binding = 4) uniform LightingBlock {
 layout (binding = 10) uniform sampler2D u_AOTexture;
 layout (binding = 11) uniform sampler2D u_NormalTexture;
 
+// Triplanar mapping settings
+layout (binding = 12) uniform TriplanarSettings {
+    float scale;
+    float sharpness;
+} triplanar;
+
 // The texture of the Unit
 // The unit has 6 faces
 layout (binding = 2) uniform sampler2D u_Texture[6];
@@ -137,6 +143,52 @@ vec3 CalculateAmbient(vec3 N, vec3 V, vec3 F0, PBRMaterial material, vec3 ambien
     return ambient;
 }
 
+// Triplanar mapping function
+vec4 TriplanarMapping(vec3 worldPos, vec3 normal, int faceIndex) {
+    // Calculate blend weights based on normal
+    vec3 blend = abs(normal);
+    blend = pow(blend, vec3(triplanar.sharpness));
+    blend /= dot(blend, vec3(1.0));
+
+    // Calculate UV coordinates for each plane
+    vec2 uvX = worldPos.zy * triplanar.scale;
+    vec2 uvY = worldPos.xz * triplanar.scale;
+    vec2 uvZ = worldPos.xy * triplanar.scale;
+
+    // Sample texture from each plane
+    vec4 colX = texture(u_Texture[faceIndex], uvX);
+    vec4 colY = texture(u_Texture[faceIndex], uvY);
+    vec4 colZ = texture(u_Texture[faceIndex], uvZ);
+
+    // Blend the three samples
+    vec4 result = colX * blend.x + colY * blend.y + colZ * blend.z;
+
+    return result;
+}
+
+// Triplanar mapping for single-channel textures (like AO)
+float TriplanarMappingSingle(vec3 worldPos, vec3 normal, sampler2D tex) {
+    // Calculate blend weights based on normal
+    vec3 blend = abs(normal);
+    blend = pow(blend, vec3(triplanar.sharpness));
+    blend /= dot(blend, vec3(1.0));
+
+    // Calculate UV coordinates for each plane
+    vec2 uvX = worldPos.zy * triplanar.scale;
+    vec2 uvY = worldPos.xz * triplanar.scale;
+    vec2 uvZ = worldPos.xy * triplanar.scale;
+
+    // Sample texture from each plane
+    float colX = texture(tex, uvX).r;
+    float colY = texture(tex, uvY).r;
+    float colZ = texture(tex, uvZ).r;
+
+    // Blend the three samples
+    float result = colX * blend.x + colY * blend.y + colZ * blend.z;
+
+    return result;
+}
+
 // Main PBR calculation
 vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material,
                   Light sunLight, vec3 ambientColor) {
@@ -198,8 +250,8 @@ void main() {
     vec3 tangentNormal = normalMapSample * 2.0 - 1.0;
     vec3 normal = normalize(v_TBN * tangentNormal);
 
-    // Sample texture based on face index
-    vec4 texColor = texture(u_Texture[v_FaceIndex], v_TexCoords);
+    // Use triplanar mapping for texture sampling
+    vec4 texColor = TriplanarMapping(v_WorldPos, normal, int(v_FaceIndex));
 
     vec3 albedoLinear = pow(texColor.rgb, vec3(2.2));
 

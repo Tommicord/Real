@@ -156,6 +156,7 @@ target_compile_shaders(
   Public/Shaders/shader.frag
   Public/Shaders/shader.vert
   Public/Shaders/unit.face.comp
+  Public/Shaders/unit.curve.comp
   Public/Shaders/unit.lightning.frag
   Public/Shaders/unit.vert
 )

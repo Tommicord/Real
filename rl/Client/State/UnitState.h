@@ -88,6 +88,20 @@ struct UnitStateDrawableVulkan : StateDrawableVulkan
   VkBuffer       triplanarSettingsBuffer       = VK_NULL_HANDLE;
   VkDeviceMemory triplanarSettingsBufferMemory = VK_NULL_HANDLE;
 
+  // Curvature compute shader buffers
+  VkBuffer       curvedVertexBuffer       = VK_NULL_HANDLE;
+  VkDeviceMemory curvedVertexBufferMemory = VK_NULL_HANDLE;
+  VkBuffer       curvedIndexBuffer       = VK_NULL_HANDLE;
+  VkDeviceMemory curvedIndexBufferMemory = VK_NULL_HANDLE;
+  VkBuffer       curveCountersBuffer       = VK_NULL_HANDLE;
+  VkDeviceMemory curveCountersBufferMemory = VK_NULL_HANDLE;
+  VkBuffer       curveIndirectDrawBuffer       = VK_NULL_HANDLE;
+  VkDeviceMemory curveIndirectDrawBufferMemory = VK_NULL_HANDLE;
+  VkPipeline     curveComputePipeline            = VK_NULL_HANDLE;
+  VkPipelineLayout curveComputePipelineLayout      = VK_NULL_HANDLE;
+  VkDescriptorSetLayout curveComputeDescriptorSetLayout = VK_NULL_HANDLE;
+  VkDescriptorSet  curveComputeDescriptorSet       = VK_NULL_HANDLE;
+
   UnitStateDrawableVulkan() = default;
 };
 

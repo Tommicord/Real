@@ -42,117 +42,40 @@ struct UnitVertex
 // VK_CULL_MODE_BACK_BIT
 static const std::vector<UnitVertex> unitVertices = {
     // Top face (faceIndex = 0) - Inclined surface (dirt)
-    // CLOCKWISE when viewed from above
-    // Vertices: 0=TLB (back-left, high), 1=TLF (front-left, low), 2=TRF (front-right, low), 3=TRB
-    // (back-right, high)
-    {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 0.0f), 0, 0, 0, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f),
-        glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f),
-        glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
-    {glm::vec4(-0.5f, 0.0f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 1.0f), 0, 0, 0, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f),
-        glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f),
-        glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
-    {glm::vec4(0.5f, 0.0f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 1.0f), 0, 0, 0, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f),
-        glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f),
-        glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
-    {glm::vec4(0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 0.0f), 0, 0, 0, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f),
-        glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f),
-        glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
+    {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 0, 0.85f, 0.0f, -0.15f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f), glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
+    {glm::vec4(-0.5f, 0.0f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 0, 0.85f, 0.0f, -0.15f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f), glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
+    {glm::vec4(0.5f, 0.0f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 0, 0.85f, 0.0f, -0.15f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f), glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
+    {glm::vec4(0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 0, 0.85f, 0.0f, -0.15f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f), glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
 
     // Bottom face (faceIndex = 1) - Flat base (dirt)
-    // CLOCKWISE when viewed from below
-    // Vertices: 4=BLB, 5=BRB, 6=BRF, 7=BLF
-    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 0.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
-        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f),
-        glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
-    {glm::vec4(0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 0.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
-        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f),
-        glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
-    {glm::vec4(0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 1.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
-        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f),
-        glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
-    {glm::vec4(-0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 1.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
-        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f),
-        glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
+    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
+    {glm::vec4(0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
+    {glm::vec4(0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
+    {glm::vec4(-0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
 
     // Left face (faceIndex = 2) - Vertical side (dirt)
-    // CLOCKWISE when viewed from left
-    // Vertices: 8=BLB, 9=BLF, 10=TLF, 11=TLB
-    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 1.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
-        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
-    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 0.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
-        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
-    {glm::vec4(-0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 0.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
-        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
-    {glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 1.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
-        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4(-0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
 
     // Right face (faceIndex = 3) - Vertical side (dirt)
-    // CLOCKWISE when viewed from right
-    // Vertices: 12=BRF, 13=BRB, 14=TRB, 15=TRF
-    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 0.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
-        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
-    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 1.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
-        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
-    {glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 1.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
-        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
-    {glm::vec4( 0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 0.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
-        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4( 0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
 
     // Front face (faceIndex = 4) - Vertical front (low height) (dirt)
-    // CLOCKWISE when viewed from front
-    // Vertices: 16=BLF, 17=BRF, 18=TRF, 19=TLF
-    {glm::vec4(-0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 1.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
-        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
-    {glm::vec4(0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 1.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
-        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
-    {glm::vec4(0.5f, 0.0f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 0.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
-        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
-    {glm::vec4(-0.5f, 0.0f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 0.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
-        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
+    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
+    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
+    {glm::vec4( 0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
+    {glm::vec4(-0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
 
     // Back face (faceIndex = 5) - Vertical back (high height) (dirt)
-    // CLOCKWISE when viewed from back
-    // Vertices: 20=BRB, 21=BLB, 22=TLB, 23=TRB
-    {glm::vec4(0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 1.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
-        glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
-    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 1.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
-        glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
-    {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 0.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
-        glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
-    {glm::vec4(0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 0.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
-        glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f),
-        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
+    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
+    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
+    {glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
+    {glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
 };
 
 // Generate cube indices dynamically for indexed drawing
@@ -510,6 +433,60 @@ static void CreateSSBOBuffers(VkDevice device,
       vk.frustumBufferMemory);
 }
 
+// Create curvature compute shader buffers
+static void CreateCurvatureComputeBuffers(VkDevice device,
+    VkPhysicalDevice                   physicalDevice,
+    size_t                             vertexCount,
+    UnitStateDrawableVulkan&           vk)
+{
+  // Calculate maximum curved vertex count (tessellation level 8 = 9x9 = 81 vertices per curved face)
+  const uint32_t tessellationLevel = 8;
+  const uint32_t verticesPerEdge = tessellationLevel + 1;
+  const uint32_t maxVerticesPerCurvedFace = verticesPerEdge * verticesPerEdge;
+  const uint32_t maxCurvedVertices = maxVerticesPerCurvedFace * 6; // 6 faces
+  const uint32_t maxCurvedIndices = tessellationLevel * tessellationLevel * 6 * 6; // 6 faces
+
+  // Create curved vertex buffer
+  VkDeviceSize curvedVertexBufferSize = sizeof(UnitVertex) * maxCurvedVertices;
+  CreateBuffer(device, physicalDevice, curvedVertexBufferSize,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+          VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk.curvedVertexBuffer, vk.curvedVertexBufferMemory);
+
+  // Create curved index buffer
+  VkDeviceSize curvedIndexBufferSize = sizeof(uint32_t) * maxCurvedIndices;
+  CreateBuffer(device, physicalDevice, curvedIndexBufferSize,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
+          VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk.curvedIndexBuffer, vk.curvedIndexBufferMemory);
+
+  // Create counters buffer (vertexCount and indexCount)
+  CreateBuffer(device, physicalDevice, 2 * sizeof(uint32_t),
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      vk.curveCountersBuffer, vk.curveCountersBufferMemory);
+
+  // Initialize counters to 0
+  uint32_t zeroCounters[2] = {0, 0};
+  CopyDataToBuffer(device, vk.curveCountersBufferMemory, 0, 2 * sizeof(uint32_t), zeroCounters);
+
+  // Create indirect draw buffer for curved geometry
+  CreateBuffer(device, physicalDevice, sizeof(DrawIndexedParams),
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
+          VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      vk.curveIndirectDrawBuffer, vk.curveIndirectDrawBufferMemory);
+
+  // Initialize indirect draw buffer
+  DrawIndexedParams initialDrawParams{};
+  initialDrawParams.indexCount = 0;
+  initialDrawParams.instanceCount = 1;
+  initialDrawParams.firstIndex = 0;
+  initialDrawParams.vertexOffset = 0;
+  initialDrawParams.firstInstance = 0;
+  CopyDataToBuffer(device, vk.curveIndirectDrawBufferMemory, 0, sizeof(DrawIndexedParams), &initialDrawParams);
+}
+
 // Create uniform buffers
 static void CreateUniformBuffers(
     VkDevice device, VkPhysicalDevice physicalDevice, UnitStateDrawableVulkan& vk)
@@ -542,6 +519,9 @@ void UnitStateDrawable::OnCreate(
 
   // Create SSBO buffers for compute shader
   CreateSSBOBuffers(context.device, context.physicalDevice, unitVertices.size(), vk);
+
+  // Create curvature compute shader buffers
+  CreateCurvatureComputeBuffers(context.device, context.physicalDevice, unitVertices.size(), vk);
 
   // Create uniform buffers
   CreateUniformBuffers(context.device, context.physicalDevice, vk);
@@ -659,7 +639,7 @@ void UnitStateDrawable::OnCreate(
   VkDescriptorPoolSize poolSizes[3]{};
   poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   poolSizes[0].descriptorCount =
-      5; // 5 SSBOs for compute (vertices + index + output + count + indirect)
+      11; // 5 SSBOs for face culling + 6 SSBOs for curvature compute
   poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
   poolSizes[1].descriptorCount =
       9; // 6 textures + 1 lighting texture + 1 AO texture + 1 normal texture
@@ -671,7 +651,8 @@ void UnitStateDrawable::OnCreate(
   poolInfo.sType         = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
   poolInfo.poolSizeCount = 3;
   poolInfo.pPoolSizes    = poolSizes;
-  poolInfo.maxSets       = 2; // 1 for compute, 1 for graphics
+  poolInfo.maxSets       = 3; // 1 for face culling + 1 for curvature + 1 for graphics
+  poolInfo.flags         = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
   if (vkCreateDescriptorPool(context.device, &poolInfo, nullptr, &vk.descriptorPool) != VK_SUCCESS)
   {
@@ -772,6 +753,187 @@ void UnitStateDrawable::OnCreate(
   computeWrites[5].pBufferInfo     = &frustumBufferInfo2;
 
   vkUpdateDescriptorSets(context.device, 6, computeWrites, 0, nullptr);
+
+  // Create curvature compute pipeline
+  auto curveComputeShaderCode   = ShaderObject::Shader("unit.curve.comp.spv");
+  auto curveComputeShaderModule = ShaderObject::CreateShaderModule(context.device, curveComputeShaderCode);
+
+  VkPipelineShaderStageCreateInfo curveComputeShaderStageInfo{};
+  curveComputeShaderStageInfo.sType  = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
+  curveComputeShaderStageInfo.stage  = VK_SHADER_STAGE_COMPUTE_BIT;
+  curveComputeShaderStageInfo.module = curveComputeShaderModule.module;
+  curveComputeShaderStageInfo.pName  = "main";
+
+  VkComputePipelineCreateInfo curveComputePipelineInfo{};
+  curveComputePipelineInfo.sType  = VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO;
+  curveComputePipelineInfo.stage  = curveComputeShaderStageInfo;
+  curveComputePipelineInfo.layout = vk.curveComputePipelineLayout; // Will be created below
+
+  // Create descriptor set layout for curvature compute shader
+  VkDescriptorSetLayoutBinding curveComputeBindings[6]{};
+  // Input vertices SSBO (binding 0)
+  curveComputeBindings[0].binding         = 0;
+  curveComputeBindings[0].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  curveComputeBindings[0].descriptorCount = 1;
+  curveComputeBindings[0].stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT;
+  // Index buffer (binding 1)
+  curveComputeBindings[1].binding         = 1;
+  curveComputeBindings[1].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  curveComputeBindings[1].descriptorCount = 1;
+  curveComputeBindings[1].stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT;
+  // Curved vertices SSBO (binding 2)
+  curveComputeBindings[2].binding         = 2;
+  curveComputeBindings[2].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  curveComputeBindings[2].descriptorCount = 1;
+  curveComputeBindings[2].stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT;
+  // Curved indices SSBO (binding 3)
+  curveComputeBindings[3].binding         = 3;
+  curveComputeBindings[3].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  curveComputeBindings[3].descriptorCount = 1;
+  curveComputeBindings[3].stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT;
+  // Counters SSBO (binding 4)
+  curveComputeBindings[4].binding         = 4;
+  curveComputeBindings[4].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  curveComputeBindings[4].descriptorCount = 1;
+  curveComputeBindings[4].stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT;
+  // Indirect draw SSBO (binding 5)
+  curveComputeBindings[5].binding         = 5;
+  curveComputeBindings[5].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  curveComputeBindings[5].descriptorCount = 1;
+  curveComputeBindings[5].stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT;
+
+  VkDescriptorSetLayoutCreateInfo curveComputeLayoutInfo{};
+  curveComputeLayoutInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+  curveComputeLayoutInfo.bindingCount = 6;
+  curveComputeLayoutInfo.pBindings    = curveComputeBindings;
+
+  if (vkCreateDescriptorSetLayout(context.device, &curveComputeLayoutInfo, nullptr,
+          &vk.curveComputeDescriptorSetLayout) != VK_SUCCESS)
+  {
+    throw std::runtime_error("Failed to create curvature compute descriptor set layout");
+  }
+
+  // Create push constant range for curvature compute shader
+  VkPushConstantRange curvePushConstantRange{};
+  curvePushConstantRange.stageFlags = VK_SHADER_STAGE_COMPUTE_BIT;
+  curvePushConstantRange.offset     = 0;
+  curvePushConstantRange.size       = 8; // 2 uint32_t (tessellationLevel + faceCount)
+
+  // Create pipeline layout for curvature compute shader
+  VkPipelineLayoutCreateInfo curvePipelineLayoutInfo{};
+  curvePipelineLayoutInfo.sType                  = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+  curvePipelineLayoutInfo.setLayoutCount         = 1;
+  curvePipelineLayoutInfo.pSetLayouts            = &vk.curveComputeDescriptorSetLayout;
+  curvePipelineLayoutInfo.pushConstantRangeCount = 1;
+  curvePipelineLayoutInfo.pPushConstantRanges    = &curvePushConstantRange;
+
+  if (vkCreatePipelineLayout(context.device, &curvePipelineLayoutInfo, nullptr,
+          &vk.curveComputePipelineLayout) != VK_SUCCESS)
+  {
+    throw std::runtime_error("Failed to create curvature compute pipeline layout");
+  }
+
+  curveComputePipelineInfo.layout = vk.curveComputePipelineLayout;
+
+  if (vkCreateComputePipelines(context.device, VK_NULL_HANDLE, 1, &curveComputePipelineInfo, nullptr,
+          &vk.curveComputePipeline) != VK_SUCCESS)
+  {
+    throw std::runtime_error("Failed to create curvature compute pipeline");
+  }
+
+  // Allocate curvature compute descriptor set
+  VkDescriptorSetAllocateInfo curveComputeAllocInfo{};
+  curveComputeAllocInfo.sType              = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+  curveComputeAllocInfo.descriptorPool     = vk.descriptorPool;
+  curveComputeAllocInfo.descriptorSetCount = 1;
+  curveComputeAllocInfo.pSetLayouts        = &vk.curveComputeDescriptorSetLayout;
+
+  if (vkAllocateDescriptorSets(context.device, &curveComputeAllocInfo, &vk.curveComputeDescriptorSet) != VK_SUCCESS)
+  {
+    throw std::runtime_error("Failed to allocate curvature compute descriptor set");
+  }
+
+  // Update curvature compute descriptor set
+  VkDescriptorBufferInfo curveInputBufferInfo{};
+  curveInputBufferInfo.buffer = vk.vertexBuffer;
+  curveInputBufferInfo.offset = 0;
+  curveInputBufferInfo.range  = sizeof(UnitVertex) * unitVertices.size();
+
+  VkDescriptorBufferInfo curveIndexBufferInfo{};
+  curveIndexBufferInfo.buffer = vk.indexBuffer;
+  curveIndexBufferInfo.offset = 0;
+  curveIndexBufferInfo.range  = sizeof(uint32_t) * 36;
+
+  VkDescriptorBufferInfo curveOutputVertexBufferInfo{};
+  curveOutputVertexBufferInfo.buffer = vk.curvedVertexBuffer;
+  curveOutputVertexBufferInfo.offset = 0;
+  curveOutputVertexBufferInfo.range  = VK_WHOLE_SIZE;
+
+  VkDescriptorBufferInfo curveOutputIndexBufferInfo{};
+  curveOutputIndexBufferInfo.buffer = vk.curvedIndexBuffer;
+  curveOutputIndexBufferInfo.offset = 0;
+  curveOutputIndexBufferInfo.range  = VK_WHOLE_SIZE;
+
+  VkDescriptorBufferInfo curveCountersBufferInfo{};
+  curveCountersBufferInfo.buffer = vk.curveCountersBuffer;
+  curveCountersBufferInfo.offset = 0;
+  curveCountersBufferInfo.range  = 2 * sizeof(uint32_t);
+
+  VkDescriptorBufferInfo curveIndirectBufferInfo{};
+  curveIndirectBufferInfo.buffer = vk.curveIndirectDrawBuffer;
+  curveIndirectBufferInfo.offset = 0;
+  curveIndirectBufferInfo.range  = sizeof(DrawIndexedParams);
+
+  VkWriteDescriptorSet curveComputeWrites[6]{};
+  curveComputeWrites[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  curveComputeWrites[0].dstSet          = vk.curveComputeDescriptorSet;
+  curveComputeWrites[0].dstBinding      = 0;
+  curveComputeWrites[0].dstArrayElement = 0;
+  curveComputeWrites[0].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  curveComputeWrites[0].descriptorCount = 1;
+  curveComputeWrites[0].pBufferInfo     = &curveInputBufferInfo;
+
+  curveComputeWrites[1].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  curveComputeWrites[1].dstSet          = vk.curveComputeDescriptorSet;
+  curveComputeWrites[1].dstBinding      = 1;
+  curveComputeWrites[1].dstArrayElement = 0;
+  curveComputeWrites[1].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  curveComputeWrites[1].descriptorCount = 1;
+  curveComputeWrites[1].pBufferInfo     = &curveIndexBufferInfo;
+
+  curveComputeWrites[2].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  curveComputeWrites[2].dstSet          = vk.curveComputeDescriptorSet;
+  curveComputeWrites[2].dstBinding      = 2;
+  curveComputeWrites[2].dstArrayElement = 0;
+  curveComputeWrites[2].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  curveComputeWrites[2].descriptorCount = 1;
+  curveComputeWrites[2].pBufferInfo     = &curveOutputVertexBufferInfo;
+
+  curveComputeWrites[3].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  curveComputeWrites[3].dstSet          = vk.curveComputeDescriptorSet;
+  curveComputeWrites[3].dstBinding      = 3;
+  curveComputeWrites[3].dstArrayElement = 0;
+  curveComputeWrites[3].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  curveComputeWrites[3].descriptorCount = 1;
+  curveComputeWrites[3].pBufferInfo     = &curveOutputIndexBufferInfo;
+
+  curveComputeWrites[4].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  curveComputeWrites[4].dstSet          = vk.curveComputeDescriptorSet;
+  curveComputeWrites[4].dstBinding      = 4;
+  curveComputeWrites[4].dstArrayElement = 0;
+  curveComputeWrites[4].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  curveComputeWrites[4].descriptorCount = 1;
+  curveComputeWrites[4].pBufferInfo     = &curveCountersBufferInfo;
+
+  curveComputeWrites[5].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  curveComputeWrites[5].dstSet          = vk.curveComputeDescriptorSet;
+  curveComputeWrites[5].dstBinding      = 5;
+  curveComputeWrites[5].dstArrayElement = 0;
+  curveComputeWrites[5].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  curveComputeWrites[5].descriptorCount = 1;
+  curveComputeWrites[5].pBufferInfo     = &curveIndirectBufferInfo;
+
+  vkUpdateDescriptorSets(context.device, 6, curveComputeWrites, 0, nullptr);
 
   // Allocate graphics descriptor set
   VkDescriptorSetAllocateInfo graphicsAllocInfo{};
@@ -1662,7 +1824,7 @@ void UnitStateDrawable::OnCreate(
   ShaderObject::DestroyShaderModule(context.device, fragShaderModule);
 }
 
-void CameraPVMToFrustumPlanes(FrustumPlanes& frustum, World::Camera& cam)
+static void CameraPVMToFrustumPlanes(FrustumPlanes& frustum, World::Camera& cam)
 {
   // Extract frustum planes from view-projection matrix (world space)
   // Negate to get inward-pointing normals (points inside have positive distance)
@@ -1891,27 +2053,58 @@ void UnitStateDrawable::OnDraw(
   glm::mat4            projection  = cam.GetProjectionMatrix();
   glm::mat4            matrices[3] = {model, view, projection};
 
+  // Check if any face has curvature
+  bool hasCurvature = false;
+  for (const auto& vertex : unitVertices) {
+    if (vertex.polCurve != 0.0f) {
+      hasCurvature = true;
+      break;
+    }
+  }
+
   // Bind graphics pipeline
   if (vk.pipeline != VK_NULL_HANDLE && vk.pipelineLayout != VK_NULL_HANDLE)
   {
     vkCmdBindPipeline(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline);
-    // Bind original vertex buffer (all vertices)
-    VkBuffer     vertexBuffers[] = {vk.vertexBuffer};
-    VkDeviceSize offsets[]       = {0};
-    vkCmdBindVertexBuffers(context.commandBuffers[0], 0, 1, vertexBuffers, offsets);
+    
+    if (hasCurvature && vk.curvedVertexBuffer != VK_NULL_HANDLE && vk.curvedIndexBuffer != VK_NULL_HANDLE)
+    {
+      // Use curved vertex buffer and curved index buffer
+      VkBuffer     vertexBuffers[] = {vk.curvedVertexBuffer};
+      VkDeviceSize offsets[]       = {0};
+      vkCmdBindVertexBuffers(context.commandBuffers[0], 0, 1, vertexBuffers, offsets);
+      vkCmdBindIndexBuffer(context.commandBuffers[0], vk.curvedIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+      
+      // Bind graphics descriptor set for textures
+      vkCmdBindDescriptorSets(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS,
+          vk.pipelineLayout, 0, 1, &vk.descriptorSet, 0, nullptr);
+      // Push camera matrices for vertex shader
+      vkCmdPushConstants(context.commandBuffers[0], vk.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+          sizeof(matrices), matrices);
+      // Draw using indirect draw parameters from curvature compute shader
+      vkCmdDrawIndexedIndirect(context.commandBuffers[0], vk.curveIndirectDrawBuffer, 0, 1,
+          sizeof(VkDrawIndexedIndirectCommand));
+    }
+    else
+    {
+      // Use original vertex buffer (all vertices)
+      VkBuffer     vertexBuffers[] = {vk.vertexBuffer};
+      VkDeviceSize offsets[]       = {0};
+      vkCmdBindVertexBuffers(context.commandBuffers[0], 0, 1, vertexBuffers, offsets);
 
-    // Bind output index buffer (culled indices from compute shader)
-    vkCmdBindIndexBuffer(context.commandBuffers[0], vk.outputIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
+      // Bind output index buffer (culled indices from compute shader)
+      vkCmdBindIndexBuffer(context.commandBuffers[0], vk.outputIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
-    // Bind graphics descriptor set for textures
-    vkCmdBindDescriptorSets(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS,
-        vk.pipelineLayout, 0, 1, &vk.descriptorSet, 0, nullptr);
-    // Push camera matrices for vertex shader
-    vkCmdPushConstants(context.commandBuffers[0], vk.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
-        sizeof(matrices), matrices);
-    // Draw using indexed indirect draw parameters from compute shader
-    vkCmdDrawIndexedIndirect(context.commandBuffers[0], vk.indirectDrawBuffer, 0, 1,
-        sizeof(VkDrawIndexedIndirectCommand));
+      // Bind graphics descriptor set for textures
+      vkCmdBindDescriptorSets(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS,
+          vk.pipelineLayout, 0, 1, &vk.descriptorSet, 0, nullptr);
+      // Push camera matrices for vertex shader
+      vkCmdPushConstants(context.commandBuffers[0], vk.pipelineLayout, VK_SHADER_STAGE_VERTEX_BIT, 0,
+          sizeof(matrices), matrices);
+      // Draw using indexed indirect draw parameters from compute shader
+      vkCmdDrawIndexedIndirect(context.commandBuffers[0], vk.indirectDrawBuffer, 0, 1,
+          sizeof(VkDrawIndexedIndirectCommand));
+    }
   }
 }
 
@@ -1969,6 +2162,48 @@ void UnitStateDrawable::OnDrawCompute(
 
   vkCmdPipelineBarrier(context.commandBuffers[0], VK_PIPELINE_STAGE_TRANSFER_BIT,
       VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &fillBarrier, 0, nullptr, 0, nullptr);
+
+  // Dispatch curvature compute shader before frustum culling
+  if (vk.curveComputePipeline != VK_NULL_HANDLE && vk.curveComputePipelineLayout != VK_NULL_HANDLE)
+  {
+    // Reset counters for curvature compute
+    uint32_t zeroCounters[2] = {0, 0};
+    vkCmdUpdateBuffer(context.commandBuffers[0], vk.curveCountersBuffer, 0, 2 * sizeof(uint32_t), zeroCounters);
+
+    VkMemoryBarrier curveResetBarrier{};
+    curveResetBarrier.sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+    curveResetBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+    curveResetBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
+
+    vkCmdPipelineBarrier(context.commandBuffers[0], VK_PIPELINE_STAGE_TRANSFER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &curveResetBarrier, 0, nullptr, 0, nullptr);
+
+    vkCmdBindPipeline(
+        context.commandBuffers[0], VK_PIPELINE_BIND_POINT_COMPUTE, vk.curveComputePipeline);
+    vkCmdBindDescriptorSets(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_COMPUTE,
+        vk.curveComputePipelineLayout, 0, 1, &vk.curveComputeDescriptorSet, 0, nullptr);
+
+    // Push constants: tessellation level (8) and face count (6)
+    uint32_t curvePushConstants[2] = {8, 6};
+    vkCmdPushConstants(context.commandBuffers[0], vk.curveComputePipelineLayout,
+        VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(curvePushConstants), curvePushConstants);
+
+    // Dispatch one workgroup per face (6 faces)
+    vkCmdDispatch(context.commandBuffers[0], 6, 1, 1);
+
+    VkBufferMemoryBarrier curveBarrier{};
+    curveBarrier.sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    curveBarrier.srcAccessMask       = VK_ACCESS_SHADER_WRITE_BIT;
+    curveBarrier.dstAccessMask       = VK_ACCESS_SHADER_READ_BIT;
+    curveBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    curveBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+    curveBarrier.buffer              = vk.curvedVertexBuffer;
+    curveBarrier.offset              = 0;
+    curveBarrier.size                = VK_WHOLE_SIZE;
+
+    vkCmdPipelineBarrier(context.commandBuffers[0], VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 0, nullptr, 1, &curveBarrier, 0, nullptr);
+  }
 
   // Dispatch compute shader for frustum culling
   if (vk.computePipeline != VK_NULL_HANDLE && vk.computePipelineLayout != VK_NULL_HANDLE)
@@ -2131,6 +2366,20 @@ void UnitStateDrawable::OnDestroy(
   vkDestroyPipeline(context.device, vk.computePipeline, nullptr);
   vkDestroyPipelineLayout(context.device, vk.computePipelineLayout, nullptr);
   vkDestroyDescriptorSetLayout(context.device, vk.computeDescriptorSetLayout, nullptr);
+  
+  // Cleanup curvature compute resources
+  vkDestroyPipeline(context.device, vk.curveComputePipeline, nullptr);
+  vkDestroyPipelineLayout(context.device, vk.curveComputePipelineLayout, nullptr);
+  vkDestroyDescriptorSetLayout(context.device, vk.curveComputeDescriptorSetLayout, nullptr);
+  vkDestroyBuffer(context.device, vk.curvedVertexBuffer, nullptr);
+  vkFreeMemory(context.device, vk.curvedVertexBufferMemory, nullptr);
+  vkDestroyBuffer(context.device, vk.curvedIndexBuffer, nullptr);
+  vkFreeMemory(context.device, vk.curvedIndexBufferMemory, nullptr);
+  vkDestroyBuffer(context.device, vk.curveCountersBuffer, nullptr);
+  vkFreeMemory(context.device, vk.curveCountersBufferMemory, nullptr);
+  vkDestroyBuffer(context.device, vk.curveIndirectDrawBuffer, nullptr);
+  vkFreeMemory(context.device, vk.curveIndirectDrawBufferMemory, nullptr);
+  
   vkDestroyPipeline(context.device, vk.pipeline, nullptr);
   vkDestroyPipelineLayout(context.device, vk.pipelineLayout, nullptr);
   vkDestroyDescriptorSetLayout(context.device, vk.descriptorSetLayout, nullptr);
