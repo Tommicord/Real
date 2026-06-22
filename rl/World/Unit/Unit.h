@@ -60,7 +60,7 @@ class BaseUnit : IUpdatable
     requires(std::is_base_of_v<BaseUnit, std::decay_t<T>>)
   BaseUnit(T* type) noexcept : BaseUnit()
   {
-    static Texture2 texture("dirt.png");
+    static Texture2 texture("unknown.png");
     using pair = UnitRegistryKVPair<UnitResourceName, BaseUnit*>;
     int id     = 1;
     if (pair::GetObjectById(id).has_value())
@@ -163,6 +163,12 @@ class BaseUnit : IUpdatable
    *
    * Store Polygons for non-fixed Grid World */
   float polTl, polDl, polBl, polFl;
+
+  /* Indicates the curvature of the unit polygons, negative or positive
+   * Negative values indicates negative curvatures
+   * Positive values indicates positive curvatures
+   */
+  float polCurve;
 
   /* Property to enable collision */
   bool mustCollide;

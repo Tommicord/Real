@@ -10,7 +10,7 @@ layout (location = 5) in uint a_TransparencyLevel; // Transparency level (4 byte
 layout (location = 6) in uint a_FaceIndex;         // Face index (4 bytes)
 layout (location = 7) in float a_Roughness;        // Roughness (4 bytes)
 layout (location = 8) in float a_Metallic;         // Metallic (4 bytes)
-layout (location = 9) in float a_Padding1;          // Padding (4 bytes)
+layout (location = 9) in float a_PolCurve;          // Polygon curvature (4 bytes)
 layout (location = 10) in vec4 a_Albedo;           // Albedo (16 bytes)
 layout (location = 11) in vec4 a_Tangent;          // Tangent (16 bytes)
 layout (location = 12) in vec4 a_Bitangent;        // Bitangent (16 bytes)
@@ -38,6 +38,7 @@ layout (location = 11) smooth out vec3 v_GeometricNormal;
 void main() {
     vec3 localPos = a_Position.xyz;
     vec2 texCoords = a_TexCoords;
+    float polCurve = a_PolCurve;
 
     uint lightingEmit     = a_LightingEmit;
     uint transparencyLevel = a_TransparencyLevel;
@@ -51,8 +52,16 @@ void main() {
     vec3 bitangent = a_Bitangent.xyz;
     vec3 geometricNormal = a_Normal.xyz;
 
+    // Apply polygon curvature to local position
+    // Positive polCurve curves outward, negative curves inward
+    // The curvature is applied along the normal direction
+    if (polCurve != 0.0) {
+        float curvatureAmount = polCurve * 0.5; // Scale factor for curvature
+        localPos += geometricNormal * curvatureAmount;
+    }
+
     // Transform to world space
-    vec4 worldPos = pc.model * a_Position;
+    vec4 worldPos = pc.model * vec4(localPos, 1.0);
 
     // Transform to clip space
     gl_Position = pc.projection * pc.view * worldPos;

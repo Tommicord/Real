@@ -28,7 +28,7 @@ struct UnitVertex
   uint32_t  faceIndex;    // 4 bytes
   float     roughness;    // 4 bytes
   float     metallic;     // 4 bytes
-  float     padding1;     // 4 bytes
+  float     polCurve;     // 4 bytes (curvature of unit polygons, negative or positive)
 
   glm::vec4 albedo;       // 16 bytes (albR, albG, albB + padding)
   glm::vec4 tangent;      // 16 bytes (tanX, tanY, tanZ + padding)
