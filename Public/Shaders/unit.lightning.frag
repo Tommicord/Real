@@ -1,8 +1,8 @@
 #version 450
 
 // Input from vertex shader (after compute shader culling)
-layout (location = 0) flat in vec3 v_WorldPos;
-layout (location = 1) in vec2 v_TexCoords;
+layout (location = 0) smooth in vec3 v_WorldPos;
+layout (location = 1) smooth in vec2 v_TexCoords;
 layout (location = 2) flat in uint v_LightingEmit;
 layout (location = 3) flat in uint v_TransparencyLevel;
 layout (location = 4) flat in uint v_FaceIndex;
@@ -201,13 +201,15 @@ void main() {
     // Sample texture based on face index
     vec4 texColor = texture(u_Texture[v_FaceIndex], v_TexCoords);
 
+    vec3 albedoLinear = pow(texColor.rgb, vec3(2.2));
+
     // Apply transparency
     float transparency = float(v_TransparencyLevel) / 255.0;
     texColor.a = mix(texColor.a, 1.0 - transparency, transparency);
 
     // Setup PBR material with texture albedo
     PBRMaterial material;
-    material.albedo = texColor.rgb;
+    material.albedo = albedoLinear;
     material.metallic = v_Metallic;
     material.roughness = v_Roughness;
 
@@ -222,7 +224,7 @@ void main() {
     Light sunLight;
     sunLight.position = lighting.u_SunDirection; // Directional light direction
     sunLight.color = lighting.u_SunColor;
-    sunLight.intensity = 1.0;
+    sunLight.intensity = 12.25;
 
     // Calculate ambient color
     vec3 ambientColor = clamp(lighting.u_AmbientStrength, 0.0, 1.0) * lighting.u_SunColor;
@@ -232,11 +234,16 @@ void main() {
 
     // Calculate self-emission
     float emission = float(v_LightingEmit) / 255.0;
-    vec3 emitColor = emission * lighting.u_SunColor;
+    vec3 emitColor = emission * lighting.u_SunColor * 2.0;
 
-    // Combine PBR lighting with emission
     vec3 finalColor = pbrColor + emitColor;
 
+    // Tone mapping
+    vec3 mappedColor = finalColor / (finalColor + vec3(1.0));
+
+    // Gamma correction
+    mappedColor = pow(mappedColor, vec3(1.0 / 2.2));
+
     // Output final color with texture alpha
-    outColor = vec4(finalColor, texColor.a);
+    outColor = vec4(mappedColor, texColor.a);
 }

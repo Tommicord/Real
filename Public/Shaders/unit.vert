@@ -1,13 +1,20 @@
 #version 450
 
-// Input from compute shader output buffer (world space)
-layout (location = 0) in vec4 a_Position;          // Clip space position (16 bytes)
-layout (location = 1) in vec4 a_WorldPosAndUV;
-layout (location = 2) in vec4 a_UVAndLighting;
-layout (location = 3) in vec4 a_Material;
-layout (location = 4) in vec4 a_RoughnessAndTan;
-layout (location = 5) in vec4 a_Bitangent;
-layout (location = 6) in vec4 a_GeometricNormal;
+// Input from vertex buffer (UnitVertex structure)
+layout (location = 0) in vec4 a_Position;          // Local position (16 bytes)
+layout (location = 1) in vec4 a_PolRight;          // Polygon fence right (16 bytes)
+layout (location = 2) in vec4 a_PolLeft;           // Polygon fence left (16 bytes)
+layout (location = 3) in vec2 a_TexCoords;         // Texture coordinates (8 bytes)
+layout (location = 4) in uint a_LightingEmit;      // Lighting emit value (4 bytes)
+layout (location = 5) in uint a_TransparencyLevel; // Transparency level (4 bytes)
+layout (location = 6) in uint a_FaceIndex;         // Face index (4 bytes)
+layout (location = 7) in float a_Roughness;        // Roughness (4 bytes)
+layout (location = 8) in float a_Metallic;         // Metallic (4 bytes)
+layout (location = 9) in float a_Padding1;          // Padding (4 bytes)
+layout (location = 10) in vec4 a_Albedo;           // Albedo (16 bytes)
+layout (location = 11) in vec4 a_Tangent;          // Tangent (16 bytes)
+layout (location = 12) in vec4 a_Bitangent;        // Bitangent (16 bytes)
+layout (location = 13) in vec4 a_Normal;           // Normal (16 bytes)
 
 // Push constants for camera matrices
 layout(push_constant) uniform PushConstants {
@@ -29,34 +36,39 @@ layout (location = 8) out mat3 v_TBN;
 layout (location = 11) smooth out vec3 v_GeometricNormal;
 
 void main() {
-    vec3 worldPos = a_WorldPosAndUV.xyz;
-    vec2 texCoords = vec2(a_WorldPosAndUV.w, a_UVAndLighting.x);
+    vec3 localPos = a_Position.xyz;
+    vec2 texCoords = a_TexCoords;
 
-    uint lightingEmit     = uint(a_UVAndLighting.y);
-    uint transparencyLevel = uint(a_UVAndLighting.z);
-    uint faceIndex        = uint(a_UVAndLighting.w);
+    uint lightingEmit     = a_LightingEmit;
+    uint transparencyLevel = a_TransparencyLevel;
+    uint faceIndex        = a_FaceIndex;
 
-    vec3 albedo = a_Material.xyz;
-    float metallic = a_Material.w;
+    vec3 albedo = a_Albedo.xyz;
+    float metallic = a_Metallic;
+    float roughness = a_Roughness;
 
-    float roughness = a_RoughnessAndTan.x;
-    vec3 tangent = a_RoughnessAndTan.yzw;
+    vec3 tangent = a_Tangent.xyz;
     vec3 bitangent = a_Bitangent.xyz;
-    vec3 geometricNormal = a_GeometricNormal.xyz;
+    vec3 geometricNormal = a_Normal.xyz;
 
-    gl_Position = a_Position;
+    // Transform to world space
+    vec4 worldPos = pc.model * a_Position;
 
-    // Tangent and bitangent are already in world space from compute shader
-    // No need to transform them with model matrix
-    vec3 T = normalize(tangent);
-    vec3 B = normalize(bitangent);
-    vec3 N = normalize(cross(B, T));
+    // Transform to clip space
+    gl_Position = pc.projection * pc.view * worldPos;
 
+    // Tangent and bitangent are in local space, transform to world space
+    mat3 normalMatrix = transpose(inverse(mat3(pc.model)));
+    vec3 T = normalize(normalMatrix * tangent);
+    vec3 B = normalize(normalMatrix * bitangent);
+    vec3 N = normalize(normalMatrix * geometricNormal);
+
+    // Re-orthogonalize TBN matrix
     N = normalize(N);
     T = normalize(T - dot(T, N) * N);
     B = normalize(cross(T, N));
 
-    v_WorldPos = worldPos;
+    v_WorldPos = worldPos.xyz;
     v_TexCoords = texCoords;
     v_LightingEmit = lightingEmit;
     v_TransparencyLevel = transparencyLevel;

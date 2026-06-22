@@ -37,8 +37,8 @@ struct UnitStateDrawableVulkan : StateDrawableVulkan
   VkDeviceMemory        vertexBufferMemory         = VK_NULL_HANDLE;
   VkBuffer              indexBuffer                = VK_NULL_HANDLE;
   VkDeviceMemory        indexBufferMemory          = VK_NULL_HANDLE;
-  VkBuffer              outputVertexBuffer         = VK_NULL_HANDLE;
-  VkDeviceMemory        outputVertexBufferMemory   = VK_NULL_HANDLE;
+  VkBuffer              outputIndexBuffer          = VK_NULL_HANDLE;
+  VkDeviceMemory        outputIndexBufferMemory    = VK_NULL_HANDLE;
   VkBuffer              visibleCountBuffer         = VK_NULL_HANDLE;
   VkDeviceMemory        visibleCountBufferMemory   = VK_NULL_HANDLE;
   VkBuffer              indirectDrawBuffer         = VK_NULL_HANDLE;

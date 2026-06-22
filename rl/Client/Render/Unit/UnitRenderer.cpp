@@ -18,136 +18,143 @@ namespace Rl::Providers
 // Vertex structure for Unit rendering (must match compute shader VertexInput with std430 layout)
 struct UnitVertex
 {
-  glm::vec4 position; // vec4 in shader (x, y, z, w) local position
-  glm::vec4 polRight; // Polygon fence right offsets (16-byte aligned)
-  glm::vec4 polLeft; // Polygon fence left offsets (16-byte aligned)
-  glm::vec2 texCoords;
-  uint32_t  lightingEmit;
-  uint32_t  transparencyLevel;
-  uint32_t  faceIndex;
-  float     albR, albG, albB;
-  float     metallic;
-  float     roughness;
-  float     tanX, tanY, tanZ;
-  float     bitanX, bitanY, bitanZ;
-  float     normX, normY, normZ; // Geometric normal for smooth rim lighting
-  float     padding; // Pad to 16-byte alignment for std430
+  glm::vec4 position;     // 16 bytes
+  glm::vec4 polRight;     // 16 bytes
+  glm::vec4 polLeft;      // 16 bytes
+  glm::vec2 texCoords;    // 8 bytes
+  uint32_t  lightingEmit; // 4 bytes
+  uint32_t  transparencyLevel; // 4 bytes
+  
+  uint32_t  faceIndex;    // 4 bytes
+  float     roughness;    // 4 bytes
+  float     metallic;     // 4 bytes
+  float     padding1;     // 4 bytes
+
+  glm::vec4 albedo;       // 16 bytes (albR, albG, albB + padding)
+  glm::vec4 tangent;      // 16 bytes (tanX, tanY, tanZ + padding)
+  glm::vec4 bitangent;    // 16 bytes (bitanX, bitanY, bitanZ + padding)
+  glm::vec4 normal;       // 16 bytes (normX, normY, normZ + padding)
 };
 
-// Unit cube vertices (6 faces, 4 vertices per face for indexed drawing)
-// Varied material properties per face for realistic PBR lighting testing
-// Face normals for rim lighting - smooth interpolation happens at edges
-// Vertices are ordered counter-clockwise for each face
+// Unit ramp vertices (6 faces, 4 vertices per face for indexed drawing)
+// Dirt-like material properties for testing polygon rendering
+// All faces are clockwise when viewed from outside for VK_FRONT_FACE_CLOCKWISE with VK_CULL_MODE_BACK_BIT
 static const std::vector<UnitVertex> unitVertices = {
-    // Top face (faceIndex = 0) - High metallic, low roughness (shiny metal)
-    // Vertices: 0=TLB, 1=TLF, 2=TRF, 3=TRB
+    // Top face (faceIndex = 0) - Inclined surface (dirt)
+    // CLOCKWISE when viewed from above
+    // Vertices: 0=TLB (back-left, high), 1=TLF (front-left, low), 2=TRF (front-right, low), 3=TRB (back-right, high)
     {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 0.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-        0.0f, 1.0f, 0.0f, 0.0f},
-    {glm::vec4(-0.5f, 0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 1.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-        0.0f, 1.0f, 0.0f, 0.0f},
-    {glm::vec4(0.5f, 0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 1.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-        0.0f, 1.0f, 0.0f, 0.0f},
-    {glm::vec4(0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 0.0f), 0, 0, 0, 0.8f, 0.9f, 0.7f, 0.9f, 0.1f, 1.0f, 0.0f, 0.0f, 0.0f, -1.0f,
-        0.0f, 1.0f, 0.0f, 0.0f},
+        glm::vec2(0.0f, 0.0f), 0, 0, 0, 0.85f, 0.0f, 0.0f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f),
+        glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
+    {glm::vec4(-0.5f, 0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(0.0f, 1.0f), 0, 0, 0, 0.85f, 0.0f, 0.0f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f),
+        glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
+    {glm::vec4( 0.5f, 0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(1.0f, 1.0f), 0, 0, 0, 0.85f, 0.0f, 0.0f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f),
+        glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
+    {glm::vec4( 0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(1.0f, 0.0f), 0, 0, 0, 0.85f, 0.0f, 0.0f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f),
+        glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
 
-    // Bottom face (faceIndex = 1) - Low metallic, high roughness (matte)
-    // Vertices: 4=BLB, 5=BLF, 6=BRF, 7=BRB
+    // Bottom face (faceIndex = 1) - Flat base (dirt)
+    // CLOCKWISE when viewed from below
+    // Vertices: 4=BLB, 5=BRB, 6=BRF, 7=BLF
     {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 0.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, -1.0f, 0.0f, 0.0f},
-    {glm::vec4(-0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 1.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, -1.0f, 0.0f, 0.0f},
-    {glm::vec4(0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 1.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, -1.0f, 0.0f, 0.0f},
-    {glm::vec4(0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 0.0f), 0, 0, 1, 0.5f, 0.5f, 0.5f, 0.0f, 0.9f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, -1.0f, 0.0f, 0.0f},
+        glm::vec2(0.0f, 0.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
+        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
+    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(1.0f, 0.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
+        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
+    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(1.0f, 1.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
+        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
+    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(0.0f, 1.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
+        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
 
-    // Left face (faceIndex = 2) - Medium metallic, medium roughness (plastic-like)
-    // Vertices: 8=TLB, 9=BLB, 10=BLF, 11=TLF
-    {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 0.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-        -1.0f, 0.0f, 0.0f, 0.0f},
+    // Left face (faceIndex = 2) - Vertical side (dirt)
+    // CLOCKWISE when viewed from left
+    // Vertices: 8=BLB, 9=BLF, 10=TLF, 11=TLB
     {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 1.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-        -1.0f, 0.0f, 0.0f, 0.0f},
-    {glm::vec4(-0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 1.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-        -1.0f, 0.0f, 0.0f, 0.0f},
-    {glm::vec4(-0.5f, 0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 0.0f), 0, 0, 2, 0.6f, 0.4f, 0.8f, 0.3f, 0.5f, 0.0f, 0.0f, 1.0f, 0.0f, 1.0f,
-        -1.0f, 0.0f, 0.0f, 0.0f},
+        glm::vec2(0.0f, 1.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
+        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(0.0f, 0.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
+        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4(-0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(1.0f, 0.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
+        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(1.0f, 1.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
+        glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
 
-    // Right face (faceIndex = 3) - High metallic, medium roughness (brushed metal)
-    // Vertices: 12=TRF, 13=BRF, 14=BRB, 15=TRB
-    {glm::vec4(0.5f, 0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 0.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 0.0f, 0.0f},
-    {glm::vec4(0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 1.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 0.0f, 0.0f},
-    {glm::vec4(0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 1.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 0.0f, 0.0f},
-    {glm::vec4(0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 0.0f), 0, 0, 3, 0.7f, 0.7f, 0.6f, 0.8f, 0.4f, 0.0f, 0.0f, -1.0f, 0.0f, 1.0f,
-        1.0f, 0.0f, 0.0f, 0.0f},
+    // Right face (faceIndex = 3) - Vertical side (dirt)
+    // CLOCKWISE when viewed from right
+    // Vertices: 12=BRF, 13=BRB, 14=TRB, 15=TRF
+    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(0.0f, 0.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
+        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(0.0f, 1.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
+        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(1.0f, 1.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
+        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
+    {glm::vec4( 0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(1.0f, 0.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f),
+        glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
 
-    // Front face (faceIndex = 4) - Low metallic, low roughness (shiny plastic)
-    // Vertices: 16=TLF, 17=BLF, 18=BRF, 19=TRF
-    {glm::vec4(-0.5f, 0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 0.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 1.0f, 0.0f},
-    {glm::vec4(-0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 1.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 1.0f, 0.0f},
-    {glm::vec4(0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 1.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 1.0f, 0.0f},
-    {glm::vec4(0.5f, 0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 0.0f), 0, 0, 4, 0.9f, 0.8f, 0.9f, 0.1f, 0.2f, 1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, 1.0f, 0.0f},
+    // Front face (faceIndex = 4) - Vertical front (low height) (dirt)
+    // CLOCKWISE when viewed from front
+    // Vertices: 16=BLF, 17=BRF, 18=TRF, 19=TLF
+    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(0.0f, 1.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
+        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
+    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(1.0f, 1.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
+        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
+    {glm::vec4( 0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(1.0f, 0.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
+        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
+    {glm::vec4(-0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(0.0f, 0.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
+        glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
 
-    // Back face (faceIndex = 5) - Medium metallic, high roughness (ceramic-like)
-    // Vertices: 20=TRB, 21=BRB, 22=BLB, 23=TLB
-    {glm::vec4(0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 0.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, -1.0f, 0.0f},
-    {glm::vec4(0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(0.0f, 1.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, -1.0f, 0.0f},
+    // Back face (faceIndex = 5) - Vertical back (high height) (dirt)
+    // CLOCKWISE when viewed from back
+    // Vertices: 20=BRB, 21=BLB, 22=TLB, 23=TRB
+    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(1.0f, 1.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
+        glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
     {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 1.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, -1.0f, 0.0f},
-    {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
-        glm::vec2(1.0f, 0.0f), 0, 0, 5, 0.4f, 0.6f, 0.5f, 0.4f, 0.7f, -1.0f, 0.0f, 0.0f, 0.0f, 1.0f,
-        0.0f, 0.0f, -1.0f, 0.0f},
+        glm::vec2(0.0f, 1.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
+        glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
+    {glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(0.0f, 0.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
+        glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
+    {glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0),
+        glm::vec2(1.0f, 0.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f),
+        glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
 };
 
 // Generate cube indices dynamically for indexed drawing
 // Each face uses 4 vertices to form 2 triangles in counter-clockwise order
-static std::vector<uint16_t> GenerateCubeIndices(uint32_t verticesPerFace, uint32_t faceCount)
+static std::vector<uint32_t> GenerateCubeIndices(uint32_t verticesPerFace, uint32_t faceCount)
 {
-  std::vector<uint16_t> indices;
+  std::vector<uint32_t> indices;
   indices.reserve(faceCount * 6); // 6 indices per face (2 triangles × 3 vertices)
 
   for (uint32_t face = 0; face < faceCount; ++face)
   {
-    auto baseIndex = static_cast<uint16_t>(face * verticesPerFace);
+    auto baseIndex = face * verticesPerFace;
     // Triangle 1: baseIndex, baseIndex+1, baseIndex+2
     indices.push_back(baseIndex);
     indices.push_back(baseIndex + 1);
     indices.push_back(baseIndex + 2);
     // Triangle 2: baseIndex, baseIndex+2, baseIndex+3
-    indices.push_back(baseIndex);
     indices.push_back(baseIndex + 2);
     indices.push_back(baseIndex + 3);
+    indices.push_back(baseIndex);
   }
 
   return indices;
@@ -181,18 +188,6 @@ struct TriplanarSettings
 struct FrustumPlanes
 {
   glm::vec4 planes[6];
-};
-
-// Vertex output structure matching compute shader
-struct VertexOutput
-{
-  glm::vec4 position;
-  glm::vec4 worldPosAndUV;
-  glm::vec4 uvAndLighting;
-  glm::vec4 material;
-  glm::vec4 roughnessAndTan;
-  glm::vec4 bitangent;
-  glm::vec4 geometricNormal;
 };
 
 // Indirect draw parameters for indexed drawing
@@ -275,40 +270,88 @@ static void CopyDataToBuffer(VkDevice device,
 // Create index buffer for the cube
 static void CreateIndexBuffer(VkDevice device,
     VkPhysicalDevice                   physicalDevice,
-    const std::vector<uint16_t>&       indices,
+    const std::vector<uint32_t>&       indices,
     VkBuffer&                          indexBuffer,
     VkDeviceMemory&                    indexBufferMemory)
 {
   VkDeviceSize bufferSize = sizeof(indices[0]) * indices.size();
 
-  CreateBuffer(device, physicalDevice, bufferSize,
-      VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
-
-  // Create staging buffer for copying
+  // Create staging buffer (host-visible)
   VkBuffer       stagingBuffer;
   VkDeviceMemory stagingBufferMemory;
   CreateBuffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
       VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
       stagingBufferMemory);
 
+  // Copy data to staging buffer
   CopyDataToBuffer(device, stagingBufferMemory, 0, bufferSize, indices.data());
 
-  // Copy from staging to device local buffer
-  // Note: In a real implementation, you'd need to use a command buffer for this transfer
-  // For simplicity, we'll use host-visible memory for now
+  // Create device-local index buffer
+  CreateBuffer(device, physicalDevice, bufferSize,
+      VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+          VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, indexBuffer, indexBufferMemory);
+
+  // Create temporary command pool for buffer copy
+  VkCommandPoolCreateInfo commandPoolInfo{};
+  commandPoolInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  commandPoolInfo.flags            = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+  commandPoolInfo.queueFamilyIndex = 0; // Assuming graphics queue family is 0
+
+  VkCommandPool commandPool;
+  if (vkCreateCommandPool(device, &commandPoolInfo, nullptr, &commandPool) != VK_SUCCESS)
+  {
+    throw std::runtime_error("Failed to create temporary command pool");
+  }
+
+  // Allocate command buffer
+  VkCommandBufferAllocateInfo allocInfo{};
+  allocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  allocInfo.commandPool        = commandPool;
+  allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  allocInfo.commandBufferCount = 1;
+
+  VkCommandBuffer commandBuffer;
+  if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) != VK_SUCCESS)
+  {
+    vkDestroyCommandPool(device, commandPool, nullptr);
+    throw std::runtime_error("Failed to allocate command buffer");
+  }
+
+  // Begin command buffer
+  VkCommandBufferBeginInfo beginInfo{};
+  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+  vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+  // Copy from staging to device-local buffer
+  VkBufferCopy copyRegion{};
+  copyRegion.srcOffset = 0;
+  copyRegion.dstOffset = 0;
+  copyRegion.size      = bufferSize;
+  vkCmdCopyBuffer(commandBuffer, stagingBuffer, indexBuffer, 1, &copyRegion);
+
+  vkEndCommandBuffer(commandBuffer);
+
+  // Submit command buffer
+  VkQueue queue = nullptr;
+  // For now, we'll assume queue 0 exists
+  vkGetDeviceQueue(device, 0, 0, &queue);
+
+  VkSubmitInfo submitInfo{};
+  submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers    = &commandBuffer;
+
+  vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+  vkQueueWaitIdle(queue);
+
+  // Cleanup
+  vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+  vkDestroyCommandPool(device, commandPool, nullptr);
   vkDestroyBuffer(device, stagingBuffer, nullptr);
   vkFreeMemory(device, stagingBufferMemory, nullptr);
-
-  // Re-create with host-visible memory for simplicity (should use staging in production)
-  vkDestroyBuffer(device, indexBuffer, nullptr);
-  vkFreeMemory(device, indexBufferMemory, nullptr);
-
-  CreateBuffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, indexBuffer,
-      indexBufferMemory);
-
-  CopyDataToBuffer(device, indexBufferMemory, 0, bufferSize, indices.data());
 }
 
 // Create vertex buffer for the cube
@@ -320,12 +363,81 @@ static void CreateVertexBuffer(VkDevice device,
 {
   VkDeviceSize bufferSize = sizeof(vertices[0]) * vertices.size();
 
-  CreateBuffer(device, physicalDevice, bufferSize,
-      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vertexBuffer,
-      vertexBufferMemory);
+  // Create staging buffer (host-visible)
+  VkBuffer       stagingBuffer;
+  VkDeviceMemory stagingBufferMemory;
+  CreateBuffer(device, physicalDevice, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
+      stagingBufferMemory);
 
-  CopyDataToBuffer(device, vertexBufferMemory, 0, bufferSize, vertices.data());
+  // Copy data to staging buffer
+  CopyDataToBuffer(device, stagingBufferMemory, 0, bufferSize, vertices.data());
+
+  // Create device-local vertex buffer
+  CreateBuffer(device, physicalDevice, bufferSize,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
+          VK_BUFFER_USAGE_TRANSFER_DST_BIT,
+      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vertexBuffer, vertexBufferMemory);
+
+  // Create temporary command pool for buffer copy
+  VkCommandPoolCreateInfo commandPoolInfo{};
+  commandPoolInfo.sType            = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+  commandPoolInfo.flags            = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+  commandPoolInfo.queueFamilyIndex = 0; // Assuming graphics queue family is 0
+
+  VkCommandPool commandPool;
+  if (vkCreateCommandPool(device, &commandPoolInfo, nullptr, &commandPool) != VK_SUCCESS)
+  {
+    throw std::runtime_error("Failed to create temporary command pool");
+  }
+
+  // Allocate command buffer
+  VkCommandBufferAllocateInfo allocInfo{};
+  allocInfo.sType              = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+  allocInfo.commandPool        = commandPool;
+  allocInfo.level              = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+  allocInfo.commandBufferCount = 1;
+
+  VkCommandBuffer commandBuffer;
+  if (vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer) != VK_SUCCESS)
+  {
+    vkDestroyCommandPool(device, commandPool, nullptr);
+    throw std::runtime_error("Failed to allocate command buffer");
+  }
+
+  // Begin command buffer
+  VkCommandBufferBeginInfo beginInfo{};
+  beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+  beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+
+  vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+  // Copy from staging to device-local buffer
+  VkBufferCopy copyRegion{};
+  copyRegion.srcOffset = 0;
+  copyRegion.dstOffset = 0;
+  copyRegion.size      = bufferSize;
+  vkCmdCopyBuffer(commandBuffer, stagingBuffer, vertexBuffer, 1, &copyRegion);
+
+  vkEndCommandBuffer(commandBuffer);
+
+  // Submit command buffer
+  VkQueue queue = nullptr;
+  vkGetDeviceQueue(device, 0, 0, &queue);
+
+  VkSubmitInfo submitInfo{};
+  submitInfo.sType              = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+  submitInfo.commandBufferCount = 1;
+  submitInfo.pCommandBuffers    = &commandBuffer;
+
+  vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE);
+  vkQueueWaitIdle(queue);
+
+  // Cleanup
+  vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer);
+  vkDestroyCommandPool(device, commandPool, nullptr);
+  vkDestroyBuffer(device, stagingBuffer, nullptr);
+  vkFreeMemory(device, stagingBufferMemory, nullptr);
 }
 
 // Create SSBO buffers for compute shader
@@ -334,11 +446,21 @@ static void CreateSSBOBuffers(VkDevice device,
     size_t                             vertexCount,
     UnitStateDrawableVulkan&           vk)
 {
-  // Create output vertex buffer
-  VkDeviceSize outputBufferSize = sizeof(VertexOutput) * vertexCount;
-  CreateBuffer(device, physicalDevice, outputBufferSize,
-      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, vk.outputVertexBuffer, vk.outputVertexBufferMemory);
+  // Create output index buffer (host-visible for compute shader writes)
+  VkDeviceSize outputIndexBufferSize = sizeof(uint32_t) * 36; // Max 36 indices for cube
+  CreateBuffer(device, physicalDevice, outputIndexBufferSize,
+      VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT,
+      VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT,
+      vk.outputIndexBuffer, vk.outputIndexBufferMemory);
+
+  std::vector<uint32_t> zeroIndices(36, 0);
+  CopyDataToBuffer(
+    device, 
+    vk.outputIndexBufferMemory, 
+    0, 
+    outputIndexBufferSize, 
+    zeroIndices.data()
+  );
 
   // Create visible count buffer
   CreateBuffer(device, physicalDevice, sizeof(uint32_t),
@@ -401,7 +523,7 @@ void UnitStateDrawable::OnCreate(
       context.device, context.physicalDevice, unitVertices, vk.vertexBuffer, vk.vertexBufferMemory);
 
   // Create index buffer for indexed drawing
-  std::vector<uint16_t> indices = GenerateCubeIndices(4, 6); // 4 vertices per face, 6 faces
+  std::vector<uint32_t> indices = GenerateCubeIndices(4, 6); // 4 vertices per face, 6 faces
   CreateIndexBuffer(
       context.device, context.physicalDevice, indices, vk.indexBuffer, vk.indexBufferMemory);
 
@@ -428,36 +550,41 @@ void UnitStateDrawable::OnCreate(
   computePipelineInfo.layout = vk.pipelineLayout; // Will be created below
 
   // Create descriptor set layout for compute shader (SSBOs)
-  VkDescriptorSetLayoutBinding computeBindings[5]{};
+  VkDescriptorSetLayoutBinding computeBindings[6]{};
   // Input vertices SSBO (binding 0)
   computeBindings[0].binding         = 0;
   computeBindings[0].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   computeBindings[0].descriptorCount = 1;
   computeBindings[0].stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT;
-  // Output vertices SSBO (binding 1)
+  // Index buffer (binding 1)
   computeBindings[1].binding         = 1;
   computeBindings[1].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   computeBindings[1].descriptorCount = 1;
   computeBindings[1].stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT;
-  // Visible count SSBO (binding 2)
+  // Output vertices SSBO (binding 2)
   computeBindings[2].binding         = 2;
   computeBindings[2].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   computeBindings[2].descriptorCount = 1;
   computeBindings[2].stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT;
-  // Indirect draw SSBO (binding 3)
+  // Visible count SSBO (binding 3)
   computeBindings[3].binding         = 3;
   computeBindings[3].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   computeBindings[3].descriptorCount = 1;
   computeBindings[3].stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT;
-  // Frustum planes uniform buffer (binding 4)
+  // Indirect draw SSBO (binding 4)
   computeBindings[4].binding         = 4;
-  computeBindings[4].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  computeBindings[4].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   computeBindings[4].descriptorCount = 1;
   computeBindings[4].stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT;
+  // Frustum planes uniform buffer (binding 5)
+  computeBindings[5].binding         = 5;
+  computeBindings[5].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  computeBindings[5].descriptorCount = 1;
+  computeBindings[5].stageFlags      = VK_SHADER_STAGE_COMPUTE_BIT;
 
   VkDescriptorSetLayoutCreateInfo computeLayoutInfo{};
   computeLayoutInfo.sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-  computeLayoutInfo.bindingCount = 5;
+  computeLayoutInfo.bindingCount = 6;
   computeLayoutInfo.pBindings    = computeBindings;
 
   if (vkCreateDescriptorSetLayout(context.device, &computeLayoutInfo, nullptr,
@@ -517,9 +644,10 @@ void UnitStateDrawable::OnCreate(
 
   // Create descriptor pool
   VkDescriptorPoolSize poolSizes[3]{};
-  poolSizes[0].type            = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-  poolSizes[0].descriptorCount = 4; // 4 SSBOs for compute
-  poolSizes[1].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+  poolSizes[0].type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+  poolSizes[0].descriptorCount =
+      5; // 5 SSBOs for compute (vertices + index + output + count + indirect)
+  poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
   poolSizes[1].descriptorCount =
       9; // 6 textures + 1 lighting texture + 1 AO texture + 1 normal texture
   poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
@@ -556,10 +684,15 @@ void UnitStateDrawable::OnCreate(
   inputBufferInfo2.offset = 0;
   inputBufferInfo2.range  = sizeof(unitVertices[0]) * unitVertices.size();
 
+  VkDescriptorBufferInfo indexBufferInfo2{};
+  indexBufferInfo2.buffer = vk.indexBuffer;
+  indexBufferInfo2.offset = 0;
+  indexBufferInfo2.range  = sizeof(uint32_t) * 36; // 6 faces × 6 indices
+
   VkDescriptorBufferInfo outputBufferInfo2{};
-  outputBufferInfo2.buffer = vk.outputVertexBuffer;
+  outputBufferInfo2.buffer = vk.outputIndexBuffer;
   outputBufferInfo2.offset = 0;
-  outputBufferInfo2.range  = sizeof(VertexOutput) * unitVertices.size();
+  outputBufferInfo2.range  = sizeof(uint32_t) * 36; // Max 36 indices for cube
 
   VkDescriptorBufferInfo countBufferInfo2{};
   countBufferInfo2.buffer = vk.visibleCountBuffer;
@@ -576,7 +709,7 @@ void UnitStateDrawable::OnCreate(
   frustumBufferInfo2.offset = 0;
   frustumBufferInfo2.range  = sizeof(FrustumPlanes);
 
-  VkWriteDescriptorSet computeWrites[5]{};
+  VkWriteDescriptorSet computeWrites[6]{};
   computeWrites[0].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   computeWrites[0].dstSet          = vk.computeDescriptorSet;
   computeWrites[0].dstBinding      = 0;
@@ -591,7 +724,7 @@ void UnitStateDrawable::OnCreate(
   computeWrites[1].dstArrayElement = 0;
   computeWrites[1].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   computeWrites[1].descriptorCount = 1;
-  computeWrites[1].pBufferInfo     = &outputBufferInfo2;
+  computeWrites[1].pBufferInfo     = &indexBufferInfo2;
 
   computeWrites[2].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   computeWrites[2].dstSet          = vk.computeDescriptorSet;
@@ -599,7 +732,7 @@ void UnitStateDrawable::OnCreate(
   computeWrites[2].dstArrayElement = 0;
   computeWrites[2].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   computeWrites[2].descriptorCount = 1;
-  computeWrites[2].pBufferInfo     = &countBufferInfo2;
+  computeWrites[2].pBufferInfo     = &outputBufferInfo2;
 
   computeWrites[3].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   computeWrites[3].dstSet          = vk.computeDescriptorSet;
@@ -607,17 +740,25 @@ void UnitStateDrawable::OnCreate(
   computeWrites[3].dstArrayElement = 0;
   computeWrites[3].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   computeWrites[3].descriptorCount = 1;
-  computeWrites[3].pBufferInfo     = &indirectBufferInfo2;
+  computeWrites[3].pBufferInfo     = &countBufferInfo2;
 
   computeWrites[4].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
   computeWrites[4].dstSet          = vk.computeDescriptorSet;
   computeWrites[4].dstBinding      = 4;
   computeWrites[4].dstArrayElement = 0;
-  computeWrites[4].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  computeWrites[4].descriptorType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
   computeWrites[4].descriptorCount = 1;
-  computeWrites[4].pBufferInfo     = &frustumBufferInfo2;
+  computeWrites[4].pBufferInfo     = &indirectBufferInfo2;
 
-  vkUpdateDescriptorSets(context.device, 5, computeWrites, 0, nullptr);
+  computeWrites[5].sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+  computeWrites[5].dstSet          = vk.computeDescriptorSet;
+  computeWrites[5].dstBinding      = 5;
+  computeWrites[5].dstArrayElement = 0;
+  computeWrites[5].descriptorType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+  computeWrites[5].descriptorCount = 1;
+  computeWrites[5].pBufferInfo     = &frustumBufferInfo2;
+
+  vkUpdateDescriptorSets(context.device, 6, computeWrites, 0, nullptr);
 
   // Allocate graphics descriptor set
   VkDescriptorSetAllocateInfo graphicsAllocInfo{};
@@ -904,7 +1045,6 @@ void UnitStateDrawable::OnCreate(
   memcpy(lightingBufferData, &lightingData, lightingBufferSize);
   vkUnmapMemory(context.device, vk.placeholderLightingBufferMemory);
 
-  // Create placeholder AO texture (1x1 white texture)
   VkImageCreateInfo aoImageInfo{};
   aoImageInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
   aoImageInfo.imageType     = VK_IMAGE_TYPE_2D;
@@ -942,7 +1082,6 @@ void UnitStateDrawable::OnCreate(
 
   vkBindImageMemory(context.device, vk.placeholderAOTexture, vk.placeholderAOTextureMemory, 0);
 
-  // Fill AO texture with white (no occlusion)
   VkBuffer           aoStagingBuffer;
   VkDeviceMemory     aoStagingBufferMemory;
   VkBufferCreateInfo aoStagingBufferInfo{};
@@ -1249,8 +1388,8 @@ void UnitStateDrawable::OnCreate(
   triplanarSettingsWrite.descriptorCount = 1;
   triplanarSettingsWrite.pBufferInfo     = &triplanarBufferInfo2;
 
-  std::array<VkWriteDescriptorSet, 5> descriptorWrites = {lightingBufferWrite, lightingTextureWrite,
-      settingsWrite, aoTextureWrite, triplanarSettingsWrite};
+  std::array descriptorWrites = {lightingBufferWrite, lightingTextureWrite, settingsWrite,
+      aoTextureWrite, triplanarSettingsWrite};
 
   vkUpdateDescriptorSets(context.device, static_cast<uint32_t>(descriptorWrites.size()),
       descriptorWrites.data(), 0, nullptr);
@@ -1302,48 +1441,83 @@ void UnitStateDrawable::OnCreate(
 
   VkPipelineShaderStageCreateInfo graphicsShaderStages[] = {
       vertShaderStageInfo, fragShaderStageInfo};
-  // Vertex input for output buffer (VertexOutput structure from compute shader)
+  // Vertex input for UnitVertex structure from vertex buffer
   VkVertexInputBindingDescription inputBindingDescription{};
   inputBindingDescription.binding   = 0;
-  inputBindingDescription.stride    = sizeof(VertexOutput);
+  inputBindingDescription.stride    = sizeof(UnitVertex);
   inputBindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-  std::array<VkVertexInputAttributeDescription, 7> inputAttributeDescriptions{};
-  // Position (vec4) - Clip space from compute shader
+  std::array<VkVertexInputAttributeDescription, 14> inputAttributeDescriptions{};
+  // Position (vec4)
   inputAttributeDescriptions[0].binding  = 0;
   inputAttributeDescriptions[0].location = 0;
   inputAttributeDescriptions[0].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
-  inputAttributeDescriptions[0].offset   = offsetof(VertexOutput, position);
-  // WorldPosAndUV (vec4) - worldX, worldY, worldZ, texCoords.x
+  inputAttributeDescriptions[0].offset   = offsetof(UnitVertex, position);
+  // PolRight (vec4)
   inputAttributeDescriptions[1].binding  = 0;
   inputAttributeDescriptions[1].location = 1;
   inputAttributeDescriptions[1].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
-  inputAttributeDescriptions[1].offset   = offsetof(VertexOutput, worldPosAndUV);
-  // UVAndLighting (vec4) - texCoords.y, lightingEmit, transparencyLevel, faceIndex
+  inputAttributeDescriptions[1].offset   = offsetof(UnitVertex, polRight);
+  // PolLeft (vec4)
   inputAttributeDescriptions[2].binding  = 0;
   inputAttributeDescriptions[2].location = 2;
   inputAttributeDescriptions[2].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
-  inputAttributeDescriptions[2].offset   = offsetof(VertexOutput, uvAndLighting);
-  // Material (vec4) - albR, albG, albB, metallic
+  inputAttributeDescriptions[2].offset   = offsetof(UnitVertex, polLeft);
+  // TexCoords (vec2)
   inputAttributeDescriptions[3].binding  = 0;
   inputAttributeDescriptions[3].location = 3;
-  inputAttributeDescriptions[3].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
-  inputAttributeDescriptions[3].offset   = offsetof(VertexOutput, material);
-  // RoughnessAndTan (vec4) - roughness, tanX, tanY, tanZ
+  inputAttributeDescriptions[3].format   = VK_FORMAT_R32G32_SFLOAT;
+  inputAttributeDescriptions[3].offset   = offsetof(UnitVertex, texCoords);
+  // LightingEmit (uint)
   inputAttributeDescriptions[4].binding  = 0;
   inputAttributeDescriptions[4].location = 4;
-  inputAttributeDescriptions[4].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
-  inputAttributeDescriptions[4].offset   = offsetof(VertexOutput, roughnessAndTan);
-  // Bitangent (vec4) - bitanX, bitanY, bitanZ, padding
+  inputAttributeDescriptions[4].format   = VK_FORMAT_R32_UINT;
+  inputAttributeDescriptions[4].offset   = offsetof(UnitVertex, lightingEmit);
+  // TransparencyLevel (uint)
   inputAttributeDescriptions[5].binding  = 0;
   inputAttributeDescriptions[5].location = 5;
-  inputAttributeDescriptions[5].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
-  inputAttributeDescriptions[5].offset   = offsetof(VertexOutput, bitangent);
-  // GeometricNormal (vec4) - normX, normY, normZ, padding
+  inputAttributeDescriptions[5].format   = VK_FORMAT_R32_UINT;
+  inputAttributeDescriptions[5].offset   = offsetof(UnitVertex, transparencyLevel);
+  // FaceIndex (uint)
   inputAttributeDescriptions[6].binding  = 0;
   inputAttributeDescriptions[6].location = 6;
-  inputAttributeDescriptions[6].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
-  inputAttributeDescriptions[6].offset   = offsetof(VertexOutput, geometricNormal);
+  inputAttributeDescriptions[6].format   = VK_FORMAT_R32_UINT;
+  inputAttributeDescriptions[6].offset   = offsetof(UnitVertex, faceIndex);
+  // Roughness (float)
+  inputAttributeDescriptions[7].binding  = 0;
+  inputAttributeDescriptions[7].location = 7;
+  inputAttributeDescriptions[7].format   = VK_FORMAT_R32_SFLOAT;
+  inputAttributeDescriptions[7].offset   = offsetof(UnitVertex, roughness);
+  // Metallic (float)
+  inputAttributeDescriptions[8].binding  = 0;
+  inputAttributeDescriptions[8].location = 8;
+  inputAttributeDescriptions[8].format   = VK_FORMAT_R32_SFLOAT;
+  inputAttributeDescriptions[8].offset   = offsetof(UnitVertex, metallic);
+  // Padding1 (float)
+  inputAttributeDescriptions[9].binding  = 0;
+  inputAttributeDescriptions[9].location = 9;
+  inputAttributeDescriptions[9].format   = VK_FORMAT_R32_SFLOAT;
+  inputAttributeDescriptions[9].offset   = offsetof(UnitVertex, padding1);
+  // Albedo (vec4)
+  inputAttributeDescriptions[10].binding  = 0;
+  inputAttributeDescriptions[10].location = 10;
+  inputAttributeDescriptions[10].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
+  inputAttributeDescriptions[10].offset   = offsetof(UnitVertex, albedo);
+  // Tangent (vec4)
+  inputAttributeDescriptions[11].binding  = 0;
+  inputAttributeDescriptions[11].location = 11;
+  inputAttributeDescriptions[11].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
+  inputAttributeDescriptions[11].offset   = offsetof(UnitVertex, tangent);
+  // Bitangent (vec4)
+  inputAttributeDescriptions[12].binding  = 0;
+  inputAttributeDescriptions[12].location = 12;
+  inputAttributeDescriptions[12].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
+  inputAttributeDescriptions[12].offset   = offsetof(UnitVertex, bitangent);
+  // Normal (vec4)
+  inputAttributeDescriptions[13].binding  = 0;
+  inputAttributeDescriptions[13].location = 13;
+  inputAttributeDescriptions[13].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
+  inputAttributeDescriptions[13].offset   = offsetof(UnitVertex, normal);
 
   VkPipelineVertexInputStateCreateInfo vertexInputInfo{};
   vertexInputInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
@@ -1708,13 +1882,13 @@ void UnitStateDrawable::OnDraw(
   if (vk.pipeline != VK_NULL_HANDLE && vk.pipelineLayout != VK_NULL_HANDLE)
   {
     vkCmdBindPipeline(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS, vk.pipeline);
-    // Bind output vertex buffer (culled vertices from compute shader)
-    VkBuffer     vertexBuffers[] = {vk.outputVertexBuffer};
+    // Bind original vertex buffer (all vertices)
+    VkBuffer     vertexBuffers[] = {vk.vertexBuffer};
     VkDeviceSize offsets[]       = {0};
     vkCmdBindVertexBuffers(context.commandBuffers[0], 0, 1, vertexBuffers, offsets);
 
-    // Bind index buffer for indexed drawing
-    vkCmdBindIndexBuffer(context.commandBuffers[0], vk.indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+    // Bind output index buffer (culled indices from compute shader)
+    vkCmdBindIndexBuffer(context.commandBuffers[0], vk.outputIndexBuffer, 0, VK_INDEX_TYPE_UINT32);
 
     // Bind graphics descriptor set for textures
     vkCmdBindDescriptorSets(context.commandBuffers[0], VK_PIPELINE_BIND_POINT_GRAPHICS,
@@ -1765,7 +1939,7 @@ void UnitStateDrawable::OnDrawCompute(
   LightingBlock lightingData{};
   lightingData.sunDirection         = glm::normalize(glm::vec3(0.5f, 0.8f, 0.6f));
   lightingData.sunColor             = glm::vec3(0.6f, 0.7f, 1.0f);
-  lightingData.ambientStrength      = 0.3f;
+  lightingData.ambientStrength      = 0.7f;
   World::AbstractCamera::Eye eyePos = cam.eye;
   lightingData.cameraPosition       = glm::vec3(eyePos.x, eyePos.y, eyePos.z);
 
@@ -1794,12 +1968,11 @@ void UnitStateDrawable::OnDrawCompute(
         VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(UniformBufferObject),
         &ubo);
 
-    // Calculate workgroup count (each workgroup processes 64 triangles)
-    uint32_t triangleCount  = unitVertices.size() / 3;
+    // Calculate workgroup count, each workgroup processes 64 triangles
+    uint32_t triangleCount  = 36 / 3; // 12 triangles
     uint32_t workgroupCount = (triangleCount + 63) / 64;
     vkCmdDispatch(context.commandBuffers[0], workgroupCount, 1, 1);
 
-    // Barrier to ensure compute shader finishes writing before the copy operation starts
     VkBufferMemoryBarrier computeToCopyBarrier{};
     computeToCopyBarrier.sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
     computeToCopyBarrier.srcAccessMask       = VK_ACCESS_SHADER_WRITE_BIT;
@@ -1813,7 +1986,6 @@ void UnitStateDrawable::OnDrawCompute(
     vkCmdPipelineBarrier(context.commandBuffers[0], VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1, &computeToCopyBarrier, 0, nullptr);
 
-    // Copy visible vertex count to indirect draw buffer (vertexCount field) [🖈]
     VkBufferCopy copyRegion{};
     copyRegion.srcOffset = 0;
     copyRegion.dstOffset = 0;
@@ -1834,37 +2006,29 @@ void UnitStateDrawable::OnDrawCompute(
     vkCmdPipelineBarrier(context.commandBuffers[0], VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 1, &indirectTransferBarrier, 0, nullptr);
 
-    // Fill instanceCount, firstVertex, firstInstance fields with total safety [🖈]
     vkCmdFillBuffer(
-        context.commandBuffers[0], vk.indirectDrawBuffer, sizeof(uint32_t), sizeof(uint32_t),
-        1 // instanceCount = 1
-    );
-    vkCmdFillBuffer(
-        context.commandBuffers[0], vk.indirectDrawBuffer, sizeof(uint32_t) * 2, sizeof(uint32_t),
-        0 // firstVertex = 0
-    );
-    vkCmdFillBuffer(
-        context.commandBuffers[0], vk.indirectDrawBuffer, sizeof(uint32_t) * 3, sizeof(uint32_t),
-        0 // firstInstance = 0
-    );
+        context.commandBuffers[0], vk.indirectDrawBuffer, sizeof(uint32_t), sizeof(uint32_t), 1);
+    vkCmdFillBuffer(context.commandBuffers[0], vk.indirectDrawBuffer, sizeof(uint32_t) * 2,
+        sizeof(uint32_t), 0);
+    vkCmdFillBuffer(context.commandBuffers[0], vk.indirectDrawBuffer, sizeof(uint32_t) * 3,
+        sizeof(uint32_t), 0);
+    vkCmdFillBuffer(context.commandBuffers[0], vk.indirectDrawBuffer, sizeof(uint32_t) * 4,
+        sizeof(uint32_t), 0);
 
-    // Final memory barrier to ensure everything is ready before entering Graphics [🖈]
     VkBufferMemoryBarrier barriers[2]{};
 
-    // Output vertex buffer barrier
     barriers[0].sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
     barriers[0].srcAccessMask       = VK_ACCESS_SHADER_WRITE_BIT;
-    barriers[0].dstAccessMask       = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+    barriers[0].dstAccessMask       = VK_ACCESS_INDEX_READ_BIT;
     barriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-    barriers[0].buffer              = vk.outputVertexBuffer;
+    barriers[0].buffer              = vk.outputIndexBuffer;
     barriers[0].offset              = 0;
     barriers[0].size                = VK_WHOLE_SIZE;
 
     // Indirect draw buffer barrier [🖈]
-    barriers[1].sType = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
-    barriers[1].srcAccessMask =
-        VK_ACCESS_TRANSFER_WRITE_BIT; // Espera al último vkCmdFillBuffer parcial
+    barriers[1].sType               = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+    barriers[1].srcAccessMask       = VK_ACCESS_TRANSFER_WRITE_BIT;
     barriers[1].dstAccessMask       = VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
     barriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
     barriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
@@ -1873,8 +2037,7 @@ void UnitStateDrawable::OnDrawCompute(
     barriers[1].size                = VK_WHOLE_SIZE;
 
     vkCmdPipelineBarrier(context.commandBuffers[0],
-        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-            VK_PIPELINE_STAGE_TRANSFER_BIT, // Bloquea ambas etapas previas
+        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
         VK_PIPELINE_STAGE_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0, 0, nullptr, 2,
         barriers, 0, nullptr);
   }
@@ -1887,8 +2050,8 @@ void UnitStateDrawable::OnDestroy(
   vkFreeMemory(context.device, vk.vertexBufferMemory, nullptr);
   vkDestroyBuffer(context.device, vk.indexBuffer, nullptr);
   vkFreeMemory(context.device, vk.indexBufferMemory, nullptr);
-  vkDestroyBuffer(context.device, vk.outputVertexBuffer, nullptr);
-  vkFreeMemory(context.device, vk.outputVertexBufferMemory, nullptr);
+  vkDestroyBuffer(context.device, vk.outputIndexBuffer, nullptr);
+  vkFreeMemory(context.device, vk.outputIndexBufferMemory, nullptr);
   vkDestroyBuffer(context.device, vk.visibleCountBuffer, nullptr);
   vkFreeMemory(context.device, vk.visibleCountBufferMemory, nullptr);
   vkDestroyBuffer(context.device, vk.indirectDrawBuffer, nullptr);
