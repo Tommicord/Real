@@ -123,6 +123,10 @@ struct TriplanarSettings
 {
   alignas(4) float scale;
   alignas(4) float sharpness;
+  alignas(4) float offsetX;
+  alignas(4) float offsetY;
+  alignas(4) float offsetZ;
+  alignas(4) float blendMix;
 };
 
 // Frustum planes for culling
@@ -501,6 +505,10 @@ static void CreateUniformBuffers(
   TriplanarSettings initialTriplanar{};
   initialTriplanar.scale     = 1.0f;
   initialTriplanar.sharpness = 2.0f;
+  initialTriplanar.offsetX  = 0.0f;
+  initialTriplanar.offsetY  = 0.0f;
+  initialTriplanar.offsetZ  = 0.0f;
+  initialTriplanar.blendMix = 1.0f;
   CopyDataToBuffer(
       device, vk.triplanarSettingsBufferMemory, 0, sizeof(TriplanarSettings), &initialTriplanar);
 }

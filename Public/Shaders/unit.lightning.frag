@@ -6,10 +6,10 @@ layout (location = 1) smooth in vec2 v_TexCoords;
 layout (location = 2) flat in uint v_LightingEmit;
 layout (location = 3) flat in uint v_TransparencyLevel;
 layout (location = 4) flat in uint v_FaceIndex;
-layout (location = 5) flat in vec3 v_Albedo;
-layout (location = 6) flat in float v_Metallic;
-layout (location = 7) flat in float v_Roughness;
-layout (location = 8) flat in mat3 v_TBN;
+layout (location = 5) smooth in vec3 v_Albedo;
+layout (location = 6) smooth in float v_Metallic;
+layout (location = 7) smooth in float v_Roughness;
+layout (location = 8) in mat3 v_TBN;
 layout (location = 11) smooth in vec3 v_GeometricNormal;
 
 // Output color
@@ -31,6 +31,10 @@ layout (binding = 11) uniform sampler2D u_NormalTexture;
 layout (binding = 12) uniform TriplanarSettings {
     float scale;
     float sharpness;
+    float offsetX;
+    float offsetY;
+    float offsetZ;
+    float blendMix;
 } triplanar;
 
 // The texture of the Unit
@@ -143,48 +147,77 @@ vec3 CalculateAmbient(vec3 N, vec3 V, vec3 F0, PBRMaterial material, vec3 ambien
     return ambient;
 }
 
-// Triplanar mapping function
-vec4 TriplanarMapping(vec3 worldPos, vec3 normal, int faceIndex) {
-    // Calculate blend weights based on normal
-    vec3 blend = abs(normal);
+// Triplanar mapping function - hybrid approach with UV blending
+vec4 TriplanarMapping(vec3 worldPos, vec3 geometricNormal, int faceIndex) {
+    // Calculate blend weights based on geometric normal
+    vec3 blend = abs(geometricNormal);
     blend = pow(blend, vec3(triplanar.sharpness));
-    blend /= dot(blend, vec3(1.0));
+    float b = blend.x + blend.y + blend.z;
+    blend /= vec3(b, b, b);
 
-    // Calculate UV coordinates for each plane
-    vec2 uvX = worldPos.zy * triplanar.scale;
-    vec2 uvY = worldPos.xz * triplanar.scale;
-    vec2 uvZ = worldPos.xy * triplanar.scale;
+    // Apply blend mix to control blending strength
+    blend *= triplanar.blendMix;
 
-    // Sample texture from each plane
+    // Calculate triplanar UV coordinates for each plane with offsets
+    vec2 uvX = (worldPos.zy + vec2(triplanar.offsetX, triplanar.offsetY)) * triplanar.scale;
+    vec2 uvY = (worldPos.xz + vec2(triplanar.offsetX, triplanar.offsetZ)) * triplanar.scale;
+    vec2 uvZ = (worldPos.xy + vec2(triplanar.offsetX, triplanar.offsetY)) * triplanar.scale;
+
+    // Sample texture from each plane using triplanar
     vec4 colX = texture(u_Texture[faceIndex], uvX);
     vec4 colY = texture(u_Texture[faceIndex], uvY);
     vec4 colZ = texture(u_Texture[faceIndex], uvZ);
 
-    // Blend the three samples
-    vec4 result = colX * blend.x + colY * blend.y + colZ * blend.z;
+    // Blend the three triplanar samples
+    vec4 triplanarResult = colX * blend.x + colY * blend.y + colZ * blend.z;
+
+    // Also sample with original UVs
+    vec4 originalUVResult = texture(u_Texture[faceIndex], v_TexCoords);
+
+    // Blend between original UV and triplanar based on how "curved" the surface is
+    // Use the deviation from axis-aligned normals as a proxy for curvature
+    float curvatureFactor = 1.0 - max(max(abs(geometricNormal.x), abs(geometricNormal.y)), abs(geometricNormal.z));
+    curvatureFactor = pow(curvatureFactor, 2.0); // Make it more pronounced
+
+    // Blend: use original UVs on flat surfaces, triplanar on curved surfaces
+    vec4 result = mix(originalUVResult, triplanarResult, curvatureFactor);
 
     return result;
 }
 
 // Triplanar mapping for single-channel textures (like AO)
-float TriplanarMappingSingle(vec3 worldPos, vec3 normal, sampler2D tex) {
-    // Calculate blend weights based on normal
-    vec3 blend = abs(normal);
+float TriplanarMappingSingle(vec3 worldPos, vec3 geometricNormal, sampler2D tex, int faceIndex) {
+    // Calculate blend weights based on geometric normal
+    vec3 blend = abs(geometricNormal);
     blend = pow(blend, vec3(triplanar.sharpness));
-    blend /= dot(blend, vec3(1.0));
+    float b = blend.x + blend.y + blend.z;
+    blend /= vec3(b, b, b);
 
-    // Calculate UV coordinates for each plane
-    vec2 uvX = worldPos.zy * triplanar.scale;
-    vec2 uvY = worldPos.xz * triplanar.scale;
-    vec2 uvZ = worldPos.xy * triplanar.scale;
+    // Apply blend mix to control blending strength
+    blend *= triplanar.blendMix;
 
-    // Sample texture from each plane
+    // Calculate triplanar UV coordinates for each plane with offsets
+    vec2 uvX = (worldPos.zy + vec2(triplanar.offsetX, triplanar.offsetY)) * triplanar.scale;
+    vec2 uvY = (worldPos.xz + vec2(triplanar.offsetX, triplanar.offsetZ)) * triplanar.scale;
+    vec2 uvZ = (worldPos.xy + vec2(triplanar.offsetX, triplanar.offsetY)) * triplanar.scale;
+
+    // Sample texture from each plane using triplanar
     float colX = texture(tex, uvX).r;
     float colY = texture(tex, uvY).r;
     float colZ = texture(tex, uvZ).r;
 
-    // Blend the three samples
-    float result = colX * blend.x + colY * blend.y + colZ * blend.z;
+    // Blend the three triplanar samples
+    float triplanarResult = colX * blend.x + colY * blend.y + colZ * blend.z;
+
+    // Also sample with original UVs
+    float originalUVResult = texture(tex, v_TexCoords).r;
+
+    // Blend between original UV and triplanar based on how "curved" the surface is
+    float curvatureFactor = 1.0 - max(max(abs(geometricNormal.x), abs(geometricNormal.y)), abs(geometricNormal.z));
+    curvatureFactor = pow(curvatureFactor, 2.0);
+
+    // Blend: use original UVs on flat surfaces, triplanar on curved surfaces
+    float result = mix(originalUVResult, triplanarResult, curvatureFactor);
 
     return result;
 }
@@ -245,13 +278,16 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
 }
 
 void main() {
-    // Normal maps
+    // Use geometric (flat) normal for triplanar mapping blend calculations
+    vec3 geoNormal = normalize(v_GeometricNormal);
+    
+    // Normal maps - use original UV-based sampling (normal maps are in tangent space)
     vec3 normalMapSample = texture(u_NormalTexture, v_TexCoords).rgb;
     vec3 tangentNormal = normalMapSample * 2.0 - 1.0;
     vec3 normal = normalize(v_TBN * tangentNormal);
 
-    // Use triplanar mapping for texture sampling
-    vec4 texColor = TriplanarMapping(v_WorldPos, normal, int(v_FaceIndex));
+    // Use triplanar mapping for texture sampling with geometric normal
+    vec4 texColor = TriplanarMapping(v_WorldPos, geoNormal, int(v_FaceIndex));
 
     vec3 albedoLinear = pow(texColor.rgb, vec3(2.2));
 
@@ -265,8 +301,8 @@ void main() {
     material.metallic = v_Metallic;
     material.roughness = v_Roughness;
 
-    // Sample ambient occlusion
-    float ao = texture(u_AOTexture, v_TexCoords).r;
+    // Sample ambient occlusion using triplanar mapping with geometric normal
+    float ao = TriplanarMappingSingle(v_WorldPos, geoNormal, u_AOTexture, int(v_FaceIndex));
     material.ao = ao;
 
     // Calculate view direction

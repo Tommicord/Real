@@ -24,14 +24,14 @@ layout(push_constant) uniform PushConstants {
 } pc;
 
 // Output to fragment shader
-layout (location = 0) out vec3 v_WorldPos;
+layout (location = 0) smooth out vec3 v_WorldPos;
 layout (location = 1) smooth out vec2 v_TexCoords;
 layout (location = 2) flat out uint v_LightingEmit;
 layout (location = 3) flat out uint v_TransparencyLevel;
 layout (location = 4) flat out uint v_FaceIndex;
-layout (location = 5) flat out vec3 v_Albedo;
-layout (location = 6) flat out float v_Metallic;
-layout (location = 7) flat out float v_Roughness;
+layout (location = 5) smooth out vec3 v_Albedo;
+layout (location = 6) smooth out float v_Metallic;
+layout (location = 7) smooth out float v_Roughness;
 layout (location = 8) out mat3 v_TBN;
 layout (location = 11) smooth out vec3 v_GeometricNormal;
 
@@ -93,4 +93,5 @@ void main() {
     v_Roughness = roughness;
     v_TBN = mat3(T, B, N);
     v_GeometricNormal = geometricNormal;
+    v_FaceIndex = a_FaceIndex;
 }
