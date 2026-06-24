@@ -5,22 +5,23 @@ layout(local_size_x = 64) in;
 
 // Vertex structure matching C++ UnitVertex
 struct VertexInput {
-    vec4 position;     // 16 bytes
-    vec4 polRight;     // 16 bytes
-    vec4 polLeft;      // 16 bytes
-    vec2 texCoords;    // 8 bytes
-    uint lightingEmit; // 4 bytes
-    uint transparencyLevel; // 4 bytes
-    
-    uint faceIndex;    // 4 bytes
-    float roughness;   // 4 bytes
-    float metallic;    // 4 bytes
-    float polCurve;    // 4 bytes (curvature of unit polygons)
+    vec4 position;
+    vec4 polRight;
+    vec4 polLeft;
+    vec2 texCoords;
+    uint lightingEmit;
+    uint transparencyLevel;
 
-    vec4 albedo;       // 16 bytes (albR, albG, albB + padding)
-    vec4 tangent;      // 16 bytes (tanX, tanY, tanZ + padding)
-    vec4 bitangent;    // 16 bytes (bitanX, bitanY, bitanZ + padding)
-    vec4 normal;       // 16 bytes (normX, normY, normZ + padding)
+    uint faceIndex;
+    float roughness;
+    float metallic;
+    uint padding;  // Padding for 16-byte alignment of albedo
+
+    vec4 polCurve;
+    vec4 albedo;
+    vec4 tangent;
+    vec4 bitangent;
+    vec4 normal;
 };
 
 // Output vertex structure (same as input for rendering)
@@ -31,12 +32,13 @@ struct VertexOutput {
     vec2 texCoords;
     uint lightingEmit;
     uint transparencyLevel;
-    
+
     uint faceIndex;
     float roughness;
     float metallic;
-    float polCurve;
-    
+    float padding; // Padding for 16-byte alignment
+
+    vec4 polCurve;
     vec4 albedo;
     vec4 tangent;
     vec4 bitangent;
@@ -44,12 +46,12 @@ struct VertexOutput {
 };
 
 // Input buffer: base vertices (4 vertices per face)
-layout(set = 0, binding = 0) readonly buffer InputVertices {
+layout(std430, set = 0, binding = 0) readonly buffer InputVertices {
     VertexInput vertices[];
 };
 
 // Index buffer for base faces
-layout(set = 0, binding = 1) readonly buffer IndexBuffer {
+layout(std430, set = 0, binding = 1) readonly buffer IndexBuffer {
     uint indices[];
 };
 
@@ -64,7 +66,7 @@ layout(std430, set = 0, binding = 3) buffer OutputIndices {
 };
 
 // Atomic counter for vertex and index counts
-layout(set = 0, binding = 4) buffer Counters {
+layout(std430, set = 0, binding = 4) buffer Counters {
     uint vertexCount;
     uint indexCount;
 };
@@ -78,7 +80,7 @@ struct DrawIndexedParams {
     uint firstInstance;
 };
 
-layout(set = 0, binding = 5) buffer IndirectDraw {
+layout(std430, set = 0, binding = 5) buffer IndirectDraw {
     DrawIndexedParams drawParams;
 };
 
@@ -103,7 +105,13 @@ VertexInput InterpolateVertex(VertexInput v0, VertexInput v1, float t) {
     result.faceIndex = v0.faceIndex;
     result.roughness = mix(v0.roughness, v1.roughness, t);
     result.metallic = mix(v0.metallic, v1.metallic, t);
-    result.polCurve = mix(v0.polCurve, v1.polCurve, t);
+    float polCurveV0 = v0.polCurve.x;
+    float polCurveH0 = v0.polCurve.y;
+    float polCurveV1 = v1.polCurve.x;
+    float polCurveH1 = v1.polCurve.y;
+    result.polCurve.x = mix(polCurveV0, polCurveV1, t);
+    result.polCurve.y = mix(polCurveH0, polCurveH1, t);
+    result.padding = 0;  // Initialize padding field
     result.albedo = mix(v0.albedo, v1.albedo, t);
     result.tangent = mix(v0.tangent, v1.tangent, t);
     result.bitangent = mix(v0.bitangent, v1.bitangent, t);
@@ -118,47 +126,201 @@ VertexInput BilinearInterpolate(VertexInput v00, VertexInput v01, VertexInput v1
     return InterpolateVertex(v0, v1, uv.y);
 }
 
+// Get curvature from adjacent faces for smooth transitions
+void GetAdjacentCurvature(uint currentFaceIndex, uint faceCount, out float adjVertical, out float adjHorizontal) {
+    adjVertical = 0.0;
+    adjHorizontal = 0.0;
+    const float adjacentFactor = 1.0;
+
+    if (currentFaceIndex == 0 || currentFaceIndex == 1) {
+        for (uint i = 2; i < 6 && i < faceCount; i++) {
+            uint adjBaseIndex = i * verticesPerFace;
+            adjVertical += max(0.0, vertices[adjBaseIndex].polCurve.x) * adjacentFactor;
+            adjHorizontal += max(0.0, vertices[adjBaseIndex].polCurve.y) * adjacentFactor;
+        }
+    } else if (currentFaceIndex == 2 || currentFaceIndex == 3) {
+        if (0 < faceCount) {
+            uint adjBaseIndex = 0 * verticesPerFace;
+            adjVertical += max(0.0, vertices[adjBaseIndex].polCurve.x) * adjacentFactor;
+            adjHorizontal += max(0.0, vertices[adjBaseIndex].polCurve.y) * adjacentFactor;
+        }
+    } else if (currentFaceIndex == 4 || currentFaceIndex == 5) {
+        if (0 < faceCount) {
+            uint adjBaseIndex = 0 * verticesPerFace;
+            adjVertical += max(0.0, vertices[adjBaseIndex].polCurve.x) * adjacentFactor;
+            adjHorizontal += max(0.0, vertices[adjBaseIndex].polCurve.y) * adjacentFactor;
+        }
+    }
+}
+
 // Apply parabolic curvature to a vertex
-void ApplyCurvature(inout VertexInput v) {
-    if (v.polCurve != 0.0) {
-        vec2 faceUV = v.texCoords;
+void ApplyCurvature(inout VertexInput v, float adjVertical, float adjHorizontal, uint faceIndex, vec2 faceUV) {
+    float totalVertical = v.polCurve.x + adjVertical;
+    float totalHorizontal = v.polCurve.y + adjHorizontal;
+    float totalCurvature = totalVertical + totalHorizontal;
+
+    if (totalCurvature != 0.0) {
         vec2 centerOffset = faceUV - vec2(0.5);
         float distanceFromCenter = length(centerOffset);
-        // Parabolic displacement: maximum at edges, zero at center
-        float curvatureAmount = v.polCurve * (distanceFromCenter * distanceFromCenter * 2.0);
+        float curvatureAmount = totalCurvature * (distanceFromCenter * distanceFromCenter * 2.0);
+
         v.position.xyz += v.normal.xyz * curvatureAmount;
-        
-        // Recompute normal based on curvature gradient
-        // For a parabolic surface, the normal changes based on position
-        vec2 gradient2D = centerOffset * v.polCurve * 4.0;
-        vec3 gradient = vec3(gradient2D, 0.0);
+
+        vec2 gradient2D = centerOffset * totalCurvature * 4.0;
+        vec3 gradient = vec3(gradient2D.x, 0.0, gradient2D.y);
+
         vec3 tangent = normalize(v.tangent.xyz + gradient);
         vec3 bitangent = normalize(v.bitangent.xyz + gradient);
         v.normal = vec4(normalize(cross(tangent, bitangent)), 0.0);
     }
+
 }
 
 void main() {
     uint globalID = gl_GlobalInvocationID.x;
-    
+
     // Each workgroup processes one face
     if (globalID >= pc.faceCount) {
         return;
     }
-    
+
     // Get the 4 vertices for this face
     uint baseIndex = globalID * verticesPerFace;
     VertexInput v0 = vertices[baseIndex];
     VertexInput v1 = vertices[baseIndex + 1];
     VertexInput v2 = vertices[baseIndex + 2];
     VertexInput v3 = vertices[baseIndex + 3];
-    
-    // Skip faces with no curvature
-    if (v0.polCurve == 0.0) {
-        // Copy original vertices and indices
-        uint vertexOffset = atomicAdd(vertexCount, verticesPerFace);
-        uint indexOffset = atomicAdd(indexCount, 6);
-        
+
+    // Get curvature packed values
+    float polCurveV = v0.polCurve.x;
+    float polCurveH = v0.polCurve.y;
+
+    // Get curvature from adjacent faces for smooth transitions
+    float adjVertical, adjHorizontal;
+    GetAdjacentCurvature(globalID, pc.faceCount, adjVertical, adjHorizontal);
+
+    float totalVertical = polCurveV + adjVertical;
+    float totalHorizontal = polCurveH + adjHorizontal;
+
+    bool shouldTessellate = (totalVertical != 0.0 || totalHorizontal != 0.0);
+    if (globalID == 2 || globalID == 3 || globalID == 4 || globalID == 5) {
+        // Side faces: tessellate if top face has curvature
+        shouldTessellate = (adjVertical != 0.0 || adjHorizontal != 0.0);
+    }
+    // Constants
+    const uint MAX_VERTICES = 4096;
+    const uint MAX_INDICES = 32738;
+
+    if (shouldTessellate) {
+        // Tessellate the face into a grid for curved surface
+        uint tess = pc.tessellationLevel;
+        uint verticesPerEdge = tess + 1;
+        uint gridVertexCount = verticesPerEdge * verticesPerEdge;
+        uint gridIndexCount = tess * tess * 6;
+
+        uint currentVertexCount = vertexCount;
+        uint currentIndexCount = indexCount;
+
+        if (currentVertexCount + gridVertexCount > MAX_VERTICES) {
+            return;
+        }
+        if (currentIndexCount + gridIndexCount > MAX_INDICES) {
+            return;
+        }
+
+        uint curvedVertexOffset = atomicAdd(vertexCount, gridVertexCount);
+        uint curvedIndexOffset = atomicAdd(indexCount, gridIndexCount);
+
+        if (curvedVertexOffset >= MAX_VERTICES || curvedIndexOffset >= MAX_INDICES) {
+            return;
+        }
+
+        if (curvedVertexOffset + gridVertexCount > MAX_VERTICES) {
+            return;
+        }
+        if (curvedIndexOffset + gridIndexCount > MAX_INDICES) {
+            return;
+        }
+
+        // Generate tessellated curved surface vertices
+        for (uint y = 0; y < verticesPerEdge; y++) {
+            for (uint x = 0; x < verticesPerEdge; x++) {
+                vec2 uv = vec2(float(x) / float(tess), float(y) / float(tess));
+
+                // Bilinear interpolation based on texture coordinate layout
+                VertexInput v = BilinearInterpolate(v0, v3, v1, v2, uv);
+
+                // Apply curvature with additional adjacent curvature
+                ApplyCurvature(v, adjVertical, adjHorizontal, globalID, uv);
+
+                // Output curved vertex
+                VertexOutput outV;
+                outV.position = v.position;
+                outV.polRight = v.polRight;
+                outV.polLeft = v.polLeft;
+                outV.texCoords = v.texCoords;
+                outV.lightingEmit = v.lightingEmit;
+                outV.transparencyLevel = v.transparencyLevel;
+                outV.faceIndex = v.faceIndex;
+                outV.roughness = v.roughness;
+                outV.metallic = v.metallic;
+                outV.polCurve.x = totalVertical;
+                outV.polCurve.y = totalHorizontal;
+                outV.padding = 0;
+                outV.albedo = v.albedo;
+                outV.tangent = v.tangent;
+                outV.bitangent = v.bitangent;
+                outV.normal = v.normal;
+
+                uint vertexIndex = curvedVertexOffset + y * verticesPerEdge + x;
+
+                if (vertexIndex < MAX_VERTICES) {
+                    curvedVertices[vertexIndex] = outV;
+                }
+            }
+        }
+
+        // Generate indices for the curved surface tessellated grid
+        for (uint y = 0; y < tess; y++) {
+            for (uint x = 0; x < tess; x++) {
+                uint topLeft = curvedVertexOffset + y * verticesPerEdge + x;
+                uint topRight = topLeft + 1;
+                uint bottomLeft = curvedVertexOffset + (y + 1) * verticesPerEdge + x;
+                uint bottomRight = bottomLeft + 1;
+
+                uint idx = curvedIndexOffset + (y * tess + x) * 6;
+
+                if (idx + 5 < MAX_INDICES) {
+                    // Triangle 1: top-left, bottom-left, top-right
+                    curvedIndices[idx] = topLeft;
+                    curvedIndices[idx + 1] = bottomLeft;
+                    curvedIndices[idx + 2] = topRight;
+
+                    // Triangle 2: top-right, bottom-left, bottom-right
+                    curvedIndices[idx + 3] = topRight;
+                    curvedIndices[idx + 4] = bottomLeft;
+                    curvedIndices[idx + 5] = bottomRight;
+                }
+            }
+        }
+    } else {
+        uint currentVertexCount = vertexCount;
+        uint currentIndexCount = indexCount;
+
+        if (currentVertexCount + 4 > MAX_VERTICES) {
+            return;
+        }
+        if (currentIndexCount + 6 > MAX_INDICES) {
+            return;
+        }
+
+        uint baseVertexOffset = atomicAdd(vertexCount, verticesPerFace);
+        uint baseIndexOffset = atomicAdd(indexCount, 6);
+
+        if (baseVertexOffset >= MAX_VERTICES || baseIndexOffset >= MAX_INDICES) {
+            return;
+        }
+
         for (uint i = 0; i < verticesPerFace; i++) {
             VertexInput v = vertices[baseIndex + i];
             VertexOutput outV;
@@ -171,92 +333,33 @@ void main() {
             outV.faceIndex = v.faceIndex;
             outV.roughness = v.roughness;
             outV.metallic = v.metallic;
-            outV.polCurve = v.polCurve;
+            outV.polCurve.x = v.polCurve.x;
+            outV.polCurve.y = v.polCurve.y;
+            outV.padding = v.padding;
             outV.albedo = v.albedo;
             outV.tangent = v.tangent;
             outV.bitangent = v.bitangent;
             outV.normal = v.normal;
-            curvedVertices[vertexOffset + i] = outV;
+
+            uint vertexIndex = baseVertexOffset + i;
+
+            if (vertexIndex < MAX_VERTICES) {
+                curvedVertices[vertexIndex] = outV;
+            }
         }
-        
-        // Copy original indices (adjusted for new vertex offset)
-        curvedIndices[indexOffset] = vertexOffset;
-        curvedIndices[indexOffset + 1] = vertexOffset + 1;
-        curvedIndices[indexOffset + 2] = vertexOffset + 2;
-        curvedIndices[indexOffset + 3] = vertexOffset + 2;
-        curvedIndices[indexOffset + 4] = vertexOffset + 3;
-        curvedIndices[indexOffset + 5] = vertexOffset;
-        return;
-    }
-    
-    // Tessellate the face into a grid
-    uint tess = pc.tessellationLevel;
-    uint verticesPerEdge = tess + 1;
-    uint gridVertexCount = verticesPerEdge * verticesPerEdge;
-    uint gridIndexCount = tess * tess * 6; // 6 indices per grid cell (2 triangles)
-    
-    uint vertexOffset = atomicAdd(vertexCount, gridVertexCount);
-    uint indexOffset = atomicAdd(indexCount, gridIndexCount);
-    
-    // Generate tessellated vertices
-    for (uint y = 0; y < verticesPerEdge; y++) {
-        for (uint x = 0; x < verticesPerEdge; x++) {
-            vec2 uv = vec2(float(x) / float(tess), float(y) / float(tess));
-            
-            // Bilinear interpolation
-            VertexInput v = BilinearInterpolate(v0, v1, v3, v2, uv);
-            
-            // Apply curvature
-            ApplyCurvature(v);
-            
-            // Output vertex
-            VertexOutput outV;
-            outV.position = v.position;
-            outV.polRight = v.polRight;
-            outV.polLeft = v.polLeft;
-            outV.texCoords = v.texCoords;
-            outV.lightingEmit = v.lightingEmit;
-            outV.transparencyLevel = v.transparencyLevel;
-            outV.faceIndex = v.faceIndex;
-            outV.roughness = v.roughness;
-            outV.metallic = v.metallic;
-            outV.polCurve = v.polCurve;
-            outV.albedo = v.albedo;
-            outV.tangent = v.tangent;
-            outV.bitangent = v.bitangent;
-            outV.normal = v.normal;
-            
-            uint vertexIndex = vertexOffset + y * verticesPerEdge + x;
-            curvedVertices[vertexIndex] = outV;
+
+        // Copy original indices
+        if (baseIndexOffset + 5 < MAX_INDICES) {
+            curvedIndices[baseIndexOffset] = baseVertexOffset;
+            curvedIndices[baseIndexOffset + 1] = baseVertexOffset + 1;
+            curvedIndices[baseIndexOffset + 2] = baseVertexOffset + 2;
+            curvedIndices[baseIndexOffset + 3] = baseVertexOffset + 2;
+            curvedIndices[baseIndexOffset + 4] = baseVertexOffset + 3;
+            curvedIndices[baseIndexOffset + 5] = baseVertexOffset;
         }
     }
-    
-    // Generate indices for the tessellated grid
-    for (uint y = 0; y < tess; y++) {
-        for (uint x = 0; x < tess; x++) {
-            uint topLeft = vertexOffset + y * verticesPerEdge + x;
-            uint topRight = topLeft + 1;
-            uint bottomLeft = vertexOffset + (y + 1) * verticesPerEdge + x;
-            uint bottomRight = bottomLeft + 1;
-            
-            uint idx = indexOffset + (y * tess + x) * 6;
-            
-            // Triangle 1: top-left, bottom-left, top-right
-            curvedIndices[idx] = topLeft;
-            curvedIndices[idx + 1] = bottomLeft;
-            curvedIndices[idx + 2] = topRight;
-            
-            // Triangle 2: top-right, bottom-left, bottom-right
-            curvedIndices[idx + 3] = topRight;
-            curvedIndices[idx + 4] = bottomLeft;
-            curvedIndices[idx + 5] = bottomRight;
-        }
+    memoryBarrier();
+    if (globalID == pc.faceCount - 1) {
+        drawParams.indexCount = indexCount;
     }
-    
-    // Update indirect draw parameters
-    drawParams.indexCount = indexCount;
-    drawParams.instanceCount = 1;
-    drawParams.firstIndex = 0;
-    drawParams.vertexOffset = 0;
-    drawParams.firstInstance = 0;
 }

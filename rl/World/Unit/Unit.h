@@ -164,11 +164,11 @@ public:
    * Store Polygons for non-fixed Grid World */
   float polTl, polDl, polBl, polFl;
 
-  /* Indicates the curvature of the unit polygons, negative or positive
-   * Negative values indicates negative curvatures
-   * Positive values indicates positive curvatures
-   */
-  float polCurve;
+  /* Indicates the vertical curvature of the unit polygons, negative or positive */
+  float polCurveV;
+
+  /* Indicates the horizontal curvature of the unit polygons, negative or positive */
+  float polCurveH;
 
   /* Property to enable collision */
   bool mustCollide;

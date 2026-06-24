@@ -10,7 +10,7 @@ layout (location = 5) in uint a_TransparencyLevel; // Transparency level (4 byte
 layout (location = 6) in uint a_FaceIndex;         // Face index (4 bytes)
 layout (location = 7) in float a_Roughness;        // Roughness (4 bytes)
 layout (location = 8) in float a_Metallic;         // Metallic (4 bytes)
-layout (location = 9) in float a_PolCurve;          // Polygon curvature (4 bytes)
+layout (location = 9) in vec4 a_PolCurve;             // Curvature (4 bytes)
 layout (location = 10) in vec4 a_Albedo;           // Albedo (16 bytes)
 layout (location = 11) in vec4 a_Tangent;          // Tangent (16 bytes)
 layout (location = 12) in vec4 a_Bitangent;        // Bitangent (16 bytes)
@@ -34,11 +34,13 @@ layout (location = 6) smooth out float v_Metallic;
 layout (location = 7) smooth out float v_Roughness;
 layout (location = 8) out mat3 v_TBN;
 layout (location = 11) smooth out vec3 v_GeometricNormal;
+layout (location = 12) smooth out vec2 v_PolCurve;
 
 void main() {
     vec3 localPos = a_Position.xyz;
     vec2 texCoords = a_TexCoords;
-    float polCurve = a_PolCurve;
+    float polCurveV = a_PolCurve.x;
+    float polCurveH = a_PolCurve.y;
 
     uint lightingEmit     = a_LightingEmit;
     uint transparencyLevel = a_TransparencyLevel;
@@ -51,20 +53,6 @@ void main() {
     vec3 tangent = a_Tangent.xyz;
     vec3 bitangent = a_Bitangent.xyz;
     vec3 geometricNormal = a_Normal.xyz;
-
-    // Apply polygon curvature to local position
-    // Positive polCurve curves outward, negative curves inward
-    // The curvature is applied as a parabolic displacement based on position within the face
-    if (polCurve != 0.0) {
-        // Use texture coordinates to determine position within the face (0-1 range)
-        vec2 faceUV = a_TexCoords;
-        // Calculate distance from center of face (0.5, 0.5)
-        vec2 centerOffset = faceUV - vec2(0.5);
-        float distanceFromCenter = length(centerOffset);
-        // Parabolic displacement: maximum at edges, zero at center
-        float curvatureAmount = polCurve * (distanceFromCenter * distanceFromCenter * 2.0);
-        localPos += geometricNormal * curvatureAmount;
-    }
 
     // Transform to world space
     vec4 worldPos = pc.model * vec4(localPos, 1.0);
@@ -92,6 +80,7 @@ void main() {
     v_Metallic = metallic;
     v_Roughness = roughness;
     v_TBN = mat3(T, B, N);
-    v_GeometricNormal = geometricNormal;
+    v_GeometricNormal = normalize(mat3(pc.model) * a_Normal.xyz);
     v_FaceIndex = a_FaceIndex;
+    v_PolCurve = a_PolCurve.xy;
 }

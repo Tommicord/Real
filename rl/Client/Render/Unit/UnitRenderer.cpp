@@ -28,8 +28,9 @@ struct UnitVertex
   uint32_t faceIndex; // 4 bytes
   float    roughness; // 4 bytes
   float    metallic; // 4 bytes
-  float    polCurve; // 4 bytes (curvature of unit polygons, negative or positive)
+  float    padding;
 
+  glm::vec4 polCurve;
   glm::vec4 albedo; // 16 bytes (albR, albG, albB + padding)
   glm::vec4 tangent; // 16 bytes (tanX, tanY, tanZ + padding)
   glm::vec4 bitangent; // 16 bytes (bitanX, bitanY, bitanZ + padding)
@@ -41,41 +42,40 @@ struct UnitVertex
 // All faces are clockwise when viewed from outside for VK_FRONT_FACE_CLOCKWISE with
 // VK_CULL_MODE_BACK_BIT
 static const std::vector<UnitVertex> unitVertices = {
-    // Top face (faceIndex = 0) - Inclined surface (dirt)
-    {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 0, 0.85f, 0.0f, -0.15f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f), glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
-    {glm::vec4(-0.5f, 0.0f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 0, 0.85f, 0.0f, -0.15f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f), glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
-    {glm::vec4(0.5f, 0.0f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 0, 0.85f, 0.0f, -0.15f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f), glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
-    {glm::vec4(0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 0, 0.85f, 0.0f, -0.15f, glm::vec4(0.6f, 0.4f, 0.2f, 0.0f), glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
+    {glm::vec4(-0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 0, 0.85f, 0.0f, 0.0f, glm::vec4(-0.45f, 0.0f, 0.0f, 0.0f), glm::vec4(0.6f, 0.4f, 0.2f, 0.0f), glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
+  {glm::vec4(-0.5f, 0.0f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 0, 0.85f, 0.0f, 0.0f, glm::vec4(-0.45f, 0.0f, 0.0f, 0.0f), glm::vec4(0.6f, 0.4f, 0.2f, 0.0f), glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
+  {glm::vec4(0.5f, 0.0f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 0, 0.85f, 0.0f, 0.0f, glm::vec4(-0.45f, 0.0f, 0.0f, 0.0f), glm::vec4(0.6f, 0.4f, 0.2f, 0.0f), glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
+  {glm::vec4(0.5f, 0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 0, 0.85f, 0.0f, 0.0f, glm::vec4(-0.45f, 0.0f, 0.0f, 0.0f), glm::vec4(0.6f, 0.4f, 0.2f, 0.0f), glm::vec4(0.0f, 1.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f)},
 
-    // Bottom face (faceIndex = 1) - Flat base (dirt)
-    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
-    {glm::vec4(0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
-    {glm::vec4(0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
-    {glm::vec4(-0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
+  // Bottom face (faceIndex = 1): Flat base (dirt)
+  {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
+  {glm::vec4(0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
+  {glm::vec4(0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
+  {glm::vec4(-0.5f, -0.5f, 0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 1, 0.9f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f), glm::vec4(0.0f, -1.0f, 0.0f, 0.0f)},
 
-    // Left face (faceIndex = 2) - Vertical side (dirt)
-    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
-    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
-    {glm::vec4(-0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
-    {glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
+  // Left face (faceIndex = 2): Vertical side (dirt)
+  {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
+  {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
+  {glm::vec4(-0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
+  {glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 2, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.707f, 0.707f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f)},
 
-    // Right face (faceIndex = 3) - Vertical side (dirt)
-    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
-    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
-    {glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
-    {glm::vec4( 0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
+  // Right face (faceIndex = 3): Vertical side (dirt)
+  {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
+  {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
+  {glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
+  {glm::vec4( 0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 3, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.55f, 0.38f, 0.22f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f), glm::vec4(0.0f, 0.707f, -0.707f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f)},
 
-    // Front face (faceIndex = 4) - Vertical front (low height) (dirt)
-    {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
-    {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
-    {glm::vec4( 0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
-    {glm::vec4(-0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
+  // Front face (faceIndex = 4): Vertical front (low height) (dirt)
+  {glm::vec4(-0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
+  {glm::vec4( 0.5f, -0.5f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
+  {glm::vec4( 0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
+  {glm::vec4(-0.5f,  0.0f,  0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 4, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f)},
 
-    // Back face (faceIndex = 5) - Vertical back (high height) (dirt)
-    {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
-    {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
-    {glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
-    {glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
+  // Back face (faceIndex = 5): Vertical back (high height) (dirt)
+  {glm::vec4( 0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 1.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
+  {glm::vec4(-0.5f, -0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 1.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
+  {glm::vec4(-0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(0.0f, 0.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
+  {glm::vec4( 0.5f,  0.5f, -0.5f, 1.0f), glm::vec4(0, 0, 0, 0), glm::vec4(0, 0, 0, 0), glm::vec2(1.0f, 0.0f), 0, 0, 5, 0.85f, 0.0f, 0.0f, glm::vec4(0.0f), glm::vec4(0.5f, 0.35f, 0.2f, 0.0f), glm::vec4(-1.0f, 0.0f, 0.0f, 0.0f), glm::vec4(0.0f, 0.0f, 1.0f, 0.0f), glm::vec4(0.0f, 0.0f, -1.0f, 0.0f)},
 };
 
 // Generate cube indices dynamically for indexed drawing
@@ -116,6 +116,12 @@ struct LightingUniforms
   alignas(16) glm::vec3 sunColor;
   alignas(4) float ambientStrength;
   alignas(16) glm::vec3 cameraPosition;
+  alignas(4) float exposure;
+  alignas(4) float padding1;  // Padding for 16-byte alignment
+  alignas(4) float padding2;  // Padding for 16-byte alignment
+  alignas(4) float padding3;  // Padding for 16-byte alignment
+  alignas(16) glm::vec3 groundColor;
+  alignas(16) glm::vec3 skyColor;
 };
 
 // Triplanar mapping settings
@@ -1179,6 +1185,12 @@ void UnitStateDrawable::OnCreate(
     alignas(16) glm::vec3 sunColor;
     alignas(4) float ambientStrength;
     alignas(16) glm::vec3 cameraPosition;
+    alignas(4) float exposure;
+    alignas(4) float padding1;  // Padding for 16-byte alignment
+    alignas(4) float padding2;  // Padding for 16-byte alignment
+    alignas(4) float padding3;  // Padding for 16-byte alignment
+    alignas(16) glm::vec3 groundColor;
+    alignas(16) glm::vec3 skyColor;
   };
 
   // Ensure buffer size matches the aligned struct size
@@ -1221,6 +1233,12 @@ void UnitStateDrawable::OnCreate(
   lightingData.sunColor        = glm::vec3(1.0f, 1.0f, 1.0f);
   lightingData.ambientStrength = 0.2f;
   lightingData.cameraPosition  = glm::vec3(0.0f, 0.0f, 15.0f);
+  lightingData.exposure        = 1.0f;
+  lightingData.padding1        = 0.0f;
+  lightingData.padding2        = 0.0f;
+  lightingData.padding3        = 0.0f;
+  lightingData.groundColor     = glm::vec3(0.1f, 0.1f, 0.15f);
+  lightingData.skyColor        = glm::vec3(0.5f, 0.7f, 1.0f);
 
   void* lightingBufferData;
   vkMapMemory(context.device, vk.placeholderLightingBufferMemory, 0, lightingBufferSize, 0,
@@ -1676,10 +1694,10 @@ void UnitStateDrawable::OnCreate(
   inputAttributeDescriptions[8].location = 8;
   inputAttributeDescriptions[8].format   = VK_FORMAT_R32_SFLOAT;
   inputAttributeDescriptions[8].offset   = offsetof(UnitVertex, metallic);
-  // PolCurve (float)
+  // PolCurve (vec4)
   inputAttributeDescriptions[9].binding  = 0;
   inputAttributeDescriptions[9].location = 9;
-  inputAttributeDescriptions[9].format   = VK_FORMAT_R32_SFLOAT;
+  inputAttributeDescriptions[9].format   = VK_FORMAT_R32G32B32A32_SFLOAT;
   inputAttributeDescriptions[9].offset   = offsetof(UnitVertex, polCurve);
   // Albedo (vec4)
   inputAttributeDescriptions[10].binding  = 0;
@@ -2064,7 +2082,7 @@ void UnitStateDrawable::OnDraw(
   // Check if any face has curvature
   bool hasCurvature = false;
   for (const auto& vertex : unitVertices) {
-    if (vertex.polCurve != 0.0f) {
+    if (vertex.polCurve.x != 0.0f || vertex.polCurve.y != 0.0f) {
       hasCurvature = true;
       break;
     }
@@ -2141,21 +2159,32 @@ void UnitStateDrawable::OnDrawCompute(
   constexpr VkDeviceSize frustumSize = sizeof(FrustumPlanes);
   vkCmdUpdateBuffer(context.commandBuffers[0], vk.frustumBuffer, 0, frustumSize, &frustum);
 
-  // Update lighting data outside render pass
   struct LightingBlock
   {
     alignas(16) glm::vec3 sunDirection;
     alignas(16) glm::vec3 sunColor;
     alignas(4) float ambientStrength;
     alignas(16) glm::vec3 cameraPosition;
+    alignas(4) float exposure;
+    alignas(4) float padding1;  // Padding for 16-byte alignment
+    alignas(4) float padding2;  // Padding for 16-byte alignment
+    alignas(4) float padding3;  // Padding for 16-byte alignment
+    alignas(16) glm::vec3 groundColor;
+    alignas(16) glm::vec3 skyColor;
   };
 
   LightingBlock lightingData{};
   lightingData.sunDirection         = glm::normalize(glm::vec3(0.5f, 0.8f, 0.6f));
-  lightingData.sunColor             = glm::vec3(0.6f, 0.7f, 1.0f);
+  lightingData.sunColor             = glm::vec3(1.0f, 0.3f, 0.6f);
   lightingData.ambientStrength      = 0.7f;
   World::AbstractCamera::Eye eyePos = cam.eye;
   lightingData.cameraPosition       = glm::vec3(eyePos.x, eyePos.y, eyePos.z);
+  lightingData.exposure             = 1.0f;
+  lightingData.padding1             = 0.0f;
+  lightingData.padding2             = 0.0f;
+  lightingData.padding3             = 0.0f;
+  lightingData.groundColor          = glm::vec3(0.1f, 0.1f, 0.15f);
+  lightingData.skyColor             = glm::vec3(0.5f, 0.7f, 1.0f);
 
   // Use the same size as the buffer creation
   constexpr VkDeviceSize lightingBlockSize = sizeof(LightingBlock);

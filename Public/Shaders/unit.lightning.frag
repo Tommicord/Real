@@ -21,6 +21,9 @@ layout(set = 0, binding = 4) uniform LightingBlock {
     vec3 u_SunColor;
     float u_AmbientStrength;
     vec3 u_CameraPosition;
+    float u_Exposure;
+    vec3 u_GroundColor;
+    vec3 u_SkyColor;
 } lighting;
 
 // Ambient occlusion texture
@@ -44,6 +47,7 @@ layout (binding = 2) uniform sampler2D u_Texture[6];
 // PBR Constants
 const float PI = 3.14159265359;
 const float EPSILON = 0.0001;
+const float MAX_REFLECTION_LOD = 4.0;
 
 // PBR Material structure
 struct PBRMaterial {
@@ -105,6 +109,22 @@ vec3 FresnelSchlickRoughness(float cosTheta, vec3 F0, float roughness) {
     return F0 + (max(vec3(1.0 - roughness), F0) - F0) * pow(clamp(1.0 - cosTheta, 0.0, 1.0), 5.0);
 }
 
+// ACES filmic tone mapping
+vec3 ACESToneMapping(vec3 color) {
+    const float A = 2.51;
+    const float B = 0.03;
+    const float C = 2.43;
+    const float D = 0.59;
+    const float E = 0.14;
+    return clamp((color * (A * color + B)) / (color * (C * color + D) + E), 0.0, 1.0);
+}
+
+// Hemispheric ambient lighting
+vec3 CalculateHemisphericAmbient(vec3 normal, vec3 groundColor, vec3 skyColor, float intensity) {
+    float hemi = 0.5 + 0.5 * normal.y;
+    return mix(groundColor, skyColor, hemi) * intensity;
+}
+
 // Calculate PBR lighting for a single light
 vec3 CalculatePBRLight(vec3 N, vec3 V, vec3 F0, PBRMaterial material, Light light) {
     // For directional light, L is just the normalized light direction
@@ -144,10 +164,16 @@ vec3 CalculateAmbient(vec3 N, vec3 V, vec3 F0, PBRMaterial material, vec3 ambien
     vec3 irradiance = ambientColor;
     vec3 ambient = kD * material.albedo * irradiance * material.ao;
 
+    // Add indirect specular approximation
+    vec3 R = reflect(-V, N);
+    vec3 F = FresnelSchlickRoughness(max(dot(N, V), 0.0), F0, material.roughness);
+    vec3 indirectSpecular = F * (1.0 - material.roughness) * ambientColor * 0.5;
+    ambient += indirectSpecular;
+
     return ambient;
 }
 
-// Triplanar mapping function - hybrid approach with UV blending
+// Triplanar mapping function
 vec4 TriplanarMapping(vec3 worldPos, vec3 geometricNormal, int faceIndex) {
     // Calculate blend weights based on geometric normal
     vec3 blend = abs(geometricNormal);
@@ -185,7 +211,7 @@ vec4 TriplanarMapping(vec3 worldPos, vec3 geometricNormal, int faceIndex) {
     return result;
 }
 
-// Triplanar mapping for single-channel textures (like AO)
+// Triplanar mapping for single-channel textures like AO
 float TriplanarMappingSingle(vec3 worldPos, vec3 geometricNormal, sampler2D tex, int faceIndex) {
     // Calculate blend weights based on geometric normal
     vec3 blend = abs(geometricNormal);
@@ -256,22 +282,22 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
 
     vec3 colorFinal = ambient + Lo;
 
-    // Rim lighting: flash of sunlight when viewing corners and sun is close to view direction
-    // Use geometric normal for smooth rim lighting across edges
     vec3 geoN = normalize(v_GeometricNormal);
-    float rimFactor = 1.0 - max(dot(geoN, V), 0.0);
-    rimFactor = pow(rimFactor, 2.0 + material.roughness * 2.0); // Smoother falloff based on roughness
-    
-    // Check if sun direction is close to view direction (for flash effect)
-    vec3 sunDir = normalize(-sunLight.position);
-    float sunViewAlignment = max(dot(sunDir, V), 0.0);
-    float flashIntensity = pow(sunViewAlignment, 4.0 + material.roughness * 4.0); // Smoother falloff based on roughness
-    
-    // Combine rim factor with sun alignment for corner flash
-    float cornerFlash = rimFactor * flashIntensity * 0.6;
-    
-    // Add sunlight color flash with smooth blending
-    vec3 rimLight = cornerFlash * sunLight.color * sunLight.intensity;
+    float NdotV = max(dot(geoN, V), 0.0);
+    vec3 rimFresnel = FresnelSchlick(NdotV, F0);
+
+    float baseRim = clamp(1.0 - NdotV, 0.0, 1.0);
+    float grosorRim = 0.4;
+    float rimFactor = smoothstep(grosorRim, 1.0, baseRim);
+
+    rimFactor = pow(rimFactor, 1.5);
+
+    float sunViewAlignment = max(dot(L, V), 0.0);
+    float flashIntensity = pow(sunViewAlignment, 4.0);
+
+    float cornerFlash = rimFactor * mix(0.2, 1.0, flashIntensity) * (1.0 - material.roughness * 0.5);
+
+    vec3 rimLight = cornerFlash * rimFresnel * sunLight.color * (sunLight.intensity * 0.5);
     colorFinal += rimLight;
 
     return colorFinal;
@@ -280,10 +306,12 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
 void main() {
     // Use geometric (flat) normal for triplanar mapping blend calculations
     vec3 geoNormal = normalize(v_GeometricNormal);
-    
+
     // Normal maps - use original UV-based sampling (normal maps are in tangent space)
     vec3 normalMapSample = texture(u_NormalTexture, v_TexCoords).rgb;
     vec3 tangentNormal = normalMapSample * 2.0 - 1.0;
+    // Better normal reconstruction with proper scaling
+    tangentNormal = normalize(tangentNormal);
     vec3 normal = normalize(v_TBN * tangentNormal);
 
     // Use triplanar mapping for texture sampling with geometric normal
@@ -314,20 +342,30 @@ void main() {
     sunLight.color = lighting.u_SunColor;
     sunLight.intensity = 12.25;
 
-    // Calculate ambient color
-    vec3 ambientColor = clamp(lighting.u_AmbientStrength, 0.0, 1.0) * lighting.u_SunColor;
+    // Calculate hemispheric ambient lighting
+    vec3 hemisphericAmbient = CalculateHemisphericAmbient(
+        normal,
+        lighting.u_GroundColor,
+        lighting.u_SkyColor,
+        lighting.u_AmbientStrength
+    );
 
     // Calculate PBR lighting
-    vec3 pbrColor = CalculatePBR(v_WorldPos, normal, viewDir, material, sunLight, ambientColor);
+    vec3 pbrColor = CalculatePBR(v_WorldPos, normal, viewDir, material, sunLight, hemisphericAmbient);
 
-    // Calculate self-emission
+    // Calculate self-emission with proper HDR handling
     float emission = float(v_LightingEmit) / 255.0;
-    vec3 emitColor = emission * lighting.u_SunColor * 2.0;
+    // Emission should be additive and not affected by AO
+    vec3 emitColor = emission * material.albedo * lighting.u_SunColor * 3.0;
 
     vec3 finalColor = pbrColor + emitColor;
 
-    // Tone mapping
-    vec3 mappedColor = finalColor / (finalColor + vec3(1.0));
+    // Apply exposure control
+    float exposure = lighting.u_Exposure > 0.0 ? lighting.u_Exposure : 1.0;
+    finalColor *= exposure;
+
+    // ACES filmic tone mapping (better than Reinhard)
+    vec3 mappedColor = ACESToneMapping(finalColor);
 
     // Gamma correction
     mappedColor = pow(mappedColor, vec3(1.0 / 2.2));

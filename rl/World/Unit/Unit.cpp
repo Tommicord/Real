@@ -262,7 +262,7 @@ void BaseUnit::SetPolFenceLeft(PolFence& fence)
 
 void BaseUnit::SetPolCurve(float curve)
 {
-  this->polCurve = curve;
+  this->polCurveV = curve;
 }
 
 void BaseUnit::EnableCollision()
