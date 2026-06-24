@@ -1,7 +1,7 @@
-#include "rl/Base/ShaderFactory.h"
 #include <fstream>
 #include <stdexcept>
 #include <vector>
+#include "rl/Base/Shader.h"
 
 namespace Rl::Providers
 {

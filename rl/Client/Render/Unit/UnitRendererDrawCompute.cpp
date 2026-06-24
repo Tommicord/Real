@@ -30,11 +30,9 @@ void UnitDispatchComputeShaders(Providers::UnitStateResource& resource,
   constexpr VkDeviceSize frustumSize = sizeof(UnitRenderFrustumPlanes);
   vkCmdUpdateBuffer(context.commandBuffers[0], vk.frustumBuffer, 0, frustumSize, &frustum);
 
-  UnitRenderLightingBlock lightingData{};
-  // Primary sun light
+  UnitRenderLightingUniforms lightingData{};
   lightingData.sunDirection         = glm::normalize(glm::vec3(0.5f, 0.8f, 0.6f));
   lightingData.sunColor             = glm::vec3(1.0f, 0.95f, 0.8f);
-  lightingData.sunIntensity         = 12.25f;
 
   // Additional lights (fill lights for more realistic lighting)
   lightingData.additionalLightCount = 2;
@@ -53,7 +51,6 @@ void UnitDispatchComputeShaders(Providers::UnitStateResource& resource,
   lightingData.cameraPosition       = glm::vec3(eyePos.x, eyePos.y, eyePos.z);
   lightingData.exposure             = 1.25f;
 
-  // Spherical harmonics coefficients for improved GI
   // These are pre-computed approximations for sky/ground lighting
   lightingData.shCoefficients[0] = glm::vec3(0.53f, 0.81f, 0.92f) * 0.5f; // L0 - sky
   lightingData.shCoefficients[1] = glm::vec3(0.15f, 0.12f, 0.1f) * 0.3f;  // L1 - ground
@@ -72,7 +69,7 @@ void UnitDispatchComputeShaders(Providers::UnitStateResource& resource,
   lightingData.padding1             = 0.0f;
   lightingData.padding2             = 0.0f;
 
-  constexpr VkDeviceSize lightingBlockSize = sizeof(UnitRenderLightingBlock);
+  constexpr VkDeviceSize lightingBlockSize = sizeof(UnitRenderLightingUniforms);
   vkCmdUpdateBuffer(
       context.commandBuffers[0], vk.placeholderLightingBuffer, 0, lightingBlockSize, &lightingData);
 

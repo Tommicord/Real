@@ -157,7 +157,7 @@ void UnitCreateDescriptorPool(VkDevice device, VkDescriptorPool& pool)
   poolSizes[0].descriptorCount = 11; // 5 SSBOs for face culling + 6 SSBOs for curvature compute
   poolSizes[1].type            = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
   poolSizes[1].descriptorCount =
-      9; // 6 textures + 1 lighting texture + 1 AO texture + 1 normal texture
+      10; // 6 textures + 1 lighting texture + 1 AO texture + 1 normal texture + 1 shadow map
   poolSizes[2].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
   poolSizes[2].descriptorCount =
       6; // 1 frustum + 1 lighting block + 1 settings + 1 triplanar + 2 extra

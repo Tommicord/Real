@@ -514,7 +514,7 @@ if %errorlevel% neq 0 goto :VCEnd</Command>
   <ItemGroup>
     <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\Game.cpp" />
     <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\Game.h" />
-    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\ShaderFactory.cpp" />
+    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\Shader.cpp" />
     <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\ShaderFactory.h" />
     <ClInclude Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\InputReceiver.h" />
     <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\InputReceiver.cpp" />

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "UnitRegister.h"
 #include "rl/World/Unit/Unit.h"
 
 namespace Rl::World
@@ -18,7 +19,7 @@ class IUnitGrowable
   virtual void Grow() = 0;
 };
 
-class UnitGrass : public BaseUnit, public IUnitGrowable
+class UnitGrass : public BaseUnit, IUnitGrowable, IUnitIdentifiable<UnitGrass>
 {
   public:
   UnitGrass() noexcept;

@@ -1,6 +1,7 @@
 #include "rl/World/Unit/Unit.h"
 #include "rl/World/Unit/UnitRegistry.h"
 #include "rl/World/Unit/UnitResourceName.h"
+#include "rl/World/Unit/UnitRegister.h"
 
 #include <algorithm>
 #include <cstring>

@@ -1,6 +1,7 @@
 #include "rl/Client/Render/Unit/UnitRendererPlaceholderResource.h"
 #include "rl/Client/Render/Unit/UnitRendererInfo.h"
 #include "rl/Client/Render/Unit/UnitRendererLightingBlock.h"
+#include "rl/Client/Render/Unit/UnitRendererBasicBuffer.h"
 
 #include <stdexcept>
 
@@ -130,7 +131,7 @@ void UnitCreatePlaceholderLightingBuffer(VkDevice device,
 {
   VkBufferCreateInfo bufferInfo{};
   bufferInfo.sType       = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-  bufferInfo.size        = sizeof(UnitRenderLightingBlock);
+  bufferInfo.size        = sizeof(UnitRenderLightingUniforms);
   bufferInfo.usage       = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
   bufferInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
 
@@ -145,7 +146,7 @@ void UnitCreatePlaceholderLightingBuffer(VkDevice device,
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize  = memRequirements.size;
-  allocInfo.memoryTypeIndex = 0; // TODO: Find appropriate memory type
+  allocInfo.memoryTypeIndex = UnitFindMemoryTypeIndex(physicalDevice, memRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
   if (vkAllocateMemory(device, &allocInfo, nullptr, &bufferMemory) != VK_SUCCESS)
   {
@@ -189,7 +190,7 @@ void UnitCreatePlaceholderAOTexture(VkDevice device,
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType           = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize  = memRequirements.size;
-  allocInfo.memoryTypeIndex = 0;
+  allocInfo.memoryTypeIndex = UnitFindMemoryTypeIndex(physicalDevice, memRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
   if (vkAllocateMemory(device, &allocInfo, nullptr, &textureMemory) != VK_SUCCESS)
   {

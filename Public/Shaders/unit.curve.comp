@@ -171,7 +171,7 @@ void ApplyCurvature(inout VertexInput v, float adjVertical, float adjHorizontal,
         
         // Smooth falloff: full curvature in center, fading to zero at edges
         // Reduced threshold for more visible curvature
-        float edgeFalloff = smoothstep(0.0, 0.3, edgeDist);
+        float edgeFalloff = smoothstep(0.0, 0.58, edgeDist);
         curvatureAmount *= edgeFalloff;
 
         v.position.xyz += v.normal.xyz * curvatureAmount;

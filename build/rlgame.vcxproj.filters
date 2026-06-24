@@ -4,7 +4,7 @@
     <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\Game.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\ShaderFactory.cpp">
+    <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\Shader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="C:\Users\USUARIO\IdeaProjects\RL\rl\Base\InputReceiver.cpp">

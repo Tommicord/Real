@@ -45,8 +45,8 @@ FetchContent_MakeAvailable(googletest)
 set(SOURCES
   rl/Base/Game.cpp
   rl/Base/Game.h
-  rl/Base/ShaderFactory.cpp
-  rl/Base/ShaderFactory.h
+  rl/Base/Shader.cpp
+  rl/Base/Shader.h
   rl/Base/InputReceiver.h
   rl/Base/InputReceiver.cpp
   rl/Base/SimplexNoise.cpp
@@ -110,6 +110,8 @@ set(SOURCES
   rl/Client/Render/Unit/UnitRendererNormalTextures.h
   rl/Client/Render/Unit/UnitRendererPlaceholderResource.cpp
   rl/Client/Render/Unit/UnitRendererPlaceholderResource.h
+  rl/Client/Render/Unit/UnitRendererShadowMap.cpp
+  rl/Client/Render/Unit/UnitRendererShadowMap.h
   rl/Client/Render/Unit/UnitRendererSampler.cpp
   rl/Client/Render/Unit/UnitRendererSampler.h
   rl/Client/Render/Unit/UnitRendererSSBOBuffer.cpp
@@ -120,6 +122,8 @@ set(SOURCES
   rl/Client/Render/Unit/UnitRendererVertexInput.h
   rl/Client/Render/Unit/UnitRendererVertices.cpp
   rl/Client/Render/Unit/UnitRendererVertices.h
+  rl/World/Chunk/UnitChunkBuffer.cpp
+  rl/World/Chunk/UnitChunkBuffer.h
 )
 
 add_subdirectory(Deps/glfw)

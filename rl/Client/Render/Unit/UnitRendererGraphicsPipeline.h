@@ -3,7 +3,7 @@
 #include <array>
 #include <vulkan/vulkan.hpp>
 #include "rl/Base/Game.h"
-#include "rl/Base/ShaderFactory.h"
+#include "rl/Base/Shader.h"
 
 namespace Rl::Client::Render
 {

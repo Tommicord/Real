@@ -1,4 +1,5 @@
-#include "UnitRendererShadowMap.h"
+#include "rl/Client/Render/Unit/UnitRendererShadowMap.h"
+#include "rl/Client/Render/Unit/UnitRendererBasicBuffer.h"
 
 #include <stdexcept>
 
@@ -93,7 +94,7 @@ void UnitCreateShadowMapSampler(VkDevice device, VkSampler& sampler)
 }
 
 void UnitCreateShadowMapResources(VkDevice device, VkPhysicalDevice physicalDevice,
-    UnitShadowMapConfig config, ShadowMapResources& resources)
+    UnitShadowMapConfig config, UnitShadowMapResources& resources)
 {
   // Create depth image for shadow map
   VkImageCreateInfo imageInfo{};
@@ -122,8 +123,7 @@ void UnitCreateShadowMapResources(VkDevice device, VkPhysicalDevice physicalDevi
   VkMemoryAllocateInfo allocInfo{};
   allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
   allocInfo.allocationSize = memRequirements.size;
-  allocInfo.memoryTypeIndex = UnitFindMemoryType(physicalDevice, memRequirements.memoryTypeBits,
-      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+  allocInfo.memoryTypeIndex = UnitFindMemoryTypeIndex(physicalDevice, memRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
   if (vkAllocateMemory(device, &allocInfo, nullptr, &resources.shadowMapMemory) != VK_SUCCESS)
   {
@@ -183,7 +183,7 @@ void UnitEndShadowMapRenderPass(VkCommandBuffer commandBuffer)
   vkCmdEndRenderPass(commandBuffer);
 }
 
-void UnitCleanupShadowMapResources(VkDevice device, ShadowMapResources& resources)
+void UnitCleanupShadowMapResources(VkDevice device, UnitShadowMapResources& resources)
 {
   if (resources.shadowMapSampler != VK_NULL_HANDLE)
   {
