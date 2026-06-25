@@ -173,7 +173,7 @@ void UnitCreateUniformBuffers(
   // Initialize triplanar settings
   UnitRenderTriplanarSettings initialTriplanar{};
   initialTriplanar.scale     = 1.0f;
-  initialTriplanar.sharpness = 2.0f;
+  initialTriplanar.sharpness = 4.0f;
   initialTriplanar.offsetX   = 0.0f;
   initialTriplanar.offsetY   = 0.0f;
   initialTriplanar.offsetZ   = 0.0f;

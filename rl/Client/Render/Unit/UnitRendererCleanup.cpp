@@ -89,6 +89,14 @@ void UnitCleanupTextures(VkDevice device, Providers::UnitStateDrawableVulkan& vk
       vkFreeMemory(device, vk.normalTexturesMemory[i], nullptr);
     }
   }
+
+  // Cleanup shadow map resources
+  vkDestroySampler(device, vk.shadowMapSampler, nullptr);
+  vkDestroyFramebuffer(device, vk.shadowMapFramebuffer, nullptr);
+  vkDestroyRenderPass(device, vk.shadowMapRenderPass, nullptr);
+  vkDestroyImageView(device, vk.shadowMapView, nullptr);
+  vkDestroyImage(device, vk.shadowMapImage, nullptr);
+  vkFreeMemory(device, vk.shadowMapMemory, nullptr);
 }
 
 void UnitCleanupSamplers(VkDevice device, Providers::UnitStateDrawableVulkan& vk)
@@ -108,6 +116,8 @@ void UnitCleanupPipelines(VkDevice device, Providers::UnitStateDrawableVulkan& v
   vkDestroyPipelineLayout(device, vk.curveComputePipelineLayout, nullptr);
   vkDestroyPipeline(device, vk.pipeline, nullptr);
   vkDestroyPipelineLayout(device, vk.pipelineLayout, nullptr);
+  vkDestroyPipeline(device, vk.shadowPipeline, nullptr);
+  vkDestroyPipelineLayout(device, vk.shadowPipelineLayout, nullptr);
 }
 
 void UnitCleanupDescriptorSets(VkDevice device, Providers::UnitStateDrawableVulkan& vk)

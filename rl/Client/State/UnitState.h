@@ -113,6 +113,9 @@ struct UnitStateDrawableVulkan : StateDrawableVulkan
   VkSampler      shadowMapSampler     = VK_NULL_HANDLE;
   VkFramebuffer  shadowMapFramebuffer = VK_NULL_HANDLE;
   VkRenderPass   shadowMapRenderPass  = VK_NULL_HANDLE;
+  VkPipeline     shadowPipeline      = VK_NULL_HANDLE;
+  VkPipelineLayout shadowPipelineLayout = VK_NULL_HANDLE;
+  bool           shadowMapInitialized = false;
 
   UnitStateDrawableVulkan() = default;
 };
@@ -126,8 +129,9 @@ class UnitStateDrawable : public StateDrawable<UnitStateResource, UnitStateDrawa
   void OnDraw(UnitStateResource& resource,
       UnitStateDrawableVulkan&   vk,
       Game::VulkanContext&       context) override;
-  void OnDrawCompute(
-      UnitStateResource& resource, UnitStateDrawableVulkan& vk, Game::VulkanContext& context);
+  void OnDrawCompute(UnitStateResource& resource,
+      UnitStateDrawableVulkan& vk,
+      Game::VulkanContext& context) override;
   void OnUpdate(UnitStateResource& resource,
       UnitStateDrawableVulkan&     vk,
       Game::VulkanContext&         context) override;

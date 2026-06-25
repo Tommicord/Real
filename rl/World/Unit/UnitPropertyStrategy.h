@@ -1,9 +1,6 @@
 #pragma once
 
-#include "rl/World/Unit/Unit.h"
-
 #include <type_traits>
-#include <cmath>
 
 namespace Rl::World {
 

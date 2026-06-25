@@ -7,7 +7,7 @@ namespace Rl::World
 
 UnitChunkBuffer::UnitChunkBuffer() noexcept
 {
-  buffer.b = std::make_unique<int>(W * H * D);
+  buffer.b = std::make_unique<int[]>(W * H * D);
   std::memset(buffer.Get(), 0, sizeof(int) * W * H * D);
 }
 
@@ -21,7 +21,7 @@ UnitChunkBuffer::~UnitChunkBuffer()
 
 UnitChunkBuffer::UnitChunkBuffer(const UnitChunkBuffer& other)
 {
-  buffer.b = std::make_unique<int>(W * H * D);
+  buffer.b = std::make_unique<int[]>(W * H * D);
   std::memcpy(buffer.Get(), other.buffer.Get(), sizeof(int) * W * H * D);
 }
 
@@ -41,7 +41,7 @@ UnitChunkBuffer& UnitChunkBuffer::operator=(const UnitChunkBuffer& other)
   {
     buffer.Delete();
   }
-  buffer.b = std::make_unique<int>(W * H * D);
+  buffer.b = std::make_unique<int[]>(W * H * D);
   std::memcpy(buffer.Get(), other.buffer.Get(), sizeof(int) * W * H * D);
   owner = true;
   return *this;
@@ -51,7 +51,6 @@ UnitChunkBuffer& UnitChunkBuffer::operator=(UnitChunkBuffer&& other) noexcept
 {
   if (this == &other)
     return *this;
-
   if (owner && buffer.b)
   {
     buffer.b.release();
@@ -80,7 +79,7 @@ std::optional<int> UnitChunkBuffer::GetUnitIdXYZ(int x, int y, int z) const
     return std::nullopt;
   if (IndexVal(x, W) && IndexVal(y, H) && IndexVal(z, D))
   {
-    return buffer.Get()[IndexMap3d2(x, y, z)];
+    return buffer.b[IndexMap3d2(x, y, z)];
   }
   return std::nullopt;
 }

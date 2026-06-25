@@ -7,6 +7,10 @@
 namespace Rl::Client::Render
 {
 
+void UnitRenderShadowMap(Providers::UnitStateResource& resource,
+    Providers::UnitStateDrawableVulkan&       vk,
+    Game::VulkanContext&                      context);
+
 void UnitRender(Providers::UnitStateResource& resource,
     Providers::UnitStateDrawableVulkan&       vk,
     Game::VulkanContext&                      context);

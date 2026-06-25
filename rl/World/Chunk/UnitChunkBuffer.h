@@ -21,7 +21,7 @@ class UnitChunkBuffer
   struct ChunkBuffer
   {
     /* Stores array of Unit id's */
-    std::unique_ptr<int> b;
+    std::unique_ptr<int[]> b;
 
     /* Gets the Unit buffer */
     int *Get() const noexcept

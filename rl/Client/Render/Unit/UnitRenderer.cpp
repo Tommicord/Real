@@ -14,6 +14,7 @@
 #include "rl/Client/Render/Unit/UnitRendererPlaceholderResource.h"
 #include "rl/Client/Render/Unit/UnitRendererSampler.h"
 #include "rl/Client/Render/Unit/UnitRendererShadowMap.h"
+#include "rl/Client/Render/Unit/UnitRendererShadowPipeline.h"
 #include "rl/Client/Render/Unit/UnitRendererTextureManage.h"
 #include "rl/Client/Render/Unit/UnitRendererVertexInput.h"
 #include "rl/Client/Render/Unit/UnitRendererVertices.h"
@@ -123,6 +124,11 @@ void UnitStateDrawable::OnCreate(
   vk.shadowMapFramebuffer = shadowResources.shadowMapFramebuffer;
   vk.shadowMapRenderPass = shadowResources.shadowMapRenderPass;
 
+  // Create shadow map pipeline layout and pipeline
+  Client::Render::UnitCreateShadowPipelineLayout(context.device, vk.shadowPipelineLayout);
+  Client::Render::UnitCreateShadowPipeline(context.device, vk.shadowPipelineLayout,
+      vk.shadowMapRenderPass, shadowConfig.width, shadowConfig.height, vk.shadowPipeline);
+
   // Create global texture sampler
   Client::Render::UnitCreateGlobalTextureSampler(context.device, vk.globalTextureSampler);
 
@@ -197,6 +203,11 @@ void UnitStateDrawable::OnDrawCompute(
   if (!resource.cameraModel)
     return;
   Client::Render::UnitDispatchComputeShaders(resource, vk, context);
+
+  // Although this has nothing to do with a
+  // compute shader, we need to render the
+  // shadows outside the render pass.
+  Client::Render::UnitRenderShadowMap(resource, vk, context);
 }
 
 void UnitStateDrawable::OnDestroy(

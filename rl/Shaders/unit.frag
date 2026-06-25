@@ -240,59 +240,122 @@ float CalculateAmbientOcclusion(vec3 normal, vec3 geometricNormal) {
 }
 
 // Ray-traced reflections approximation with environment mapping
-vec3 CalculateReflections(vec3 worldPos, vec3 normal, vec3 viewDir, vec3 albedo, 
+vec3 CalculateReflections(vec3 worldPos, vec3 normal, vec3 viewDir, vec3 albedo,
                            float metallic, float roughness) {
-    if (metallic < 0.2) return vec3(0.0);
-    
+    if (metallic < 0.1) return vec3(0.0);
+
     // Calculate reflection direction
     vec3 R = reflect(-viewDir, normal);
-    
-    // Environment mapping based on reflection direction
-    float skyFactor = max(R.y, 0.0);
-    float groundFactor = max(-R.y, 0.0);
-    
+
+    // Parallax correction for reflections
+    // This makes reflections appear grounded by accounting for position relative to environment
+    vec3 cameraPos = lighting.u_CameraPosition.xyz;
+    vec3 toCamera = normalize(cameraPos - worldPos);
+    vec3 parallaxR = reflect(-toCamera, normal);
+
+    // Blend between original reflection and parallax-corrected reflection
+    // More parallax correction for grazing angles
+    float NdotV = max(dot(normal, viewDir), 0.0);
+    float parallaxBlend = 1.0 - NdotV;
+    parallaxBlend = pow(parallaxBlend, 2.0);
+    R = mix(R, parallaxR, parallaxBlend * 0.3);
+
+    // Environment mapping based on reflection direction with better interpolation
+    float skyFactor = smoothstep(-0.1, 0.1, R.y);
+    float groundFactor = 1.0 - skyFactor;
+
     // Get environment colors
     vec3 skyReflect = lighting.u_SkyColor.xyz;
     vec3 groundReflect = lighting.u_GroundColor.xyz;
-    
-    // Mix based on reflection direction
+
+    // Mix based on reflection direction with horizon blending
     vec3 envColor = mix(groundReflect, skyReflect, skyFactor);
-    
+
     // Add sun reflection if reflection direction aligns with sun
     vec3 sunDir = normalize(lighting.u_SunDirection.xyz);
     float sunReflect = max(dot(R, sunDir), 0.0);
-    float sunSpecular = pow(sunReflect, 256.0 - roughness * 200.0);
-    envColor += lighting.u_SunColor.xyz * sunSpecular * 2.0;
-    
-    // Roughness affects reflection intensity and sharpness
-    float roughnessFactor = 1.0 - roughness;
-    vec3 reflection = envColor * roughnessFactor * metallic;
-    
-    // Add albedo tint for metals
-    reflection *= mix(vec3(1.0), albedo, metallic);
-    
-    return reflection * 0.6;
+    float sunSpecular = pow(sunReflect, 512.0 - roughness * 400.0);
+    envColor += lighting.u_SunColor.xyz * sunSpecular * 3.0;
+
+    // Roughness-based reflection blur approximation
+    // Higher roughness = more spread, less intense
+    float roughnessBlur = roughness * roughness;
+    float sharpness = 1.0 - roughnessBlur;
+    sharpness = pow(sharpness, 2.0);
+
+    // Distance-based fade - reflections fade with distance
+    float distance = length(worldPos - lighting.u_CameraPosition.xyz);
+    float distanceFade = smoothstep(50.0, 100.0, distance);
+    distanceFade = 1.0 - distanceFade * 0.5;
+
+    // Fresnel-based reflection intensity
+    vec3 F0 = mix(vec3(0.04), albedo, metallic);
+    vec3 fresnel = FresnelSchlick(NdotV, F0);
+
+    // Combine all factors
+    float reflectionIntensity = sharpness * distanceFade * metallic;
+    vec3 reflection = envColor * fresnel * reflectionIntensity;
+
+    // Add albedo tint for metals with proper energy conservation
+    vec3 tintedReflection = reflection * mix(vec3(1.0), albedo, metallic * 0.8);
+
+    // Add subtle secondary reflection bounce approximation
+    vec3 secondaryR = reflect(R, normal * 0.5);
+    float secondarySky = max(secondaryR.y, 0.0);
+    vec3 secondaryEnv = mix(groundReflect, skyReflect, secondarySky);
+    float secondaryIntensity = reflectionIntensity * 0.15 * (1.0 - roughness);
+    tintedReflection += secondaryEnv * secondaryIntensity;
+
+    return tintedReflection * 0.9;
 }
 
 // Global illumination approximation with light bounces
 vec3 CalculateGI(vec3 normal, vec3 albedo, float roughness, vec3 lightColor) {
-    // First bounce approximation - light bouncing from environment
-    vec3 bounceColor = albedo * lightColor * 0.40;
-    
-    // Roughness affects bounce intensity - rougher surfaces scatter more
+    // Primary bounce - direct light reflected from environment
+    vec3 bounceColor = albedo * lightColor * 0.5;
     bounceColor *= (1.0 + roughness * 0.5);
-    
-    // Add color bleeding from ground and sky
+
+    // Add color bleeding from ground and sky with improved weighting
     float skyBounce = max(normal.y, 0.0);
     float groundBounce = max(-normal.y, 0.0);
-    
-    vec3 skyGI = lighting.u_SkyColor.xyz * albedo * skyBounce * 0.2;
-    vec3 groundGI = lighting.u_GroundColor.xyz * albedo * groundBounce * 0.3;
-    
-    // Add inter-reflection approximation
-    vec3 interReflect = albedo * lighting.u_SunColor.xyz * 0.15 * (1.0 - roughness);
-    
-    return bounceColor + skyGI + groundGI + interReflect;
+
+    // Sky GI with atmospheric scattering approximation
+    vec3 skyGI = lighting.u_SkyColor.xyz * albedo * skyBounce * 0.25;
+    // Add blue tint for atmospheric scattering
+    skyGI *= mix(vec3(1.0), vec3(0.8, 0.85, 1.0), skyBounce * 0.3);
+
+    // Ground GI with color bleeding from ground color
+    vec3 groundGI = lighting.u_GroundColor.xyz * albedo * groundBounce * 0.35;
+    // Ground reflections are warmer
+    groundGI *= mix(vec3(1.0), vec3(1.05, 0.95, 0.9), groundBounce * 0.2);
+
+    // Secondary bounce approximation - light reflecting off nearby surfaces
+    vec3 secondaryBounce = vec3(0.0);
+
+    // Approximate inter-reflection from sun
+    vec3 sunDir = normalize(lighting.u_SunDirection.xyz);
+    float sunBounce = max(dot(normal, sunDir), 0.0);
+    vec3 sunGI = lighting.u_SunColor.xyz * albedo * sunBounce * 0.15 * (1.0 - roughness);
+    secondaryBounce += sunGI;
+
+    // Add color bleeding from opposite surfaces
+    // Surfaces facing up get ground color bleeding, surfaces facing down get sky color
+    vec3 oppositeColor = mix(lighting.u_GroundColor.xyz, lighting.u_SkyColor.xyz, skyBounce);
+    float oppositeFactor = 0.1 * (1.0 - roughness);
+    secondaryBounce += oppositeColor * albedo * oppositeFactor;
+
+    // Tertiary bounce - very subtle, adds depth
+    vec3 tertiaryBounce = (skyGI + groundGI) * 0.05;
+    tertiaryBounce *= (1.0 - roughness * 0.5);
+
+    // Combine all bounces with energy conservation
+    vec3 totalGI = bounceColor + skyGI + groundGI + secondaryBounce + tertiaryBounce;
+
+    // Apply occlusion based on surface orientation
+    float occlusion = 1.0 - max(0.0, -normal.y) * 0.2;
+    totalGI *= occlusion;
+
+    return totalGI;
 }
 
 // Calculate PBR lighting for a single light
@@ -458,9 +521,16 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
     vec3 specular = numerator / denominator;
 
     // Add a bit of lighting to the other faces
-    float wrap = 0.6;
-    float NdotL = max((dot(N, L) + wrap) / (1.0 + wrap), 0.0);
-    Lo += (kD * material.albedo / PI + specular) * radiance * NdotL;
+    float NdotL = max(dot(N, L), 0.0);
+    vec3 sunLightDirect = (kD * material.albedo / PI + specular) * radiance * NdotL;
+    float shadowMap = CalculateShadow(worldPos, L, N);
+
+    // Get geometric normal for shadow calculations
+    vec3 geoN = normalize(v_GeometricNormal);
+
+    float softShadow = CalculateSoftShadows(worldPos, N, L, geoN);
+    float totalShadow = shadowMap * softShadow;
+    vec3 directLighting = sunLightDirect * totalShadow;
 
     // Additional lights
     for (uint i = 0u; i < lighting.u_AdditionalLightCount && i < 4u; ++i) {
@@ -483,30 +553,17 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
         float lightNdotL = max(dot(N, lightDir), 0.0);
         Lo += (lightKD * material.albedo / PI + lightSpecular) * lightRadiance * lightNdotL;
     }
-
-    vec3 colorFinal = ambient + Lo;
-
-    // Get geometric normal for shadow calculations
-    vec3 geoN = normalize(v_GeometricNormal);
-
-    vec3 sunLightDirect = (kD * material.albedo / PI + specular) * radiance * NdotL;
-    float shadowMap = CalculateShadow(worldPos, L, N);
-    float softShadow = CalculateSoftShadows(worldPos, N, L, geoN);
-    float totalShadow = shadowMap * softShadow;
-    Lo += sunLightDirect * totalShadow;
-
     // Ambient occlusion
     float ao = CalculateAmbientOcclusion(N, geoN);
-    colorFinal *= ao;
+
+    vec3 gi = CalculateGI(N, material.albedo, material.roughness, lighting.u_SunColor.xyz);
+
+    vec3 indirectLighting = (ambient + gi) * ao;
 
     // Ray-traced reflections for metallic surfaces
-    vec3 reflections = CalculateReflections(worldPos, N, V, material.albedo,
-                                           material.metallic, material.roughness);
-    colorFinal += reflections;
+    vec3 reflections = CalculateReflections(worldPos, N, V, material.albedo, material.metallic, material.roughness);
 
-    // Global illumination
-    vec3 gi = CalculateGI(N, material.albedo, material.roughness, lighting.u_SunColor.xyz);
-    colorFinal += gi;
+    vec3 colorFinal = indirectLighting + directLighting + Lo + reflections;
 
     // Enhanced rim lighting with geometric normal for better edge definition
     float NdotV = max(dot(geoN, V), 0.0);
@@ -540,7 +597,7 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
     colorFinal += rimLight;
 
     // Add subtle subsurface scattering approximation for non-metallic materials
-    if (material.metallic < 0.5) {
+    if (material.metallic < 0.25) {
         float sssThickness = 1.0 - material.roughness;
         float backLight = max(dot(-L, N), 0.0);
         vec3 sssColor = material.albedo * lighting.u_SunColor.xyz * backLight * sssThickness * 0.15;
@@ -549,7 +606,7 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
 
     // Add microfacet detail for rough surfaces
     if (material.roughness > 0.3) {
-        float microDetail = material.roughness * 0.1;
+        float microDetail = material.roughness * 0.025;
         vec3 microColor = material.albedo * shAmbient * microDetail;
         colorFinal += microColor;
     }

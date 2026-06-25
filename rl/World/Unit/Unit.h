@@ -19,7 +19,7 @@ using namespace Rl::Providers;
 enum class UnitType
 {
   Visible, // Unit Visible
-  NoVisible, // Unit No Visible
+  NotVisible, // Unit No Visible
   Solid, // Is Unit Solid
   Liquid, // Is Unit Solid
 };
@@ -61,7 +61,7 @@ public:
     requires IsDerivedUnit<T>
   BaseUnit(T* type) noexcept : BaseUnit()
   {
-    static Texture2 texture("unknown.png");
+    static Texture2 texture("Unknown.png");
     using pair = UnitRegistryKVPair<UnitResourceName, BaseUnit*>;
     int id     = 1;
     if (pair::GetObjectById(id).has_value())

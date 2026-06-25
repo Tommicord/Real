@@ -50,7 +50,7 @@ void UnitDispatchComputeShaders(Providers::UnitStateResource& resource,
   UnitRenderLightingUniforms lightingData{};
   lightingData.sunDirection         = glm::normalize(glm::vec4(0.5f, 0.8f, 0.6f, 0.0));
   lightingData.sunColor             = glm::vec4(1.0f, 0.95f, 0.8f, 0.0f);
-  lightingData.sunIntensity         = 5.5f;
+  lightingData.sunIntensity         = 3.5f;
 
   // Additional lights (fill lights for more realistic lighting)
   lightingData.additionalLightCount = 2;
@@ -61,7 +61,7 @@ void UnitDispatchComputeShaders(Providers::UnitStateResource& resource,
   // warm rim light
   lightingData.additionalLights[1].direction = glm::normalize(glm::vec3(-0.8f, 0.2f, 0.5f));
   lightingData.additionalLights[1].color = glm::vec3(1.0f, 0.8f, 0.6f);
-  lightingData.additionalLights[1].intensity = 1.5f;
+  lightingData.additionalLights[1].intensity = 4.5f;
 
   // Ambient and environment
   lightingData.ambientStrength      = 0.15f;

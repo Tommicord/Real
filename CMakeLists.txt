@@ -54,7 +54,7 @@ set(SOURCES
   rl/Base/Texture2.cpp
   rl/Base/Texture2Lightning.cpp
   rl/Base/Texture2Normal.cpp
-  rl/Base/Texture2Vk.cpp
+  rl/Base/Texture2Binding.cpp
   rl/Base/Texture2.h
   rl/Base/StateModel.h
   rl/Base/StateDrawable.h
@@ -102,6 +102,8 @@ set(SOURCES
   rl/Client/Render/Unit/UnitRendererFrustum.h
   rl/Client/Render/Unit/UnitRendererGraphicsPipeline.cpp
   rl/Client/Render/Unit/UnitRendererGraphicsPipeline.h
+  rl/Client/Render/Unit/UnitRendererShadowPipeline.cpp
+  rl/Client/Render/Unit/UnitRendererShadowPipeline.h
   rl/Client/Render/Unit/UnitRendererIndirectDraw.cpp
   rl/Client/Render/Unit/UnitRendererIndirectDraw.h
   rl/Client/Render/Unit/UnitRendererInfo.h
@@ -202,6 +204,8 @@ endfunction()
 
 target_compile_shaders(
   rlgame
+  rl/Shaders/unit.shadow.vert
+  rl/Shaders/unit.shadow.frag
   rl/Shaders/unit.face.comp
   rl/Shaders/unit.curve.comp
   rl/Shaders/unit.frag
@@ -261,7 +265,7 @@ function(target_add_resources TARGET)
     TARGET ${TARGET} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     "${CMAKE_CURRENT_SOURCE_DIR}/Public/Resources/Textures/"
-    "$<TARGET_FILE_DIR:rlgame_tests>/"
+    "$<TARGET_FILE_DIR:${TARGET}>/"
     COMMENT "Copying test assets to the build directory"
   )
 endfunction()
