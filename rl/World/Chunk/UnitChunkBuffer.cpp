@@ -2,7 +2,7 @@
 
 #include <cstring>
 
-namespace Rl::World
+namespace Rl::World::Chunk
 {
 
 UnitChunkBuffer::UnitChunkBuffer() noexcept

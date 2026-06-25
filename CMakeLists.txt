@@ -126,6 +126,8 @@ set(SOURCES
   rl/World/Chunk/UnitChunkBuffer.cpp
   rl/World/Chunk/UnitChunkBuffer.h
   rl/World/Unit/UnitPropertyStrategy.h
+  rl/World/Chunk/UnitChunkBufferGPUSimplex.cpp
+  rl/World/Chunk/UnitChunkBufferGPUSimplex.h
 )
 
 add_subdirectory(Deps/glfw)
@@ -210,6 +212,14 @@ target_compile_shaders(
   rl/Shaders/unit.curve.comp
   rl/Shaders/unit.frag
   rl/Shaders/unit.vert
+  rl/Shaders/Simplex/simplex.comp
+  rl/Shaders/Simplex/simplex.noise2d.glsl
+  rl/Shaders/Simplex/simplex.noise3d.glsl
+  rl/Shaders/Simplex/simplex.common.glsl
+  rl/Shaders/Simplex/simplex.gradients.glsl
+  rl/Shaders/Simplex/simplex.init.comp
+  rl/Shaders/Simplex/simplex.noise.constants.glsl
+  rl/Shaders/Simplex/simplex.perm.glsl
 )
 enable_testing()
 

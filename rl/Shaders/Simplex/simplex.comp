@@ -1,0 +1,58 @@
+#version 450
+
+#include "simplex.noise.constants.glsl"
+#include "simplex.gradients.glsl"
+#include "simplex.perm.glsl"
+#include "simplex.init.comp"
+#include "simplex.common.glsl"
+#include "simplex.noise2d.glsl"
+#include "simplex.noise3d.glsl"
+
+layout (local_size_x = 8, local_size_y = 8, local_size_z = 8) in;
+
+// Output buffer for noise values
+layout(std430, binding = 2) buffer NoiseBuffer {
+    float noiseValues[];
+};
+
+// Noise generation parameters
+layout(push_constant) uniform PushConstants {
+    uint dimension;      // 2, 3, or 4
+    float scale;         // Noise scale
+    float offsetX;       // X offset
+    float offsetY;       // Y offset
+    float offsetZ;       // Z offset
+    float offsetW;       // W offset (for 4D)
+    uint width;          // Grid width
+    uint height;         // Grid height
+    uint depth;          // Grid depth
+    uint time;           // Time offset for animated noise
+} pc;
+
+void main() {
+    uint x = gl_GlobalInvocationID.x;
+    uint y = gl_GlobalInvocationID.y;
+    uint z = gl_GlobalInvocationID.z;
+    
+    // Check bounds
+    if (x >= pc.width || y >= pc.height || z >= pc.depth) {
+        return;
+    }
+
+    float worldX = (float(x) / float(pc.width)) * pc.scale + pc.offsetX;
+    float worldY = (float(y) / float(pc.height)) * pc.scale + pc.offsetY;
+    float worldZ = (float(z) / float(pc.depth)) * pc.scale + pc.offsetZ;
+    float worldW = float(pc.time) * 0.01 + pc.offsetW;
+
+    uint index = x + y * pc.width + z * pc.width * pc.height;
+
+    float noiseValue = 0.0;
+    
+    if (pc.dimension == 2) {
+        noiseValue = Noise2D(worldX, worldY);
+    } else if (pc.dimension == 3) {
+        noiseValue = Noise3D(worldX, worldY, worldZ);
+    }
+
+    noiseValues[index] = noiseValue;
+}

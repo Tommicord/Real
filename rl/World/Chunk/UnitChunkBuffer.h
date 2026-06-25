@@ -5,7 +5,7 @@
 #include <memory>
 #include <optional>
 
-namespace Rl::World
+namespace Rl::World::Chunk
 {
 
 /* Chunk Storage data */
