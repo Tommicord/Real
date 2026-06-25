@@ -32,7 +32,7 @@ layout (location = 4) flat out uint v_FaceIndex;
 layout (location = 5) smooth out vec3 v_Albedo;
 layout (location = 6) smooth out float v_Metallic;
 layout (location = 7) smooth out float v_Roughness;
-layout (location = 8) out mat3 v_TBN;
+layout (location = 8) smooth out mat3 v_TBN;
 layout (location = 11) smooth out vec3 v_GeometricNormal;
 layout (location = 12) smooth out vec2 v_PolCurve;
 

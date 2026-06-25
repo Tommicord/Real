@@ -35,7 +35,7 @@ void UnitCreateGraphicsPipeline(VkDevice                     device,
     VkPipeline&                                              pipeline)
 {
   auto vertShaderCode   = Providers::ShaderObject::Shader("unit.vert.spv");
-  auto fragShaderCode   = Providers::ShaderObject::Shader("unit.lightning.frag.spv");
+  auto fragShaderCode   = Providers::ShaderObject::Shader("unit.frag.spv");
   auto vertShaderModule = Providers::ShaderObject::Module(device, vertShaderCode);
   auto fragShaderModule = Providers::ShaderObject::Module(device, fragShaderCode);
 

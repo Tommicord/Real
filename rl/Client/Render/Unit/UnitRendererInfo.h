@@ -33,37 +33,32 @@ struct UnitRenderVertex
 /* Defines a single light source */
 struct UnitRenderLight
 {
-  alignas(16) glm::vec3 direction; // For directional lights
-  alignas(16) glm::vec3 color;
-  alignas(4) float intensity;
-  alignas(4) float padding;
+  glm::vec3 direction;
+  float padding0;
+  glm::vec3 color;
+  float intensity;
+  float padding1[4];
 };
 
 /* Defines the lighting uniforms for the unit render info */
-struct UnitRenderLightingUniforms
+struct alignas(16) UnitRenderLightingUniforms
 {
-  // Primary sun light
-  alignas(16) glm::vec3 sunDirection;
-  alignas(16) glm::vec3 sunColor;
-  alignas(4) float sunIntensity;
+  // Primary sunlight
+  glm::vec4 sunDirection;
+  glm::vec4 sunColor;
+  float sunIntensity;
+  uint32_t additionalLightCount;
+  float ambientStrength;
+  float exposure;
+
+  alignas(16) glm::vec3 cameraPosition;
 
   UnitRenderLight additionalLights[4];
-  alignas(4) uint32_t additionalLightCount;
-
-  // Ambient and environment
-  alignas(4) float ambientStrength;
-  alignas(16) glm::vec3 cameraPosition;
-  alignas(4) float exposure;
-
   // Spherical harmonics for GI (9 coefficients for RGB = 27 floats)
-  alignas(16) glm::vec3 shCoefficients[9];
-
-  // Environment colors
-  alignas(16) glm::vec3 groundColor;
-  alignas(16) glm::vec3 skyColor;
-
-  alignas(4) float padding1;
-  alignas(4) float padding2;
+  alignas(16) glm::vec4 shCoefficients[9];
+  alignas(16) glm::vec4 groundColor;
+  alignas(16) glm::vec4 skyColor;
+  alignas(16) glm::mat4 lightSpaceMatrix;
 };
 
 /* Defines the triplanar settings */

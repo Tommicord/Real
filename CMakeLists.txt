@@ -105,7 +105,6 @@ set(SOURCES
   rl/Client/Render/Unit/UnitRendererIndirectDraw.cpp
   rl/Client/Render/Unit/UnitRendererIndirectDraw.h
   rl/Client/Render/Unit/UnitRendererInfo.h
-  rl/Client/Render/Unit/UnitRendererLightingBlock.h
   rl/Client/Render/Unit/UnitRendererNormalTextures.cpp
   rl/Client/Render/Unit/UnitRendererNormalTextures.h
   rl/Client/Render/Unit/UnitRendererPlaceholderResource.cpp
@@ -124,7 +123,7 @@ set(SOURCES
   rl/Client/Render/Unit/UnitRendererVertices.h
   rl/World/Chunk/UnitChunkBuffer.cpp
   rl/World/Chunk/UnitChunkBuffer.h
-  rl/World/Unit/UnitPropertySetter.h
+  rl/World/Unit/UnitPropertyStrategy.h
 )
 
 add_subdirectory(Deps/glfw)
@@ -203,12 +202,10 @@ endfunction()
 
 target_compile_shaders(
   rlgame
-  Public/Shaders/shader.frag
-  Public/Shaders/shader.vert
-  Public/Shaders/unit.face.comp
-  Public/Shaders/unit.curve.comp
-  Public/Shaders/unit.lightning.frag
-  Public/Shaders/unit.vert
+  rl/Shaders/unit.face.comp
+  rl/Shaders/unit.curve.comp
+  rl/Shaders/unit.frag
+  rl/Shaders/unit.vert
 )
 enable_testing()
 

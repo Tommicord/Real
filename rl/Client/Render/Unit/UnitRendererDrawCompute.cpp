@@ -1,10 +1,27 @@
 #include "rl/Client/Render/Unit/UnitRendererDrawCompute.h"
-#include <glm/glm.hpp>
 #include "rl/Client/Render/Unit/UnitRendererFrustum.h"
-#include "rl/Client/Render/Unit/UnitRendererLightingBlock.h"
+
+#include <glm/glm.hpp>
 
 namespace Rl::Client::Render
 {
+
+static glm::mat4 CalculateLightSpaceMatrix(const glm::vec3& sunDirection, const glm::vec3& targetPosition)
+{
+  float orthoSize = 20.0f;
+  glm::mat4 lightProjection = glm::ortho(
+      -orthoSize,  orthoSize,
+      -orthoSize,  orthoSize,
+       0.1f,       50.0f
+  );
+  glm::vec3 shadowCameraPos = targetPosition + (sunDirection * 30.0f);
+  glm::mat4 lightView = glm::lookAt(
+  shadowCameraPos,
+  targetPosition,
+  glm::vec3(0.0f, 1.0f, 0.0f)
+  );
+  return lightProjection * lightView;
+}
 
 void UnitDispatchComputeShaders(Providers::UnitStateResource& resource,
     Providers::UnitStateDrawableVulkan&                       vk,
@@ -31,8 +48,9 @@ void UnitDispatchComputeShaders(Providers::UnitStateResource& resource,
   vkCmdUpdateBuffer(context.commandBuffers[0], vk.frustumBuffer, 0, frustumSize, &frustum);
 
   UnitRenderLightingUniforms lightingData{};
-  lightingData.sunDirection         = glm::normalize(glm::vec3(0.5f, 0.8f, 0.6f));
-  lightingData.sunColor             = glm::vec3(1.0f, 0.95f, 0.8f);
+  lightingData.sunDirection         = glm::normalize(glm::vec4(0.5f, 0.8f, 0.6f, 0.0));
+  lightingData.sunColor             = glm::vec4(1.0f, 0.95f, 0.8f, 0.0f);
+  lightingData.sunIntensity         = 5.5f;
 
   // Additional lights (fill lights for more realistic lighting)
   lightingData.additionalLightCount = 2;
@@ -52,22 +70,20 @@ void UnitDispatchComputeShaders(Providers::UnitStateResource& resource,
   lightingData.exposure             = 1.25f;
 
   // These are pre-computed approximations for sky/ground lighting
-  lightingData.shCoefficients[0] = glm::vec3(0.53f, 0.81f, 0.92f) * 0.5f; // L0 - sky
-  lightingData.shCoefficients[1] = glm::vec3(0.15f, 0.12f, 0.1f) * 0.3f;  // L1 - ground
-  lightingData.shCoefficients[2] = glm::vec3(0.0f, 0.0f, 0.0f);  // L1
-  lightingData.shCoefficients[3] = glm::vec3(0.0f, 0.0f, 0.0f);  // L1
-  lightingData.shCoefficients[4] = glm::vec3(0.0f, 0.0f, 0.0f);  // L2
-  lightingData.shCoefficients[5] = glm::vec3(0.0f, 0.0f, 0.0f);  // L2
-  lightingData.shCoefficients[6] = glm::vec3(0.0f, 0.0f, 0.0f);  // L2
-  lightingData.shCoefficients[7] = glm::vec3(0.0f, 0.0f, 0.0f);  // L2
-  lightingData.shCoefficients[8] = glm::vec3(0.0f, 0.0f, 0.0f);  // L2
+  lightingData.shCoefficients[0] = glm::vec4(0.53f, 0.81f, 0.92f, 0.0f) * 0.09f; // L0 - sky
+  lightingData.shCoefficients[1] = glm::vec4(0.15f, 0.12f, 0.1f, 0.0f) * 0.05f;  // L1 - ground
+  lightingData.shCoefficients[2] = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);  // L1
+  lightingData.shCoefficients[3] = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);  // L1
+  lightingData.shCoefficients[4] = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);  // L2
+  lightingData.shCoefficients[5] = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);  // L2
+  lightingData.shCoefficients[6] = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);  // L2
+  lightingData.shCoefficients[7] = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);  // L2
+  lightingData.shCoefficients[8] = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);  // L2
 
   // Environment colors
-  lightingData.groundColor          = glm::vec3(0.15f, 0.12f, 0.1f);
-  lightingData.skyColor             = glm::vec3(0.53f, 0.81f, 0.92f);
-
-  lightingData.padding1             = 0.0f;
-  lightingData.padding2             = 0.0f;
+  lightingData.groundColor          = glm::vec4(0.15f, 0.12f, 0.1f, 0.0f);
+  lightingData.skyColor             = glm::vec4(0.53f, 0.81f, 0.92f, 0.0f);
+  lightingData.lightSpaceMatrix     = CalculateLightSpaceMatrix(lightingData.sunDirection, lightingData.cameraPosition);
 
   constexpr VkDeviceSize lightingBlockSize = sizeof(UnitRenderLightingUniforms);
   vkCmdUpdateBuffer(

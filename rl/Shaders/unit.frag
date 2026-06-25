@@ -9,7 +9,7 @@ layout (location = 4) flat in uint v_FaceIndex;
 layout (location = 5) smooth in vec3 v_Albedo;
 layout (location = 6) smooth in float v_Metallic;
 layout (location = 7) smooth in float v_Roughness;
-layout (location = 8) in mat3 v_TBN;
+layout (location = 8) smooth in mat3 v_TBN;
 layout (location = 11) smooth in vec3 v_GeometricNormal;
 
 // Output color
@@ -24,29 +24,21 @@ struct Light {
 };
 
 // Lighting uniforms
-layout(set = 0, binding = 4) uniform LightingBlock {
-    // Primary sun light
-    vec3 u_SunDirection;
-    vec3 u_SunColor;
+layout(std140, set = 0, binding = 4) uniform LightingBlock {
+    vec4 u_SunDirection;
+    vec4 u_SunColor;
     float u_SunIntensity;
-
-    Light u_AdditionalLights[4];
     uint u_AdditionalLightCount;
-
-    // Ambient and environment
     float u_AmbientStrength;
-    vec3 u_CameraPosition;
     float u_Exposure;
+    vec4 u_CameraPosition;
+    Light u_AdditionalLights[4];
 
     // Spherical harmonics for GI (9 coefficients for RGB)
-    vec3 u_SHCoefficients[9];
-
-    // Environment colors
-    vec3 u_GroundColor;
-    vec3 u_SkyColor;
-
-    float u_Padding1;
-    float u_Padding2;
+    vec4 u_SHCoefficients[9];
+    vec4 u_GroundColor;
+    vec4 u_SkyColor;
+    mat4 u_LightSpaceMatrix;
 } lighting;
 
 // Ambient occlusion texture
@@ -161,65 +153,75 @@ vec3 CalculateHemisphericAmbient(vec3 normal, vec3 groundColor, vec3 skyColor, f
 }
 
 // Spherical harmonics ambient lighting for improved GI
-vec3 CalculateSHAmbient(vec3 normal, vec3 shCoefficients[9]) {
+vec3 CalculateSHAmbient(vec3 normal, vec4 shCoefficients[9]) {
     // Simplified spherical harmonics evaluation (3 bands)
-    vec3 result = shCoefficients[0]; // L0
+    vec3 result = shCoefficients[0].xyz; // L0
 
     // L1 band
-    result += shCoefficients[1] * normal.y;
-    result += shCoefficients[2] * normal.z;
-    result += shCoefficients[3] * normal.x;
+    result += shCoefficients[1].xyz * normal.y;
+    result += shCoefficients[2].xyz * normal.z;
+    result += shCoefficients[3].xyz * normal.x;
 
     // L2 band (simplified)
     float xx = normal.x * normal.x;
     float yy = normal.y * normal.y;
     float zz = normal.z * normal.z;
-    result += shCoefficients[4] * (3.0 * yy - 1.0);
-    result += shCoefficients[5] * (normal.y * normal.z);
-    result += shCoefficients[6] * (normal.x * normal.z);
-    result += shCoefficients[7] * (normal.x * normal.y);
-    result += shCoefficients[8] * (xx - zz);
+    result += shCoefficients[4].xyz * (3.0 * yy - 1.0);
+    result += shCoefficients[5].xyz * (normal.y * normal.z);
+    result += shCoefficients[6].xyz * (normal.x * normal.z);
+    result += shCoefficients[7].xyz * (normal.x * normal.y);
+    result += shCoefficients[8].xyz * (xx - zz);
 
     return max(result, vec3(0.0));
 }
 
 // PCF shadow calculation with 3x3 kernel
 float CalculateShadow(vec3 fragPosWorldSpace, vec3 lightDir, vec3 normal) {
-    // Transform world position to shadow map space
-    // This would require a light projection matrix - for now, use a simplified approach
-    // In a full implementation, you'd need to pass the light's view-projection matrix as a uniform
-    
-    // For directional light, project position onto a plane perpendicular to light direction
-    float shadow = 1.0;
-    
-    // Simple NdotL-based shadow as fallback when shadow map is not properly set up
-    float NdotL = max(dot(normal, lightDir), 0.0);
-    shadow = smoothstep(0.0, 0.1, NdotL);
-    
+    vec4 fragPosLightSpace = lighting.u_LightSpaceMatrix * vec4(fragPosWorldSpace, 1.0);
+    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
+    projCoords.xy = projCoords.xy * 0.5 + 0.5;
+
+    if (
+        projCoords.z > 1.0 || projCoords.x < 0.0 || projCoords.x > 1.0 ||
+        projCoords.y < 0.0 || projCoords.y > 1.0
+    ) {
+        return 1.0;
+    }
+
+    float minBias = 0.0005;
+    float maxBias = 0.005;
+    float bias = max(maxBias * (1.0 - dot(normal, lightDir)), minBias);
+
+    float currentDepth = projCoords.z - bias;
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(u_ShadowMap, 0);
+
+    for(int x = -1; x <= 1; ++x) {
+        for(int y = -1; y <= 1; ++y) {
+            vec3 shadowCoord = vec3(projCoords.xy + vec2(x, y) * texelSize, currentDepth);
+            shadow += texture(u_ShadowMap, shadowCoord);
+        }
+    }
+    shadow /= 9.0;
     return shadow;
 }
 
 // Soft shadows with organic falloff based on surface orientation
 float CalculateSoftShadows(vec3 worldPos, vec3 normal, vec3 lightDir, vec3 geometricNormal) {
     // Self-shadowing: surfaces facing away from light are in shadow
-    float NdotL = max(dot(geometricNormal, lightDir), 0.0);
-    float selfShadow = smoothstep(0.0, 0.2, NdotL);
+    float NdotL = max(dot(normal, lightDir), 0.0);
+    float selfShadow = smoothstep(0.0, 0.25, NdotL);
     
     // Ambient occlusion-like shadow based on surface concavity
     // Surfaces facing inward get more shadow
     float inwardFactor = 1.0 - max(geometricNormal.y, 0.0);
     float cavityShadow = 1.0 - inwardFactor * 0.4;
     
-    // Distance-based soft shadow for nearby surfaces
-    // Approximate shadow from other parts of the cube
-    float distFromCenter = length(worldPos);
-    float distShadow = smoothstep(0.3, 0.7, distFromCenter);
-    
     // Combine shadow factors with organic blending
-    float shadow = selfShadow * cavityShadow * distShadow;
+    float shadow = selfShadow * cavityShadow;
     
     // Add subtle penumbra effect
-    shadow = mix(shadow, 1.0, 0.3);
+    shadow = mix(shadow, 1.0, 0.25);
     
     return pow(shadow, 2.0);
 }
@@ -250,17 +252,17 @@ vec3 CalculateReflections(vec3 worldPos, vec3 normal, vec3 viewDir, vec3 albedo,
     float groundFactor = max(-R.y, 0.0);
     
     // Get environment colors
-    vec3 skyReflect = lighting.u_SkyColor;
-    vec3 groundReflect = lighting.u_GroundColor;
+    vec3 skyReflect = lighting.u_SkyColor.xyz;
+    vec3 groundReflect = lighting.u_GroundColor.xyz;
     
     // Mix based on reflection direction
     vec3 envColor = mix(groundReflect, skyReflect, skyFactor);
     
     // Add sun reflection if reflection direction aligns with sun
-    vec3 sunDir = normalize(lighting.u_SunDirection);
+    vec3 sunDir = normalize(lighting.u_SunDirection.xyz);
     float sunReflect = max(dot(R, sunDir), 0.0);
     float sunSpecular = pow(sunReflect, 256.0 - roughness * 200.0);
-    envColor += lighting.u_SunColor * sunSpecular * 2.0;
+    envColor += lighting.u_SunColor.xyz * sunSpecular * 2.0;
     
     // Roughness affects reflection intensity and sharpness
     float roughnessFactor = 1.0 - roughness;
@@ -284,11 +286,11 @@ vec3 CalculateGI(vec3 normal, vec3 albedo, float roughness, vec3 lightColor) {
     float skyBounce = max(normal.y, 0.0);
     float groundBounce = max(-normal.y, 0.0);
     
-    vec3 skyGI = lighting.u_SkyColor * albedo * skyBounce * 0.2;
-    vec3 groundGI = lighting.u_GroundColor * albedo * groundBounce * 0.3;
+    vec3 skyGI = lighting.u_SkyColor.xyz * albedo * skyBounce * 0.2;
+    vec3 groundGI = lighting.u_GroundColor.xyz * albedo * groundBounce * 0.3;
     
     // Add inter-reflection approximation
-    vec3 interReflect = albedo * lighting.u_SunColor * 0.15 * (1.0 - roughness);
+    vec3 interReflect = albedo * lighting.u_SunColor.xyz * 0.15 * (1.0 - roughness);
     
     return bounceColor + skyGI + groundGI + interReflect;
 }
@@ -439,10 +441,10 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
     vec3 Lo = vec3(0.0);
 
     // Primary sun light
-    vec3 L = normalize(-lighting.u_SunDirection);
+    vec3 L = normalize(-lighting.u_SunDirection.xyz);
     vec3 H = normalize(V + L);
 
-    vec3 radiance = lighting.u_SunColor * lighting.u_SunIntensity;
+    vec3 radiance = lighting.u_SunColor.xyz * lighting.u_SunIntensity;
     float NDF = DistributionGGX(N, H, material.roughness);
     float G = GeometrySmith(N, V, L, material.roughness);
     vec3 F = FresnelSchlick(max(dot(H, V), 0.0), F0);
@@ -455,7 +457,9 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
     float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + EPSILON;
     vec3 specular = numerator / denominator;
 
-    float NdotL = max(dot(N, L), 0.0);
+    // Add a bit of lighting to the other faces
+    float wrap = 0.6;
+    float NdotL = max((dot(N, L) + wrap) / (1.0 + wrap), 0.0);
     Lo += (kD * material.albedo / PI + specular) * radiance * NdotL;
 
     // Additional lights
@@ -485,8 +489,11 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
     // Get geometric normal for shadow calculations
     vec3 geoN = normalize(v_GeometricNormal);
 
+    vec3 sunLightDirect = (kD * material.albedo / PI + specular) * radiance * NdotL;
+    float shadowMap = CalculateShadow(worldPos, L, N);
     float softShadow = CalculateSoftShadows(worldPos, N, L, geoN);
-    colorFinal *= softShadow;
+    float totalShadow = shadowMap * softShadow;
+    Lo += sunLightDirect * totalShadow;
 
     // Ambient occlusion
     float ao = CalculateAmbientOcclusion(N, geoN);
@@ -498,7 +505,7 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
     colorFinal += reflections;
 
     // Global illumination
-    vec3 gi = CalculateGI(N, material.albedo, material.roughness, lighting.u_SunColor);
+    vec3 gi = CalculateGI(N, material.albedo, material.roughness, lighting.u_SunColor.xyz);
     colorFinal += gi;
 
     // Enhanced rim lighting with geometric normal for better edge definition
@@ -528,7 +535,7 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
     float cornerFlash = combinedRim * mix(0.3, 1.0, flashIntensity) * roughnessAttenuation;
 
     // Colored rim light based on material and sun
-    vec3 rimColor = mix(lighting.u_SunColor, material.albedo, 0.3);
+    vec3 rimColor = mix(lighting.u_SunColor.xyz, material.albedo, 0.3);
     vec3 rimLight = cornerFlash * rimFresnel * rimColor * (lighting.u_SunIntensity * 0.7);
     colorFinal += rimLight;
 
@@ -536,7 +543,7 @@ vec3 CalculatePBR(vec3 worldPos, vec3 normal, vec3 viewDir, PBRMaterial material
     if (material.metallic < 0.5) {
         float sssThickness = 1.0 - material.roughness;
         float backLight = max(dot(-L, N), 0.0);
-        vec3 sssColor = material.albedo * lighting.u_SunColor * backLight * sssThickness * 0.15;
+        vec3 sssColor = material.albedo * lighting.u_SunColor.xyz * backLight * sssThickness * 0.15;
         colorFinal += sssColor;
     }
 
@@ -581,7 +588,7 @@ void main() {
     material.ao = ao;
 
     // Calculate view direction
-    vec3 viewDir = normalize(lighting.u_CameraPosition - v_WorldPos);
+    vec3 viewDir = normalize(lighting.u_CameraPosition.xyz - v_WorldPos);
 
     // Calculate PBR lighting (uses spherical harmonics ambient internally)
     vec3 pbrColor = CalculatePBR(v_WorldPos, normal, viewDir, material, vec3(0.0));
@@ -589,7 +596,7 @@ void main() {
     // Calculate self-emission with proper HDR handling
     float emission = float(v_LightingEmit) / 255.0;
     // Emission should be additive and not affected by AO
-    vec3 emitColor = emission * material.albedo * lighting.u_SunColor * 4.0;
+    vec3 emitColor = emission * material.albedo * lighting.u_SunColor.xyz * 4.0;
     
     // Add bloom-like glow for emissive materials
     if (emission > 0.1) {

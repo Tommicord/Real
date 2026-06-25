@@ -58,10 +58,10 @@ public:
 
   /* Creates a basic WorldUnit, automatically registers the unit */
   template <typename T>
-    requires(IsDerivedUnit<T>)
+    requires IsDerivedUnit<T>
   BaseUnit(T* type) noexcept : BaseUnit()
   {
-    static Texture2 texture("grass.png");
+    static Texture2 texture("unknown.png");
     using pair = UnitRegistryKVPair<UnitResourceName, BaseUnit*>;
     int id     = 1;
     if (pair::GetObjectById(id).has_value())

@@ -1,6 +1,5 @@
 #include "rl/Client/Render/Unit/UnitRendererPlaceholderResource.h"
 #include "rl/Client/Render/Unit/UnitRendererInfo.h"
-#include "rl/Client/Render/Unit/UnitRendererLightingBlock.h"
 #include "rl/Client/Render/Unit/UnitRendererBasicBuffer.h"
 
 #include <stdexcept>
