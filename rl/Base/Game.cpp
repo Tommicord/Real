@@ -103,7 +103,7 @@ void Game::OnKeyEvent(const Input::KeyEvent& event)
 {
   if (cameraModel)
   {
-    cameraModel->GetObject().OnKeyEvent(event);
+    cameraModel->GetObjectRef().OnKeyEvent(event);
   }
 }
 
@@ -111,7 +111,7 @@ void Game::OnMouseButtonEvent(const Input::MouseButtonEvent& event)
 {
   if (cameraModel)
   {
-    cameraModel->GetObject().OnMouseButtonEvent(event);
+    cameraModel->GetObjectRef().OnMouseButtonEvent(event);
   }
 }
 
@@ -119,7 +119,7 @@ void Game::OnMouseMoveEvent(const Input::MouseMoveEvent& event)
 {
   if (cameraModel)
   {
-    cameraModel->GetObject().OnMouseMoveEvent(event);
+    cameraModel->GetObjectRef().OnMouseMoveEvent(event);
   }
 }
 
@@ -127,7 +127,7 @@ void Game::OnMouseScrollEvent(const Input::MouseScrollEvent& event)
 {
   if (cameraModel)
   {
-    cameraModel->GetObject().OnMouseScrollEvent(event);
+    cameraModel->GetObjectRef().OnMouseScrollEvent(event);
   }
 }
 
@@ -271,13 +271,13 @@ void Game::CreateCameraModel()
 {
   cameraModel = std::make_unique<CameraModel>(binding);
   // Set camera aspect ratio to match window dimensions
-  cameraModel->GetObject().SetAspectRatio(static_cast<float>(width) / static_cast<float>(height));
+  cameraModel->GetObjectRef().SetAspectRatio(static_cast<float>(width) / static_cast<float>(height));
   // Move camera back from origin to see the unit
   World::AbstractCamera::Eye eyePosition{};
   eyePosition.x = 0.0;
   eyePosition.y = 0.0;
   eyePosition.z = 5.0;
-  cameraModel->GetObject().SetEyePosition(eyePosition);
+  cameraModel->GetObjectRef().SetEyePosition(eyePosition);
 }
 
 void Game::CreateUnitModel()

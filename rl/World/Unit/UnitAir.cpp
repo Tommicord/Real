@@ -9,4 +9,6 @@ UnitAir::UnitAir() noexcept :
 {
 }
 
+template class IUnit<UnitAir>;
+
 } // namespace Rl::World

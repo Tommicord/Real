@@ -9,14 +9,21 @@ import <type_traits>;
 namespace Rl::Providers
 {
 
-export template<typename T>
-inline constexpr bool IsUpdatable = std::is_base_of_v<IUpdatable, T>;
+/* Validate in compile time if the class is an updatable */
+export template <typename T>
+concept IsUpdatable = std::is_base_of_v<IUpdatable, T>;
 
-export template <class T, class D, class R, class DV>
-  requires IsUpdatable<T>
+/* Validate in compile time if the class is derived from templated base class */
+export template <class Derived, template <typename...> class Base>
+concept IsDerivedTemplate =
+    requires(Derived& derived) { []<class... Ts>(Base<Ts...>&) {}(derived); };
+
+/* Acts like the controller or manager of Resources, Drawable, and Bindings (Vulkan resources) */
+export template <class T, class D, class R, class B>
+  requires(IsUpdatable<T> && IsDerivedTemplate<D, IStateDrawable>)
 class IStateModel
 {
-public:
+  public:
   /* Initializer of a state model */
   explicit IStateModel(Game::MainBinding& context)
   {
@@ -26,7 +33,7 @@ public:
   virtual ~IStateModel() = default;
 
   /* Gets the stored object */
-  virtual T& GetObject() const = 0;
+  virtual T& GetObjectRef() const = 0;
 
   /* Gets the stored camera */
   virtual R& GetResource() const = 0;
@@ -35,35 +42,26 @@ public:
   virtual D& GetDrawable() const = 0;
 
   /* Gets the stored camera */
-  virtual DV& GetBinding() const = 0;
+  virtual B& GetBinding() const = 0;
 
   /* Draws the drawable using the vulkan context */
   void Draw(Game::MainBinding& context)
   {
-    GetDrawable().OnDraw(GetResource(), GetBinding(), context);
+    static_cast<D&>(GetDrawable()).OnDraw(GetResource(), GetBinding(), context);
   }
 
   /* Dispatches compute shaders using the vulkan context */
   void DrawCompute(Game::MainBinding& context)
   {
-    static_cast<IStateDrawable>(
-      GetDrawable()
-    ).OnDrawCompute(
-      GetResource(), GetBinding(), context
-    );
+    static_cast<D&>(GetDrawable()).OnDrawCompute(GetResource(), GetBinding(), context);
   }
 
   /* Updates the drawable state */
   void Update(Game::MainBinding& context)
   {
-    static_cast<IUpdatable>(
-      GetObject()
-    ).Update();
-    static_cast<IStateDrawable>(
-      GetDrawable()
-    ).OnUpdate(
-      GetResource(), GetBinding(), context
-    );
+    static_cast<IUpdatable&>(GetObjectRef()).Update();
+    static_cast<D&>(GetDrawable()).OnUpdate(GetResource(), GetBinding(), context);
   }
 };
+
 } // namespace Rl::Providers

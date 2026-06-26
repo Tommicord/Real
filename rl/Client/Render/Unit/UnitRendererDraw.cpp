@@ -31,7 +31,7 @@ void UnitRenderShadowMap(Providers::UnitStateResource& resource,
       vk.shadowMapRenderPass == VK_NULL_HANDLE || vk.shadowMapFramebuffer == VK_NULL_HANDLE)
     return;
 
-  const World::Camera& cam = resource.camera.value().GetObject();
+  const World::Camera& cam = resource.camera->GetObjectRef();
 
   // Calculate light space matrix
   glm::vec3                  sunDirection = glm::normalize(glm::vec3(0.5f, 0.8f, 0.6f));
@@ -107,7 +107,7 @@ void UnitRender(Providers::UnitStateResource& resource,
     Game::MainBinding&                      context)
 {
   const auto&          vertices = UnitGetTestVertices();
-  const World::Camera& cam = resource.camera.value().GetObject();
+  const World::Camera& cam = resource.camera->GetObjectRef();
   glm::mat4            model = cam.GetModelMatrix();
   glm::mat4            view = cam.GetViewMatrix();
   glm::mat4            projection = cam.GetProjectionMatrix();

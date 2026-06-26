@@ -72,7 +72,7 @@ export class CameraModel final : public IStateModel<World::Camera,
 
   /* Gets the stored camera */
   [[nodiscard]]
-  World::Camera& GetObject() const override;
+  World::Camera& GetObjectRef() const override;
 
   /* Gets the stored camera */
   [[nodiscard]]

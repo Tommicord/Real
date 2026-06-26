@@ -244,7 +244,7 @@ Texture2* UnitDynamicTexture::GenTexture(
 {
   // Create new Texture2
   auto* newTexture = new Texture2();
-  newTexture->LoadFromData(data, static_cast<int>(width), static_cast<int>(height),
+  newTexture->FromData(data, static_cast<int>(width), static_cast<int>(height),
       (channels == 4) ? Texture2Format::RGBA8 : Texture2Format::RGB8, Texture2Properties());
   delete[] data;
   return newTexture;

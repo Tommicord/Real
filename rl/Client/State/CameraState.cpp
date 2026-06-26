@@ -26,7 +26,7 @@ CameraModel::CameraModel(Game::MainBinding& context) : IStateModel(context)
   cameraDrawable->OnCreate(*cameraResource, *cameraBinding, context);
 }
 
-World::Camera& CameraModel::GetObject() const
+World::Camera& CameraModel::GetObjectRef() const
 {
   return *camera;
 }

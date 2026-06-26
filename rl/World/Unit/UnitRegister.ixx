@@ -63,34 +63,39 @@ export template <typename T> class IUnitIdentifiable : public UnitRegister
     return GetStaticClassId();
   }
 
+  private:
+  /* Helper function to get type name from signature */
+  template<typename U>
   [[nodiscard]]
-  static consteval std::string_view SimpleClassName()
+  static consteval std::string_view GetTypeName()
   {
 #if defined(__clang__)
     constexpr std::string_view name{__PRETTY_FUNCTION__};
-    constexpr std::string_view prefix = "std::string_view SimpleClassName() [T = ";
+    constexpr std::string_view prefix = "std::string_view GetTypeName() [U = ";
     constexpr std::string_view suffix = "]";
 #elif defined(__GNUC__)
     constexpr std::string_view name{__PRETTY_FUNCTION__};
-    constexpr std::string_view prefix = "constexpr std::string_view SimpleClassName() [with T = ";
+    constexpr std::string_view prefix = "constexpr std::string_view GetTypeName() [with U = ";
     constexpr std::string_view suffix = "]";
 #elif defined(_MSC_VER)
     constexpr std::string_view name{__FUNCSIG__};
-    constexpr std::string_view prefix = "class std::basic_string_view<char, "
-                                        "std::char_traits<char> > __cdecl SimpleClassName<";
+    // MSVC format: ... GetTypeName<U>(void)
+    // Extract from function template parameter
+    constexpr std::string_view prefix = "GetTypeName<";
     constexpr std::string_view suffix = ">(void)";
 #else
     return "UnitError";
 #endif
     auto start = name.find(prefix);
     if (start == std::string_view::npos)
-      return name;
+      return "UnitError";
     auto currentStart = start + prefix.length();
     auto end = name.find(suffix, currentStart);
     if (end == std::string_view::npos)
-      return name;
+      return "UnitError";
     std::string_view typeName = name.substr(currentStart, end - currentStart);
 #if defined(_MSC_VER)
+    // Remove common MSVC prefixes
     if (typeName.starts_with("class "))
     {
       typeName.remove_prefix(6);
@@ -100,12 +105,21 @@ export template <typename T> class IUnitIdentifiable : public UnitRegister
       typeName.remove_prefix(7);
     }
 #endif
+
+    // Extract just the simple class name (after last ::)
     auto last = typeName.rfind("::");
     if (last != std::string_view::npos)
     {
       typeName.remove_prefix(last + 2);
     }
     return typeName;
+  }
+
+  public:
+  [[nodiscard]]
+  static consteval std::string_view SimpleClassName()
+  {
+    return GetTypeName<T>();
   }
 };
 

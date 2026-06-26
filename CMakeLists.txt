@@ -9,23 +9,23 @@ set(CMAKE_CXX_SCAN_FOR_MODULES ON)
 set(CMAKE_CXX_MODULE_STD ON)
 
 # Platform-specific defines for Vulkan
-if(WIN32)
+if (WIN32)
   add_compile_definitions(VK_USE_PLATFORM_WIN32_KHR)
-elseif(APPLE)
+elseif (APPLE)
   add_compile_definitions(VK_USE_PLATFORM_METAL_EXT)
-elseif(UNIX)
+elseif (UNIX)
   add_compile_definitions(VK_USE_PLATFORM_XCB_KHR)
-endif()
+endif ()
 
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM|aarch64|AARCH64")
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM|aarch64|AARCH64")
   add_compile_definitions(ARM_)
   message(STATUS "Target architecture ARM; NEON SIMD enabled")
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86|x86_64|AMD64|amd64|i386|i686")
+elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "x86|x86_64|AMD64|amd64|i386|i686")
   add_compile_definitions(X86_)
-  message(STATUS "Target architecture x86/x86-64 - SSE/AVX SIMD enabled")
-else()
+  message(STATUS "Target architecture x86/x86-64; SSE/AVX SIMD enabled")
+else ()
   message(WARNING "Unknown target architecture ${CMAKE_SYSTEM_PROCESSOR}; SIMD optimizations disabled")
-endif()
+endif ()
 
 find_package(Vulkan REQUIRED COMPONENTS glslc)
 
@@ -34,42 +34,42 @@ set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 
 function(target_add_header_units TARGET)
   set(_headers ${ARGN})
-  foreach(H IN LISTS _headers)
-    if(IS_ABSOLUTE "${H}")
+  foreach (H IN LISTS _headers)
+    if (IS_ABSOLUTE "${H}")
       set(HEADER_PATH "${H}")
-    else()
+    else ()
       set(HEADER_PATH "${CMAKE_CURRENT_SOURCE_DIR}/${H}")
-    endif()
+    endif ()
     target_sources(
       ${TARGET}
       PRIVATE FILE_SET
-        HEADERS FILES
+      HEADERS FILES
       "${HEADER_PATH}"
     )
-  endforeach()
+  endforeach ()
 endfunction()
 
 # Helper: apply SIMD/compiler flags to a target (centralized to avoid duplication)
 function(target_configure TARGET)
-  if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM|aarch64|AARCH64")
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  if (CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM|aarch64|AARCH64")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
       target_compile_options(${TARGET} PRIVATE -mfpu=neon -mfloat-abi=hard)
-    endif()
-  elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86|x86_64|AMD64|amd64|i386|i686")
-    if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    endif ()
+  elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "x86|x86_64|AMD64|amd64|i386|i686")
+    if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
       target_compile_options(${TARGET} PRIVATE -msse4.2 -mavx2)
-    elseif(MSVC)
+    elseif (MSVC)
       target_compile_options(
         ${TARGET}
         PRIVATE
-          "/experimental:module"
-          "/Zc:preprocessor"
-          "/arch:AVX2"
-          "/Zm200"
-          "/MP2"
+        "/experimental:module"
+        "/Zc:preprocessor"
+        "/arch:AVX2"
+        "/Zm200"
+        "/MP2"
       )
-    endif()
-  endif()
+    endif ()
+  endif ()
 endfunction()
 
 # C++20 Modules
@@ -178,7 +178,7 @@ target_sources(
   rlgame
   PUBLIC
   FILE_SET CXX_MODULES
-    FILES ${CXX_MODULES}
+  FILES ${CXX_MODULES}
 )
 target_include_directories(
   rlgame
@@ -195,20 +195,20 @@ target_link_libraries(
 )
 
 # Platform-specific libraries for input polling
-if(WIN32)
+if (WIN32)
   # Windows API is part of the OS, no additional libraries needed
-elseif(UNIX AND NOT APPLE)
+elseif (UNIX AND NOT APPLE)
   find_package(X11 REQUIRED)
   target_link_libraries(rlgame PRIVATE X11::X11)
-elseif(APPLE)
+elseif (APPLE)
   find_library(COCOA_LIBRARY Cocoa)
   find_library(APPLICATIONSERVICES_LIBRARY ApplicationServices)
   target_link_libraries(rlgame PRIVATE ${COCOA_LIBRARY} ${APPLICATIONSERVICES_LIBRARY})
-elseif(ANDROID)
+elseif (ANDROID)
   target_link_libraries(rlgame PRIVATE android log)
-elseif(IOS)
+elseif (IOS)
   target_link_libraries(rlgame PRIVATE "-framework UIKit" "-framework Foundation")
-endif()
+endif ()
 # Compile Vulkan Shaders
 function(target_compile_shaders TARGET)
   set(SHADERS ${ARGN})
@@ -257,10 +257,10 @@ add_executable(
   Tests/UnitChunkBufferTest.cpp
 )
 target_sources(
-  rlgame_tests 
-  PUBLIC FILE_SET 
-    CXX_MODULES FILES 
-    ${CXX_MODULES}
+  rlgame_tests
+  PUBLIC FILE_SET
+  CXX_MODULES FILES
+  ${CXX_MODULES}
 )
 
 target_include_directories(
@@ -274,6 +274,21 @@ target_compile_options(rlgame_tests PRIVATE /EHsc)
 set_property(TARGET rlgame_tests PROPERTY CXX_STANDARD 20)
 set_property(TARGET rlgame_tests PROPERTY CXX_STANDARD_REQUIRED ON)
 
+set(EXTERN_IMPL 
+  GLFW_INCLUDE_VULKAN 
+  STB_IMAGE_IMPLEMENTATION
+)
+
+target_compile_definitions(
+  rlgame 
+  PRIVATE 
+  ${EXTERN_IMPL}
+)
+target_compile_definitions(
+  rlgame_tests
+  PRIVATE 
+  ${EXTERN_IMPL}
+)
 target_link_libraries(
   rlgame_tests
   PRIVATE
@@ -295,19 +310,19 @@ target_add_header_units(rlgame_tests ${HEADER_UNITS})
 target_add_header_units(rlgame ${HEADER_UNITS})
 
 # Enable SIMD instructions based on architecture for tests
-if(CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM|aarch64|AARCH64")
-  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if (CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM|aarch64|AARCH64")
+  if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(rlgame_tests PRIVATE -mfpu=neon)
     target_compile_options(rlgame_tests PRIVATE -mfloat-abi=hard)
-  endif()
-elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "x86|x86_64|AMD64|amd64|i386|i686")
-  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+  endif ()
+elseif (CMAKE_SYSTEM_PROCESSOR MATCHES "x86|x86_64|AMD64|amd64|i386|i686")
+  if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(rlgame_tests PRIVATE -msse4.2)
     target_compile_options(rlgame_tests PRIVATE -mavx2)
-  elseif(MSVC)
+  elseif (MSVC)
     target_compile_options(rlgame_tests PRIVATE /arch:AVX2)
-  endif()
-endif()
+  endif ()
+endif ()
 
 include(GoogleTest)
 

@@ -13,6 +13,7 @@ import <string_view>;
 import <array>;
 import <memory>;
 import <vector>;
+import <cstring>;
 
 namespace Rl::World
 {
@@ -46,7 +47,7 @@ export class UnitTextureMaterial
 // Forward reference to default block
 class UnitAir;
 
-export template <class Derived = void> class IUnit : IUpdatable
+export template <class Derived = void> class IUnit : public IUpdatable
 {
   /* The registry value type */
   using RegistryV = IUnit*;
@@ -54,7 +55,7 @@ export template <class Derived = void> class IUnit : IUpdatable
   /* Internal Field: Stores the count of registered world units */
   using Registry = UnitRegistryPair3<UnitResourceName, RegistryV>;
   inline static std::vector<std::string_view> defaultName = {std::string_view("Unknown")};
-  inline static auto                          registry = Registry(UnitResourceName(defaultName));
+  inline static auto registry = Registry(UnitResourceName(defaultName));
 
   public:
   /* Stores the properties of the world unit */
@@ -69,7 +70,7 @@ export template <class Derived = void> class IUnit : IUpdatable
   {
     RegisterDerived(id);
 
-    static Texture2 texture("Unknown.png");
+    static Texture2 texture("rl.unit.Unknown");
 
     textures = std::make_unique<UnitTextureMaterial>();
     textures->front = textures->back = &texture;
@@ -259,22 +260,18 @@ export template <class Derived = void> class IUnit : IUpdatable
   static void RegisterDerived(unsigned short& id)
   {
     using P = UnitRegistryPair3<UnitResourceName, IUnit*>;
-    RegisterDerivedInRegistry<P>(id);
+    RegisterDerivedInRegistry(id);
   }
 
   /* Registers in a Unit id, name, and constant value into the registry */
-  template <typename P> static void RegisterDerivedInRegistry(unsigned short& id)
+  static void RegisterDerivedInRegistry(unsigned short& id)
   {
-    if (!P::GetObjectById(id).has_value())
-    {
-      std::vector<std::string_view> v;
-      v.reserve(1);
-      v[0] = IUnitIdentifiable<Derived>::SimpleClassName();
-      UnitResourceName resourceName(v);
-      auto*            base = static_cast<Derived*>(new IUnit());
-      auto             ref = static_cast<RegistryV>(base);
-      registry.Register(id, resourceName, ref);
-    }
+    std::vector<std::string_view> v;
+    v.push_back(IUnitIdentifiable<Derived>::SimpleClassName());
+    UnitResourceName resourceName(v);
+    auto*            base = static_cast<Derived*>(new IUnit());
+    auto             ref = static_cast<RegistryV>(base);
+    registry.Register(id, resourceName, ref);
   }
 
   /* Texture of the unit, back, front, left, right, bottom, top */
@@ -330,5 +327,75 @@ export template <class Derived = void> class IUnit : IUpdatable
   /* Private IUnit constructor, only to init the fields */
   IUnit() = default;
 };
+
+// Template implementations for IUnit
+template <class Derived> IUnit<Derived>::~IUnit()
+{
+  textures.reset();
+}
+
+template <class Derived> UnitTextureMaterial& IUnit<Derived>::GetMaterial() const
+{
+  return *textures;
+}
+
+template <class Derived> void IUnit<Derived>::SetResistance(const float resistance)
+{
+  this->unitResistance = resistance;
+}
+
+template <class Derived> void IUnit<Derived>::SetLightEmit(const float emit)
+{
+  this->lightEmit = emit;
+}
+
+template <class Derived> void IUnit<Derived>::SetLightOpacity(const float opacity)
+{
+  this->lightOpacity = opacity;
+}
+
+template <class Derived> void IUnit<Derived>::SetUnitHardness(const float hardness)
+{
+  this->unitHardness = hardness;
+}
+
+template <class Derived> void IUnit<Derived>::SetPolFenceRight(const PolFence& fence)
+{
+  std::memcpy(&polTr, &fence, sizeof(fence));
+}
+
+template <class Derived> void IUnit<Derived>::SetPolFenceLeft(const PolFence& fence)
+{
+  std::memcpy(&polTl, &fence, sizeof(fence));
+}
+
+template <class Derived> void IUnit<Derived>::SetPolCurve(const float curve)
+{
+  this->polCurveV = curve;
+}
+
+template <class Derived> void IUnit<Derived>::EnableCollision()
+{
+  mustCollide = true;
+}
+
+template <class Derived> void IUnit<Derived>::DisableCollision()
+{
+  mustCollide = false;
+}
+
+template <class Derived> bool IUnit<Derived>::IsCollisionEnabled() const
+{
+  return mustCollide;
+}
+
+template <class Derived> bool IUnit<Derived>::IsVisible() const
+{
+  return mustVisible;
+}
+
+template <class Derived> void IUnit<Derived>::Update()
+{
+}
 
 } // namespace Rl::World

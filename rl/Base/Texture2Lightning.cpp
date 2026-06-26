@@ -85,7 +85,7 @@ Texture2* GenerateLightningTexture(Texture2* baseTexture, const Texture2Properti
   lightningProps.format              = Texture2Format::R8;
   lightningProps.generateMipmaps     = true;
 
-  lightningTexture->LoadFromData(lightningData, width, height, Texture2Format::R8, lightningProps);
+  lightningTexture->FromData(lightningData, width, height, Texture2Format::R8, lightningProps);
 
   // Clean up temporary data
   delete[] lightningData;
@@ -93,8 +93,7 @@ Texture2* GenerateLightningTexture(Texture2* baseTexture, const Texture2Properti
   return lightningTexture;
 }
 
-Texture2* GenerateDirectionalLightTexture(
-    Texture2* baseTexture, const glm::vec3& lightDirection, const Texture2Properties& properties)
+Texture2* GenerateDirectionalLightTexture(const Texture2* baseTexture, const glm::vec3& lightDirection, const Texture2Properties& properties)
 {
   if (!baseTexture || !baseTexture->IsLoaded())
   {
@@ -199,7 +198,7 @@ Texture2* GenerateDirectionalLightTexture(
   lightingProps.format              = Texture2Format::RGB8;
   lightingProps.generateMipmaps     = true;
 
-  lightingTexture->LoadFromData(lightingData, width, height, Texture2Format::RGB8, lightingProps);
+  lightingTexture->FromData(lightingData, width, height, Texture2Format::RGB8, lightingProps);
 
   // Clean up temporary data
   delete[] lightingData;

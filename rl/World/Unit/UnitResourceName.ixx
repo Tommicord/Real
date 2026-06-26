@@ -44,6 +44,13 @@ export class UnitResourceName
   /* Compares the resource name with other resource name */
   [[nodiscard]]
   bool Equals(const UnitResourceName& resource) const;
+
+  /* Equality operator for comparison */
+  [[nodiscard]]
+  bool operator==(const UnitResourceName& other) const
+  {
+    return Equals(other);
+  }
 };
 
 } // namespace Rl::World

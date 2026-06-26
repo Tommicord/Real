@@ -37,19 +37,24 @@ export enum class Texture2Filter {
   LINEAR_MIPMAP_LINEAR
 };
 
-export enum class Texture2Wrap { REPEAT, MIRRORED_REPEAT, CLAMP_TO_EDGE, CLAMP_TO_BORDER };
+export enum class Texture2Wrap {
+  REPEAT,
+  MIRRORED_REPEAT,
+  CLAMP_TO_EDGE,
+  CLAMP_TO_BORDER
+};
 
 export struct Texture2Properties
 {
-  Texture2Format format               = Texture2Format::RGBA8;
-  Texture2Filter minFilter            = Texture2Filter::LINEAR_MIPMAP_LINEAR;
-  Texture2Filter magFilter            = Texture2Filter::LINEAR;
-  Texture2Wrap   wrapS                = Texture2Wrap::REPEAT;
-  Texture2Wrap   wrapT                = Texture2Wrap::REPEAT;
-  bool           generateMipmaps      = true;
-  bool           sRGB                 = true;
+  Texture2Format format = Texture2Format::RGBA8;
+  Texture2Filter minFilter = Texture2Filter::LINEAR_MIPMAP_LINEAR;
+  Texture2Filter magFilter = Texture2Filter::LINEAR;
+  Texture2Wrap   wrapS = Texture2Wrap::REPEAT;
+  Texture2Wrap   wrapT = Texture2Wrap::REPEAT;
+  bool           generateMipmaps = true;
+  bool           sRGB = true;
   bool           anisotropicFiltering = true;
-  float          maxAnisotropy        = 16.0f;
+  float          maxAnisotropy = 16.0f;
 };
 
 export class Texture2
@@ -58,11 +63,11 @@ export class Texture2
   /* Vulkan-specific resources */
   struct VkBinding
   {
-    VkImage        vkImage               = VK_NULL_HANDLE;
-    VkDeviceMemory vkImageMemory         = VK_NULL_HANDLE;
-    VkSampler      vkSampler             = VK_NULL_HANDLE;
-    VkImageView    vkImageView           = VK_NULL_HANDLE;
-    VkBuffer       vkStagingBuffer       = VK_NULL_HANDLE;
+    VkImage        vkImage = VK_NULL_HANDLE;
+    VkDeviceMemory vkImageMemory = VK_NULL_HANDLE;
+    VkSampler      vkSampler = VK_NULL_HANDLE;
+    VkImageView    vkImageView = VK_NULL_HANDLE;
+    VkBuffer       vkStagingBuffer = VK_NULL_HANDLE;
     VkDeviceMemory vkStagingBufferMemory = VK_NULL_HANDLE;
   };
   VkBinding binding;
@@ -131,21 +136,21 @@ export class Texture2
   static bool        IsFormatSupported(Texture2Format format);
   static int         GetFormatSize(Texture2Format format);
   static std::string GetFormatName(Texture2Format format);
-  bool               LoadFromFile(const std::string& filepath);
-  bool LoadFromFile(const std::string& filepath, const Texture2Properties& properties);
-  bool LoadFromMemory(const uint8_t* data, size_t size, const Texture2Properties& properties);
-  bool LoadFromData(const uint8_t* data,
-      int                          width,
-      int                          height,
-      Texture2Format               format,
-      const Texture2Properties&    properties);
-  bool LoadFromAndroidAsset(const std::string& assetPath);
-  bool LoadFromIOSBundle(const std::string& resourcePath);
+  bool               FromResource(const std::string& filepath);
+  bool FromResource(const std::string& filepath, const Texture2Properties& properties);
+  bool FromMemory(const uint8_t* data, size_t size, const Texture2Properties& properties);
+  bool FromData(const uint8_t*  data,
+      int                       width,
+      int                       height,
+      Texture2Format            format,
+      const Texture2Properties& properties);
+  bool FromAndroidAsset(const std::string& assetPath);
+  bool FromIOSBundle(const std::string& resourcePath);
   static bool        IsMobilePlatform();
   static bool        IsDesktopPlatform();
   static std::string GetPlatformName();
 
-  void GenerateMipmaps();
+  void GenMipmaps();
   void GetSampler(Game::MainBinding& context);
   void GetImageView(Game::MainBinding& context);
   void Cleanup();
@@ -181,8 +186,10 @@ export class Texture2
 
 export Texture2* GenerateLightningTexture(
     Texture2* baseTexture, const Texture2Properties& properties);
-export Texture2* GenerateDirectionalLightTexture(
-    Texture2* baseTexture, const glm::vec3& lightDirection, const Texture2Properties& properties);
-export Texture2* GenerateNormalTexture(Texture2* baseTexture, const Texture2Properties& properties);
+export Texture2* GenerateDirectionalLightTexture(const Texture2* baseTexture,
+    const glm::vec3&                                       lightDirection,
+    const Texture2Properties&                              properties);
+export Texture2* GenerateNormalTexture(
+    Texture2* baseTexture, const Texture2Properties& properties);
 
 } // namespace Rl::Providers

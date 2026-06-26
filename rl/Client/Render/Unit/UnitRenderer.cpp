@@ -159,13 +159,13 @@ void UnitStateDrawable::OnCreate(
 void UnitStateDrawable::OnUpdate(
     UnitStateResource& resource, UnitStateBinding& vk, Game::MainBinding& context)
 {
-  if (!resource.camera.has_value())
+  if (!resource.camera)
   {
     return;
   }
   // Visible count reset is now handled in OnDrawCompute using vkCmdFillBuffer (GPU-side)
   Client::Render::UnitRenderFrustumPlanes frustum{};
-  Client::Render::UnitCameraToFrustumPlanes(frustum, resource.camera.value().GetObject());
+  Client::Render::UnitCameraToFrustumPlanes(frustum, resource.camera->GetObjectRef());
 
   // Update graphics descriptor set with textures from unit (only if textures changed)
   Client::Render::UnitUpdateUnitTextures(
@@ -193,7 +193,7 @@ void UnitStateDrawable::OnUpdate(
 void UnitStateDrawable::OnDraw(
     UnitStateResource& resource, UnitStateBinding& vk, Game::MainBinding& context)
 {
-  if (!resource.camera.has_value())
+  if (!resource.camera)
   {
     return;
   }
@@ -203,7 +203,7 @@ void UnitStateDrawable::OnDraw(
 void UnitStateDrawable::OnDrawCompute(
     UnitStateResource& resource, UnitStateBinding& vk, Game::MainBinding& context)
 {
-  if (!resource.camera.has_value())
+  if (!resource.camera)
   {
     return;
   }

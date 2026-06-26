@@ -21,7 +21,7 @@ UnitModel::UnitModel(Game::MainBinding& context) : IStateModel(context)
   unitDrawable->OnCreate(*unitResource, *unitBinding, context);
 }
 
-World::IUnit<>& UnitModel::GetObject() const
+World::IUnit<>& UnitModel::GetObjectRef() const
 {
   return *unit;
 }

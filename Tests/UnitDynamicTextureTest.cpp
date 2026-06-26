@@ -14,7 +14,7 @@ class UnitDynamicTextureTest : public ::testing::Test
   void SetUp() override
   {
     testTexture = new Texture2();
-    bool loaded = testTexture->LoadFromFile("dirt.png");
+    bool loaded = testTexture->FromResource("dirt.png");
     ASSERT_TRUE(loaded) << "Failed to load test texture data";
 
     options.noiseSc  = 0.1f;
@@ -187,7 +187,7 @@ TEST(UnitDynamicTextureEdgeCases, ZeroNoiseScale)
 {
   uint8_t  testData[64] = {0};
   Texture2 testTexture;
-  testTexture.LoadFromData(testData, 8, 8, Texture2Format::RGB8, Texture2Properties());
+  testTexture.FromData(testData, 8, 8, Texture2Format::RGB8, Texture2Properties());
 
   UnitDynamicTexture::DynamicOptions options;
   options.noiseSc  = 0.0f;
@@ -205,7 +205,7 @@ TEST(UnitDynamicTextureEdgeCases, MaximumVariation)
 {
   uint8_t  testData[64] = {128}; // Gray texture
   Texture2 testTexture;
-  testTexture.LoadFromData(testData, 8, 8, Texture2Format::RGB8, Texture2Properties());
+  testTexture.FromData(testData, 8, 8, Texture2Format::RGB8, Texture2Properties());
 
   UnitDynamicTexture::DynamicOptions options;
   options.noiseSc  = 1.0f;

@@ -5,7 +5,7 @@ namespace Rl::World
 {
 
 UnitGrass::UnitGrass() noexcept :
-    IUnit(IUnitIdentifiable::GetClassId()), IUnitGrowable(), IUnitIdentifiable()
+    IUnit(IUnitIdentifiable<UnitGrass>::GetClassId()), IUnitGrowable(), IUnitIdentifiable<UnitGrass>()
 {
 }
 
@@ -17,5 +17,6 @@ bool UnitGrass::InGrowState()
 void UnitGrass::Grow()
 {
 }
+template class IUnit<UnitGrass>;
 
 } // namespace Rl::World

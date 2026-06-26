@@ -25,11 +25,10 @@ import <android/log.h>;
 import <CoreFoundation/CoreFoundation.h>;
 #endif
 
-#define STB_IMAGE_IMPLEMENTATION
 import <stb_image.h>;
-
 import <cmath>;
 import <cstring>;
+import <algorithm>;
 import <fstream>;
 import <sstream>;
 import <vulkan/vulkan.hpp>;
@@ -183,13 +182,13 @@ Texture2::Texture2() :
 
 Texture2::Texture2(const std::string& filepath) : Texture2()
 {
-  LoadFromFile(filepath);
+  FromResource(filepath);
 }
 
 Texture2::Texture2(const std::string& filepath, const Texture2Properties& properties) : Texture2()
 {
   this->properties = properties;
-  LoadFromFile(filepath);
+  FromResource(filepath);
 }
 
 Texture2::~Texture2()
@@ -199,13 +198,13 @@ Texture2::~Texture2()
 
 void Texture2::Initialize()
 {
-  data         = nullptr;
-  dataSize     = 0;
-  width        = 0;
-  height       = 0;
-  channels     = 0;
+  data = nullptr;
+  dataSize = 0;
+  width = 0;
+  height = 0;
+  channels = 0;
   mipmapLevels = 1;
-  loaded       = false;
+  loaded = false;
 }
 
 void Texture2::Cleanup()
@@ -216,7 +215,7 @@ void Texture2::Cleanup()
     data = nullptr;
   }
   dataSize = 0;
-  loaded   = false;
+  loaded = false;
 }
 void Texture2::CleanupBinding(const Game::MainBinding& context)
 {
@@ -254,19 +253,20 @@ void Texture2::CleanupBinding(const Game::MainBinding& context)
 }
 
 // Loading functions
-bool Texture2::LoadFromFile(const std::string& filepath)
+bool Texture2::FromResource(const std::string& filepath)
 {
-  return LoadFromFile(filepath, properties);
+  return FromResource(filepath, properties);
 }
 
-bool Texture2::LoadFromFile(const std::string& filepath, const Texture2Properties& properties)
+bool Texture2::FromResource(const std::string& filepath, const Texture2Properties& properties)
 {
   this->properties = properties;
-  this->filepath   = filepath;
+  this->filepath = filepath;
   return LoadImage(filepath);
 }
 
-bool Texture2::LoadFromMemory(const uint8_t* data, size_t size, const Texture2Properties& properties)
+bool Texture2::FromMemory(
+    const uint8_t* data, size_t size, const Texture2Properties& properties)
 {
   this->properties = properties;
 
@@ -282,31 +282,31 @@ bool Texture2::LoadFromMemory(const uint8_t* data, size_t size, const Texture2Pr
   return ProcessImageData(imageData, width, height, channels);
 }
 
-bool Texture2::LoadFromData(const uint8_t* data,
+bool Texture2::FromData(const uint8_t* data,
     int                                    width,
     int                                    height,
-    Texture2Format                          format,
-    const Texture2Properties&               properties)
+    Texture2Format                         format,
+    const Texture2Properties&              properties)
 {
-  this->properties        = properties;
+  this->properties = properties;
   this->properties.format = format;
-  this->width             = width;
-  this->height            = height;
-  this->channels          = GetFormatSize(format);
+  this->width = width;
+  this->height = height;
+  this->channels = GetFormatSize(format);
 
   this->dataSize = width * height * this->channels;
-  this->data     = new uint8_t[this->dataSize];
+  this->data = new uint8_t[this->dataSize];
   memcpy(this->data, data, this->dataSize);
   loaded = true;
   if (properties.generateMipmaps)
   {
-    GenerateMipmaps();
+    GenMipmaps();
   }
 
   return true;
 }
 
-bool Texture2::LoadFromAndroidAsset(const std::string& assetPath)
+bool Texture2::FromAndroidAsset(const std::string& assetPath)
 {
 #ifdef RL_PLATFORM_ANDROID
   // Android-specific asset loading
@@ -318,7 +318,7 @@ bool Texture2::LoadFromAndroidAsset(const std::string& assetPath)
 #endif
 }
 
-bool Texture2::LoadFromIOSBundle(const std::string& resourcePath)
+bool Texture2::FromIOSBundle(const std::string& resourcePath)
 {
 #ifdef RL_PLATFORM_IOS
   // iOS-specific bundle resource loading
@@ -341,13 +341,13 @@ bool Texture2::LoadFromIOSBundle(const std::string& resourcePath)
   CFStringRef cfFilePath = CFURLCopyFileSystemPath(cfUrl, kCFURLPOSIXPathStyle);
   CFRelease(cfUrl);
 
-  CFIndex length   = CFStringGetLength(cfFilePath);
-  CFIndex maxSize  = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
+  CFIndex length = CFStringGetLength(cfFilePath);
+  CFIndex maxSize = CFStringGetMaximumSizeForEncoding(length, kCFStringEncodingUTF8) + 1;
   char*   filePath = new char[maxSize];
 
   if (CFStringGetCString(cfFilePath, filePath, maxSize, kCFStringEncodingUTF8))
   {
-    bool result = LoadFromFile(std::string(filePath));
+    bool result = FromResource(std::string(filePath));
     delete[] filePath;
     CFRelease(cfFilePath);
     return result;
@@ -373,9 +373,9 @@ bool Texture2::LoadImage(const std::string& filepath)
     if (IsMobilePlatform())
     {
 #ifdef RL_PLATFORM_ANDROID
-      return LoadFromAndroidAsset(filepath);
+      return FromAndroidAsset(filepath);
 #elif defined(RL_PLATFORM_IOS)
-      return LoadFromIOSBundle(filepath);
+      return FromIOSBundle(filepath);
 #endif
     }
     return false;
@@ -386,8 +386,8 @@ bool Texture2::LoadImage(const std::string& filepath)
 
 bool Texture2::ProcessImageData(uint8_t* imageData, int width, int height, int channels)
 {
-  this->width    = width;
-  this->height   = height;
+  this->width = width;
+  this->height = height;
   this->channels = channels;
 
   // Determine format based on channels
@@ -411,7 +411,7 @@ bool Texture2::ProcessImageData(uint8_t* imageData, int width, int height, int c
   }
   // Calculate data size
   dataSize = width * height * channels;
-  data     = new uint8_t[dataSize];
+  data = new uint8_t[dataSize];
   memcpy(data, imageData, dataSize);
   // Free stb_image data
   stbi_image_free(imageData);
@@ -419,33 +419,33 @@ bool Texture2::ProcessImageData(uint8_t* imageData, int width, int height, int c
   // Generate mipmaps if requested
   if (properties.generateMipmaps)
   {
-    GenerateMipmaps();
+    GenMipmaps();
   }
 
   return true;
 }
 
-void Texture2::GenerateMipmaps()
+void Texture2::GenMipmaps()
 {
   if (!loaded || width == 0 || height == 0)
   {
     return;
   }
   // Calculate number of mipmap levels
-  int maxDimension = std::max(width, height);
-  mipmapLevels     = static_cast<int>(std::floor(std::log2(maxDimension))) + 1;
+  const int maxDimension = width > height ? width : height;
+  mipmapLevels = static_cast<int>(std::floor(std::log2(maxDimension))) + 1;
 
   // Generate mipmap data from RGBA array
   if (mipmapLevels > 1 && data)
   {
     // Calculate total size needed for all mipmaps
     size_t totalMipmapSize = 0;
-    int    mipWidth        = width;
-    int    mipHeight       = height;
+    int    mipWidth = width;
+    int    mipHeight = height;
 
     for (int level = 0; level < mipmapLevels; ++level)
     {
-      size_t levelSize = mipWidth * mipHeight * channels;
+      const size_t levelSize = mipWidth * mipHeight * channels;
       totalMipmapSize += levelSize;
       if (mipWidth > 1)
         mipWidth /= 2;
@@ -455,11 +455,11 @@ void Texture2::GenerateMipmaps()
 
     // Allocate new buffer for mipmapped data
     uint8_t* mipmappedData = new uint8_t[totalMipmapSize];
-    uint8_t* dst           = mipmappedData;
+    uint8_t* dst = mipmappedData;
 
     // Copy base level
-    mipWidth        = width;
-    mipHeight       = height;
+    mipWidth = width;
+    mipHeight = height;
     size_t baseSize = width * height * channels;
     memcpy(dst, data, baseSize);
     dst += baseSize;
@@ -467,7 +467,7 @@ void Texture2::GenerateMipmaps()
     // Generate each subsequent mipmap level
     for (int level = 1; level < mipmapLevels; ++level)
     {
-      int prevWidth  = mipWidth;
+      int prevWidth = mipWidth;
       int prevHeight = mipHeight;
 
       if (mipWidth > 1)
@@ -483,7 +483,7 @@ void Texture2::GenerateMipmaps()
           // Sample 2x2 pixels from previous level and average
           for (int c = 0; c < channels; ++c)
           {
-            int sum   = 0;
+            int sum = 0;
             int count = 0;
 
             for (int dy = 0; dy < 2; ++dy)
@@ -496,8 +496,8 @@ void Texture2::GenerateMipmaps()
                 size_t srcOffset = (srcY * prevWidth + srcX) * channels + c;
                 // Find the offset in the previous level's data
                 size_t prevLevelOffset = 0;
-                int    pw              = width;
-                int    ph              = height;
+                int    pw = width;
+                int    ph = height;
                 for (int l = 0; l < level - 1; ++l)
                 {
                   size_t levelSize = pw * ph * channels;
@@ -523,7 +523,7 @@ void Texture2::GenerateMipmaps()
 
     // Replace old data with mipmapped data
     delete[] data;
-    data     = mipmappedData;
+    data = mipmappedData;
     dataSize = totalMipmapSize;
   }
 }

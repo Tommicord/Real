@@ -116,7 +116,7 @@ Texture2* GenerateNormalTexture(Texture2* baseTexture, const Texture2Properties&
     rgbaData[i * 4 + 3] = 255; // Alpha = 1.0
   }
 
-  normalTexture->LoadFromData(rgbaData, width, height, Texture2Format::RGBA8, normalProps);
+  normalTexture->FromData(rgbaData, width, height, Texture2Format::RGBA8, normalProps);
   delete[] rgbaData;
 
   // Clean up temporary data

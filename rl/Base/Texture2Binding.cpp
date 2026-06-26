@@ -1,4 +1,5 @@
 import Rl.Base.Game;
+import Rl.Base.Binding;
 import Rl.Base.Texture2;
 
 import <cstring>;

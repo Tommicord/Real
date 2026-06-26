@@ -1,5 +1,7 @@
 export module Rl.World.Unit.UnitRegistry;
 
+import Rl.World.Unit.UnitResourceName;
+
 import <map>;
 import <optional>;
 import <vector>;
@@ -69,6 +71,82 @@ class UnitRegistryPair3
   [[nodiscard]]
   static std::optional<V> GetObjectById(unsigned short id);
 };
+
+// Template implementations
+template <class K, class V>
+UnitRegistryPair3<K, V>::UnitRegistryPair3(const K& defaultRegKey) : regId(0), regKey(defaultRegKey), regValue(V{})
+{
+  UnitRegisters<K, V>::PutPair(*this);
+}
+
+template <class K, class V>
+void UnitRegistryPair3<K, V>::Register(unsigned short id, K& key, V& value)
+{
+  regId    = id;
+  regValue = value;
+  UnitRegisters<K, V>::PutPair(*this);
+}
+
+template <class K, class V>
+std::optional<K> UnitRegistryPair3<K, V>::GetNameForObject(V& value)
+{
+  for (const auto& pair : UnitRegisters<K, V>::GetRegistry())
+  {
+    if (pair.regValue == value)
+    {
+      return std::optional<K>(pair.regKey);
+    }
+  }
+  return std::nullopt;
+}
+
+template <class K, class V>
+std::optional<V> UnitRegistryPair3<K, V>::GetObject(K name)
+{
+  for (const auto& pair : UnitRegisters<K, V>::GetRegistry())
+  {
+    if (pair.regKey == name)
+    {
+      return std::optional<V>(pair.regValue);
+    }
+  }
+  return std::nullopt;
+}
+
+template <class K, class V>
+std::optional<V> UnitRegistryPair3<K, V>::GetObjectById(unsigned short id)
+{
+  for (const auto& pair : UnitRegisters<K, V>::GetRegistry())
+  {
+    if (pair.regId == id)
+    {
+      return pair.regValue;
+    }
+  }
+  return std::nullopt;
+}
+
+template <class K, class V>
+std::vector<UnitRegistryPair3<K, V>> UnitRegisters<K, V>::registry;
+
+template <class K, class V>
+void UnitRegisters<K, V>::PutPair(UnitRegistryPair3<K, V>& reg) noexcept
+{
+  registry.push_back(reg);
+}
+
+template <class K, class V>
+size_t UnitRegisters<K, V>::GetRegistrySize()
+{
+  return registry.size();
+}
+
+template <class K, class V>
+const std::vector<UnitRegistryPair3<K, V>>& UnitRegisters<K, V>::GetRegistry()
+{
+  return registry;
+}
+
 template class UnitRegistryPair3<UnitResourceName, IUnit*>;
 
 } // namespace Rl::World

@@ -17,7 +17,7 @@ namespace Rl::Providers
 {
 
 // Just for data interchange between classes
-export struct UnitStateResource final : IStateResource
+export struct UnitStateResource final : public IStateResource
 {
   World::IUnit<>& unit;
   CameraModel*   camera;
@@ -28,7 +28,7 @@ export struct UnitStateResource final : IStateResource
   }
 };
 
-export struct UnitStateBinding final : IStateDrawableBinding
+export struct UnitStateBinding final : public IStateDrawableBinding
 {
   VkBuffer              vertexBuffer = VK_NULL_HANDLE;
   VkDeviceMemory        vertexBufferMemory = VK_NULL_HANDLE;
@@ -154,7 +154,7 @@ export class UnitModel final
 
   /* Gets the stored camera */
   [[nodiscard]]
-  World::IUnit<>& GetObject() const override;
+  World::IUnit<>& GetObjectRef() const override;
 
   /* Gets the stored camera */
   [[nodiscard]]
