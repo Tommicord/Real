@@ -11,7 +11,6 @@ import Rl.World.Unit;
 
 using namespace Rl::World;
 
-// Test class for UnitResourceName
 class UnitResourceNameTest : public ::testing::Test
 {
   protected:
@@ -31,28 +30,24 @@ class UnitResourceNameTest : public ::testing::Test
   UnitResourceName* resourceName;
 };
 
-// Test UnitResourceName constructor
 TEST_F(UnitResourceNameTest, ConstructorInitializesName)
 {
   ASSERT_NE(resourceName, nullptr);
   EXPECT_GT(resourceName->GetResourceNameLength(), 0);
 }
 
-// Test UnitResourceName with single component
 TEST(UnitResourceNameEdgeCases, SingleComponentName)
 {
   UnitResourceName singleName({std::string_view("Test")});
   EXPECT_GT(singleName.GetResourceNameLength(), 0);
 }
 
-// Test UnitResourceName with empty vector
 TEST(UnitResourceNameEdgeCases, EmptyVectorName)
 {
   UnitResourceName emptyName({});
   EXPECT_EQ(emptyName.GetResourceNameLength(), 0);
 }
 
-// Test UnitResourceName equality
 TEST_F(UnitResourceNameTest, EqualityComparison)
 {
   UnitResourceName otherName(
@@ -60,21 +55,18 @@ TEST_F(UnitResourceNameTest, EqualityComparison)
   EXPECT_TRUE(resourceName->Equals(otherName));
 }
 
-// Test UnitResourceName inequality
 TEST_F(UnitResourceNameTest, InequalityComparison)
 {
   UnitResourceName otherName({std::string_view("Water"), std::string_view("Sand")});
   EXPECT_FALSE(resourceName->Equals(otherName));
 }
 
-// Test UnitResourceName split
 TEST_F(UnitResourceNameTest, SplitResourceName)
 {
   auto tokens = resourceName->SplitResourceName();
   EXPECT_GT(tokens.size(), 0);
 }
 
-// Test UnitResourceName operator==
 TEST_F(UnitResourceNameTest, EqualityOperator)
 {
   UnitResourceName otherName(
@@ -82,11 +74,9 @@ TEST_F(UnitResourceNameTest, EqualityOperator)
   EXPECT_TRUE(*resourceName == otherName);
 }
 
-// Test class for UnitRegister and IUnitIdentifiable
 class UnitRegisterTest : public ::testing::Test
 {
   protected:
-  // Mock class implementing IUnitIdentifiable
   class MockUnit : public IUnitIdentifiable<MockUnit>
   {
   };
@@ -96,7 +86,6 @@ class UnitRegisterTest : public ::testing::Test
   };
 };
 
-// Test IUnitIdentifiable GetStaticClassId
 TEST_F(UnitRegisterTest, GetStaticClassIdReturnsValidId)
 {
   auto id1 = MockUnit::GetStaticClassId();
@@ -107,7 +96,6 @@ TEST_F(UnitRegisterTest, GetStaticClassIdReturnsValidId)
   EXPECT_NE(id1, id2); // Different classes should have different IDs
 }
 
-// Test IUnitIdentifiable SimpleClassName
 TEST_F(UnitRegisterTest, SimpleClassNameReturnsValidName)
 {
   auto name1 = MockUnit::SimpleClassName();
@@ -115,10 +103,9 @@ TEST_F(UnitRegisterTest, SimpleClassNameReturnsValidName)
   
   EXPECT_GT(name1.length(), 0);
   EXPECT_GT(name2.length(), 0);
-  EXPECT_NE(name1, name2); // Different classes should have different names
+  EXPECT_NE(name1, name2);
 }
 
-// Test IUnitIdentifiable GetClassId (instance method)
 TEST_F(UnitRegisterTest, GetClassIdReturnsSameAsStatic)
 {
   MockUnit unit;
@@ -128,11 +115,9 @@ TEST_F(UnitRegisterTest, GetClassIdReturnsSameAsStatic)
   EXPECT_EQ(staticId, instanceId);
 }
 
-// Test class for UnitPropertyStrategy
 class UnitPropertyStrategyTest : public ::testing::Test
 {
   protected:
-  // Mock class using UnitPropertyStrategy
   class MockMaterial : public UnitPropertyStrategy<MockMaterial>
   {
   };
@@ -148,7 +133,6 @@ class UnitPropertyStrategyTest : public ::testing::Test
   };
 };
 
-// Test default property values
 TEST_F(UnitPropertyStrategyTest, DefaultLightEmit)
 {
   EXPECT_EQ(MockMaterial::GetLightEmit(), 0.0f);
@@ -305,17 +289,13 @@ TEST_F(UnitPropertyStrategyTest, CalculateLightAttenuationCustom)
   EXPECT_EQ(attenuation, CustomMaterial::GetLightOpacity() + CustomMaterial::GetLightAbsorption());
 }
 
-// Test class for UnitRegistry
 class UnitRegistryTest : public ::testing::Test
 {
   protected:
   void SetUp() override
   {
-    // Reset registry state if possible
-    // Note: This is a limitation of the static registry design
   }
 
-  // Mock class for registry testing
   class TestRegistryItem
   {
   };
@@ -336,7 +316,7 @@ TEST_F(UnitRegistryTest, RegistryPairConstructorInitializesFields)
 // Test UnitRegisters GetRegistrySize
 TEST_F(UnitRegistryTest, GetRegistrySizeReturnsCorrectSize)
 {
-  size_t initialSize = TestRegistry::GetRegistrySize();
+  const size_t initialSize = TestRegistry::GetRegistrySize();
   
   std::string testKey = "another_key";
   TestPair pair(testKey);
@@ -351,13 +331,13 @@ TEST_F(UnitRegistryTest, GetRegistryReturnsValidReference)
   EXPECT_GE(registry.size(), 0);
 }
 
-// Test UnitRegistryPair3 Register method
+
 TEST_F(UnitRegistryTest, RegisterUpdatesPairValues)
 {
-  std::string key = "register_test";
+  const std::string key = "register_test";
   TestPair pair(key);
-  
-  unsigned short testId = 42;
+
+  const unsigned short testId = 42;
   std::string newKey = "new_key";
   int newValue = 100;
   
@@ -368,7 +348,6 @@ TEST_F(UnitRegistryTest, RegisterUpdatesPairValues)
   EXPECT_GT(registry.size(), 0);
 }
 
-// Test UnitRegistryPair3 GetObject
 TEST_F(UnitRegistryTest, GetObjectReturnsCorrectValue)
 {
   std::string key = "get_object_test";
@@ -382,19 +361,17 @@ TEST_F(UnitRegistryTest, GetObjectReturnsCorrectValue)
   EXPECT_EQ(result.value(), value);
 }
 
-// Test UnitRegistryPair3 GetObject with non-existent key
 TEST_F(UnitRegistryTest, GetObjectReturnsNulloptForNonExistentKey)
 {
   auto result = TestPair::GetObject("non_existent_key");
   EXPECT_FALSE(result.has_value());
 }
 
-// Test UnitRegistryPair3 GetObjectById
 TEST_F(UnitRegistryTest, GetObjectByIdReturnsCorrectValue)
 {
   std::string key = "get_by_id_test";
   int value = 456;
-  unsigned short id = 99;
+  const unsigned short id = 99;
   
   TestPair pair(key);
   pair.Register(id, key, value);
@@ -404,7 +381,6 @@ TEST_F(UnitRegistryTest, GetObjectByIdReturnsCorrectValue)
   EXPECT_EQ(result.value(), value);
 }
 
-// Test UnitRegistryPair3 GetObjectById with non-existent id
 TEST_F(UnitRegistryTest, GetObjectByIdReturnsNulloptForNonExistentId)
 {
   auto result = TestPair::GetObjectById(9999);
@@ -425,10 +401,10 @@ TEST_F(UnitRegistryTest, GetNameForObjectReturnsCorrectName)
   EXPECT_EQ(result.value(), key);
 }
 
-// Test UnitRegistryPair3 GetNameForObject with non-existent value
 TEST_F(UnitRegistryTest, GetNameForObjectReturnsNulloptForNonExistentValue)
 {
-  auto result = TestPair::GetNameForObject(99999);
+  int id = 99999;
+  auto result = TestPair::GetNameForObject(id);
   EXPECT_FALSE(result.has_value());
 }
 
@@ -438,8 +414,6 @@ class IUnitTest : public ::testing::Test
   protected:
   void SetUp() override
   {
-    // Create a mock IUnit for testing
-    // Note: IUnit constructor is protected, so we need to derive from it
   }
 
   // Mock IUnit implementation for testing
@@ -465,7 +439,6 @@ class IUnitTest : public ::testing::Test
   };
 };
 
-// Test IUnit constructor initializes fields
 TEST_F(IUnitTest, ConstructorInitializesFields)
 {
   MockIUnit unit;
@@ -474,16 +447,13 @@ TEST_F(IUnitTest, ConstructorInitializesFields)
   EXPECT_NE(unit.GetMaterial().down, nullptr);
 }
 
-// Test IUnit SetResistance
 TEST_F(IUnitTest, SetResistanceUpdatesValue)
 {
   MockIUnit unit;
   unit.SetResistance(5.0f);
-  // Verify the resistance was set (would need accessor to verify)
   SUCCEED();
 }
 
-// Test IUnit SetLightEmit
 TEST_F(IUnitTest, SetLightEmitUpdatesValue)
 {
   MockIUnit unit;
@@ -499,7 +469,6 @@ TEST_F(IUnitTest, SetLightOpacityUpdatesValue)
   SUCCEED();
 }
 
-// Test IUnit SetUnitHardness
 TEST_F(IUnitTest, SetUnitHardnessUpdatesValue)
 {
   MockIUnit unit;
@@ -507,7 +476,6 @@ TEST_F(IUnitTest, SetUnitHardnessUpdatesValue)
   SUCCEED();
 }
 
-// Test IUnit SetPolFenceRight
 TEST_F(IUnitTest, SetPolFenceRightUpdatesValues)
 {
   MockIUnit unit;
@@ -516,7 +484,6 @@ TEST_F(IUnitTest, SetPolFenceRightUpdatesValues)
   SUCCEED();
 }
 
-// Test IUnit SetPolFenceLeft
 TEST_F(IUnitTest, SetPolFenceLeftUpdatesValues)
 {
   MockIUnit unit;
@@ -525,7 +492,6 @@ TEST_F(IUnitTest, SetPolFenceLeftUpdatesValues)
   SUCCEED();
 }
 
-// Test IUnit SetPolCurve
 TEST_F(IUnitTest, SetPolCurveUpdatesValue)
 {
   MockIUnit unit;
@@ -533,7 +499,6 @@ TEST_F(IUnitTest, SetPolCurveUpdatesValue)
   SUCCEED();
 }
 
-// Test IUnit EnableCollision
 TEST_F(IUnitTest, EnableCollisionSetsFlag)
 {
   MockIUnit unit;
@@ -541,7 +506,6 @@ TEST_F(IUnitTest, EnableCollisionSetsFlag)
   EXPECT_TRUE(unit.IsCollisionEnabled());
 }
 
-// Test IUnit DisableCollision
 TEST_F(IUnitTest, DisableCollisionClearsFlag)
 {
   MockIUnit unit;
@@ -550,21 +514,18 @@ TEST_F(IUnitTest, DisableCollisionClearsFlag)
   EXPECT_FALSE(unit.IsCollisionEnabled());
 }
 
-// Test IUnit IsCollisionEnabled default state
 TEST_F(IUnitTest, IsCollisionEnabledDefaultState)
 {
   MockIUnit unit;
   EXPECT_FALSE(unit.IsCollisionEnabled());
 }
 
-// Test IUnit IsVisible default state
 TEST_F(IUnitTest, IsVisibleDefaultState)
 {
   MockIUnit unit;
   EXPECT_FALSE(unit.IsVisible());
 }
 
-// Test IUnit Update
 TEST_F(IUnitTest, UpdateDoesNotCrash)
 {
   MockIUnit unit;
@@ -572,7 +533,6 @@ TEST_F(IUnitTest, UpdateDoesNotCrash)
   SUCCEED();
 }
 
-// Test IUnit virtual strategy methods
 TEST_F(IUnitTest, VirtualStrategyMethodsReturnDefaults)
 {
   MockIUnit unit;
@@ -597,14 +557,12 @@ TEST_F(IUnitTest, VirtualStrategyMethodsReturnDefaults)
   EXPECT_TRUE(unit.IsStrategySolid());
 }
 
-// Test IUnit GetDerivedClassId
 TEST_F(IUnitTest, GetDerivedClassIdReturnsValidId)
 {
   MockIUnit unit;
   EXPECT_GT(unit.GetDerivedClassId(), 0);
 }
 
-// Test IUnit GetDerivedClassName
 TEST_F(IUnitTest, GetDerivedClassNameReturnsValidName)
 {
   MockIUnit unit;
@@ -612,19 +570,16 @@ TEST_F(IUnitTest, GetDerivedClassNameReturnsValidName)
   EXPECT_GT(name.length(), 0);
 }
 
-// Test IUnit copy constructor is deleted
 TEST(IUnitEdgeCases, CopyConstructorIsDeleted)
 {
   EXPECT_FALSE(std::is_copy_constructible<IUnit>::value);
 }
 
-// Test IUnit copy assignment is deleted
 TEST(IUnitEdgeCases, CopyAssignmentIsDeleted)
 {
   EXPECT_FALSE(std::is_copy_assignable<IUnit>::value);
 }
 
-// Test UnitTextureMaterial
 TEST(UnitTextureMaterialTest, DefaultConstructorInitializesPointers)
 {
   UnitTextureMaterial material;
@@ -636,7 +591,6 @@ TEST(UnitTextureMaterialTest, DefaultConstructorInitializesPointers)
   EXPECT_EQ(material.back, nullptr);
 }
 
-// Test UnitTextureMaterial parameterized constructor
 TEST(UnitTextureMaterialTest, ParameterizedConstructorInitializesPointers)
 {
   Texture2 tex1("test1");
@@ -656,7 +610,6 @@ TEST(UnitTextureMaterialTest, ParameterizedConstructorInitializesPointers)
   EXPECT_EQ(material.back, &tex6);
 }
 
-// Test UnitType enum values
 TEST(UnitTypeTest, EnumValuesAreValid)
 {
   EXPECT_EQ(static_cast<int>(UnitType::VISIBLE), 0);
