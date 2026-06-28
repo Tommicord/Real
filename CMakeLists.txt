@@ -88,6 +88,8 @@ set(CXX_MODULES
   rl/Player/PlayerController.ixx
   rl/Player/PlayerProvider.ixx
   rl/Player/IPlayer.ixx
+  rl/Player/IPlayerController.ixx
+  rl/Player/IPlayerCameraController.ixx
   rl/Player/Player.ixx
   rl/World/Unit/Unit.ixx
   rl/World/Unit/UnitRegistry.ixx

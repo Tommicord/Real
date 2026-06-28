@@ -2,12 +2,13 @@ export module Rl.Player.CameraController;
 
 import Rl.Player.PlayerCamera;
 import Rl.Base.UserInput;
+import Rl.Player.IPlayerCameraController;
 
 namespace Rl::Player
 {
 
 /* Controls camera rotation and movement from input */
-export class PlayerCameraController final : public PlayerCameraInput
+export class PlayerCameraController final : public IPlayerCameraController
 {
 public:
   /* Constructs controller with camera reference */

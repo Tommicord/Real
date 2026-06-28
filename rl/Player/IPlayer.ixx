@@ -1,8 +1,8 @@
 export module Rl.Player.IPlayer;
 
 import Rl.Player.PlayerCamera;
-import Rl.Player.PlayerController;
-import Rl.Player.CameraController;
+import Rl.Player.IPlayerCameraController;
+import Rl.Player.IPlayerController;
 
 import <memory>;
 
@@ -27,10 +27,10 @@ export class IPlayer
   std::unique_ptr<IPlayerCamera> camera;
 
   /* The player camera controller for input handling */
-  std::unique_ptr<PlayerCameraController> cameraControl;
+  std::unique_ptr<IPlayerCameraController> cameraControl;
 
   /* The player controller for input and state handling */
-  std::unique_ptr<PlayerController> playerControl;
+  std::unique_ptr<IPlayerController> playerControl;
 
   /* Gets coordinate floating-point version of coordinates */
   [[nodiscard]]
@@ -62,22 +62,18 @@ export class IPlayer
     return GetFp(cZ);
   }
 
-  IPlayer() noexcept
-  {
-    CreateInputCameraController();
-    CreateInputPlayerController();
-
-    cX = cY = cZ = 0L;
-  }
+  IPlayer() noexcept = default;
 
   /* Creates and configures the Player camera controller */
-  void CreateInputCameraController() noexcept;
+  virtual void CreateInputCameraController() noexcept = 0;
 
   /* Creates and configures the Player controller */
-  void CreateInputPlayerController() noexcept;
+  virtual void CreateInputPlayerController() noexcept = 0;
 
   IPlayer& operator=(const IPlayer& player) = delete;
   IPlayer& operator=(const IPlayer&& player) = delete;
+  
+  virtual ~IPlayer() = default;
 };
 
 } // namespace Rl::Player

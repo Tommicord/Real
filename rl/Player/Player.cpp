@@ -1,5 +1,7 @@
 import Rl.Player;
 import Rl.Player.IPlayer;
+import Rl.Player.IPlayerCameraController;
+import Rl.Player.IPlayerController;
 import Rl.Player.PlayerCamera;
 import Rl.Player.PlayerProvider;
 import Rl.Player.PlayerController;
@@ -23,15 +25,21 @@ IPlayer& PlayerProvider::GetInstance()
   return *player;
 }
 
+Player::Player() noexcept
+{
+  cX = cY = cZ = 0;
+  CreateInputCameraController();
+  CreateInputPlayerController();
+}
+
 void Player::CreateInputCameraController() noexcept
 {
   // Set camera aspect
+  camera = std::make_unique<PlayerCamera>();
   const auto  binding = Main::Game::GetInstance().GetMainBinding();
   const float aspect = static_cast<float>(binding.swapChainExtent.width) /
                        static_cast<float>(binding.swapChainExtent.height);
   camera->SetAspectRatio(aspect);
-
-  // For now this
   camera->SetEyePosition(IPlayerCamera::Eye{GetXfp(), GetYfp(), GetZfp()});
   cameraControl = std::make_unique<PlayerCameraController>(*camera);
 }
@@ -39,6 +47,14 @@ void Player::CreateInputCameraController() noexcept
 void Player::CreateInputPlayerController() noexcept
 {
   playerControl = std::make_unique<PlayerController>(*this);
+}
+
+Player::~Player()
+{
+  // Delete camera controller using the ~IPlayerCameraController
+  cameraControl->~IPlayerCameraController();
+  // Delete player controller using the ~IPlayerCameraController
+  playerControl->~IPlayerController();
 }
 
 } // namespace Rl::Player

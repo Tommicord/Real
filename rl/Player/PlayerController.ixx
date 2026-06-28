@@ -1,27 +1,14 @@
 export module Rl.Player.PlayerController;
 
 import Rl.Base.UserInput;
+import Rl.Player.IPlayerController;
+import Rl.Player.IPlayer;
 
 namespace Rl::Player
 {
 
-/* Forward reference to avoid circular dependencies */
-class IPlayer;
-
-/* Interface for Player input handling */
-export struct PlayerInput : Input::IInputObserver
-{
-  PlayerInput() : IInputObserver(*this)
-  {
-  }
-  void OnKeyEvent(const Input::KeyEvent& event) override = 0;
-  void OnMouseButtonEvent(const Input::MouseButtonEvent& event) override = 0;
-  void OnMouseMoveEvent(const Input::MouseMoveEvent& event) override = 0;
-  void OnMouseScrollEvent(const Input::MouseScrollEvent& event) override = 0;
-};
-
 /* Controls player movement from input */
-export class PlayerController final : public PlayerInput
+export class PlayerController final : public IPlayerController
 {
   public:
   /* Constructs controller with player reference */
@@ -42,7 +29,7 @@ export class PlayerController final : public PlayerInput
   void OnMouseScrollEvent(const Input::MouseScrollEvent& event) override;
 
   /* Updates player state from input */
-  void Update() const;
+  void Update() const override;
 
   private:
   /* The player object reference */

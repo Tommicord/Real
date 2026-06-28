@@ -9,7 +9,7 @@ namespace Rl::Player
 {
 
 PlayerCameraController::PlayerCameraController(IPlayerCamera& camera) noexcept :
-    PlayerCameraInput(*this), camera(camera)
+    IPlayerCameraController(*this), camera(camera)
 {
 }
 
