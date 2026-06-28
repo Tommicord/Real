@@ -72,20 +72,20 @@ function(target_configure TARGET)
   endif ()
 endfunction()
 
-# C++20 Modules
 set(CXX_MODULES
   rl/Base/Binding.ixx
   rl/Base/Game.ixx
   rl/Base/Shader.ixx
-  rl/Base/InputReceiver.ixx
+  rl/Base/UserInput.ixx
   rl/Base/SimplexNoise.ixx
   rl/Base/Texture2.ixx
   rl/Base/IStateModel.ixx
   rl/Base/IStateDrawable.ixx
   rl/Base/IUpdatable.ixx
-  rl/Client/State/CameraState.ixx
   rl/Client/State/UnitState.ixx
-  rl/World/Camera.ixx
+  rl/Player/PlayerCamera.ixx
+  rl/Player/PlayerCameraController.ixx
+  rl/Player/Player.ixx
   rl/World/Unit/Unit.ixx
   rl/World/Unit/UnitRegistry.ixx
   rl/World/Unit/UnitResourceName.ixx
@@ -122,19 +122,16 @@ set(CXX_MODULES
 
 set(SOURCES
   rl/Base/Shader.cpp
-  rl/Base/InputReceiver.cpp
+  rl/Base/UserInput.cpp
   rl/Base/SimplexNoise.cpp
   rl/Base/Texture2.cpp
   rl/Base/Texture2Lightning.cpp
   rl/Base/Texture2Normal.cpp
   rl/Base/Texture2Binding.cpp
-  rl/Client/Render/CameraRenderer.cpp
-  rl/Client/State/CameraState.cpp
-  rl/Client/State/UnitState.cpp
-  rl/World/Camera.cpp
+  rl/Player/PlayerCameraController.cpp
+  rl/Player/PlayerCamera.cpp
+  rl/Player/Player.cpp
   rl/World/Unit/Unit.cpp
-  rl/World/Unit/UnitGrass.cpp
-  rl/World/Unit/UnitGrass.cpp
   rl/World/Unit/UnitDynamicTexture.cpp
   rl/Client/Render/Unit/UnitRenderer.cpp
   rl/Client/Render/Unit/UnitRendererAOTextures.cpp
@@ -169,15 +166,12 @@ add_subdirectory(Deps/glfw)
 add_subdirectory(Deps/glm)
 add_subdirectory(Deps/gtest)
 
-add_executable(rlgame rl/Base/Game.cpp ${SOURCES}
-  rl/Base/Binding.ixx
-  rl/World/Unit/UnitAir.ixx
-  rl/World/Unit/UnitAir.cpp)
+add_executable(rlgame rl/Base/Game.cpp ${SOURCES})
 
 target_sources(
   rlgame
   PUBLIC
-  FILE_SET CXX_MODULES
+    FILE_SET CXX_MODULES
   FILES ${CXX_MODULES}
 )
 target_include_directories(

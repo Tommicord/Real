@@ -19,14 +19,14 @@ import <thread>;
 namespace Rl::Input
 {
 
-InputReceiver::InputReceiver()
+UserInput::UserInput()
 {
 #if defined(__linux__)
   display = XOpenDisplay(nullptr);
 #endif
 }
 
-InputReceiver::~InputReceiver()
+UserInput::~UserInput()
 {
   Stop();
 #if defined(__linux__)
@@ -37,25 +37,26 @@ InputReceiver::~InputReceiver()
 #endif
 }
 
-InputReceiver& InputReceiver::GetInstance()
+UserInput& UserInput::GetInstance()
 {
-  static InputReceiver instance;
+  static UserInput instance;
   return instance;
 }
 
-void InputReceiver::Subscribe(InputObserver* observer)
+void UserInput::Subscribe(IInputObserver* observer)
 {
   std::scoped_lock lock(observersMutex);
   observers.push_back(observer);
 }
 
-void InputReceiver::Unsubscribe(InputObserver* observer)
+void UserInput::Unsubscribe(IInputObserver* observer)
 {
   std::scoped_lock lock(observersMutex);
-  observers.erase(std::remove(observers.begin(), observers.end(), observer), observers.end());
+  observers.erase(
+      std::remove(observers.begin(), observers.end(), observer), observers.end());
 }
 
-void InputReceiver::NotifyKeyEvent(const KeyEvent& event)
+void UserInput::NotifyKeyEvent(const KeyEvent& event)
 {
   std::cerr << "Key event: " << static_cast<int>(event.key)
             << ", action: " << static_cast<int>(event.action) << std::endl;
@@ -66,7 +67,7 @@ void InputReceiver::NotifyKeyEvent(const KeyEvent& event)
   }
 }
 
-void InputReceiver::NotifyMouseButtonEvent(const MouseButtonEvent& event)
+void UserInput::NotifyMouseButtonEvent(const MouseButtonEvent& event)
 {
   std::scoped_lock lock(observersMutex);
   for (auto* observer : observers)
@@ -75,7 +76,7 @@ void InputReceiver::NotifyMouseButtonEvent(const MouseButtonEvent& event)
   }
 }
 
-void InputReceiver::NotifyMouseMoveEvent(const MouseMoveEvent& event)
+void UserInput::NotifyMouseMoveEvent(const MouseMoveEvent& event)
 {
   std::scoped_lock lock(observersMutex);
   for (auto* observer : observers)
@@ -84,7 +85,7 @@ void InputReceiver::NotifyMouseMoveEvent(const MouseMoveEvent& event)
   }
 }
 
-void InputReceiver::NotifyMouseScrollEvent(const MouseScrollEvent& event)
+void UserInput::NotifyMouseScrollEvent(const MouseScrollEvent& event)
 {
   std::scoped_lock lock(observersMutex);
   for (auto* observer : observers)
@@ -93,7 +94,7 @@ void InputReceiver::NotifyMouseScrollEvent(const MouseScrollEvent& event)
   }
 }
 
-void InputReceiver::Start()
+void UserInput::Start()
 {
   if (running.load())
   {
@@ -101,11 +102,11 @@ void InputReceiver::Start()
   }
 
   running.store(true);
-  inputThread = std::thread(&InputReceiver::InputThread, this);
+  inputThread = std::thread(&UserInput::InputThread, this);
   std::cerr << "DeviceInputReceiver started" << std::endl;
 }
 
-void InputReceiver::Stop()
+void UserInput::Stop()
 {
   if (!running.load())
   {
@@ -121,7 +122,7 @@ void InputReceiver::Stop()
   }
 }
 
-void InputReceiver::InputThread()
+void UserInput::InputThread()
 {
   while (running.load())
   {
@@ -350,23 +351,23 @@ Key WindowsKeyToInputKey(int vkCode)
   }
 }
 
-void InputReceiver::PollWindowsInput()
+void UserInput::PollWindowsInput()
 {
   static int keyStates[256] = {0};
 
   for (int i = 0; i < 256; ++i)
   {
-    SHORT state     = GetAsyncKeyState(i);
+    SHORT state = GetAsyncKeyState(i);
     bool  isPressed = (state & 0x8000) != 0;
 
     int previousState = keyStates[i];
-    keyStates[i]      = isPressed ? 1 : 0;
+    keyStates[i] = isPressed ? 1 : 0;
 
     if (isPressed && previousState == 0)
     {
       KeyEvent event;
-      event.key       = WindowsKeyToInputKey(i);
-      event.action    = Action::Press;
+      event.key = WindowsKeyToInputKey(i);
+      event.action = Action::Press;
       event.modifiers = 0;
       if (GetAsyncKeyState(VK_SHIFT))
         event.modifiers |= static_cast<int>(Modifier::Shift);
@@ -379,27 +380,26 @@ void InputReceiver::PollWindowsInput()
     else if (!isPressed && previousState == 1)
     {
       KeyEvent event;
-      event.key       = WindowsKeyToInputKey(i);
-      event.action    = Action::Release;
+      event.key = WindowsKeyToInputKey(i);
+      event.action = Action::Release;
       event.modifiers = 0;
       NotifyKeyEvent(event);
     }
   }
 
-  // Mouse polling disabled: using GLFW input instead
-  // POINT cursorPos;
-  // if (GetCursorPos(&cursorPos))
-  // {
-  //     static POINT lastCursorPos = {0, 0};
-  //     if (cursorPos.x != lastCursorPos.x || cursorPos.y != lastCursorPos.y)
-  //     {
-  //         MouseMoveEvent event;
-  //         event.x = cursorPos.x;
-  //         event.y = cursorPos.y;
-  //         NotifyMouseMoveEvent(event);
-  //         lastCursorPos = cursorPos;
-  //     }
-  // }
+  POINT cursorPos;
+  if (GetCursorPos(&cursorPos))
+  {
+    static POINT lastCursorPos = {0, 0};
+    if (cursorPos.x != lastCursorPos.x || cursorPos.y != lastCursorPos.y)
+    {
+      MouseMoveEvent event;
+      event.x = cursorPos.x;
+      event.y = cursorPos.y;
+      NotifyMouseMoveEvent(event);
+      lastCursorPos = cursorPos;
+    }
+  }
 }
 #endif
 
@@ -630,9 +630,9 @@ void DeviceInputReceiver::PollLinuxInput()
     case KeyRelease:
       {
         KeyEvent keyEvent;
-        KeySym   keysym    = XLookupKeysym(&event.xkey, 0);
-        keyEvent.key       = X11KeyToInputKey(keysym);
-        keyEvent.action    = (event.type == KeyPress) ? Action::Press : Action::Release;
+        KeySym   keysym = XLookupKeysym(&event.xkey, 0);
+        keyEvent.key = X11KeyToInputKey(keysym);
+        keyEvent.action = (event.type == KeyPress) ? Action::Press : Action::Release;
         keyEvent.modifiers = 0;
         if (event.xkey.state & ShiftMask)
           keyEvent.modifiers |= static_cast<int>(Modifier::Shift);
@@ -647,8 +647,8 @@ void DeviceInputReceiver::PollLinuxInput()
     case ButtonRelease:
       {
         MouseButtonEvent mouseEvent;
-        mouseEvent.button    = static_cast<MouseButton>(event.xbutton.button);
-        mouseEvent.action    = (event.type == ButtonPress) ? Action::Press : Action::Release;
+        mouseEvent.button = static_cast<MouseButton>(event.xbutton.button);
+        mouseEvent.action = (event.type == ButtonPress) ? Action::Press : Action::Release;
         mouseEvent.modifiers = 0;
         NotifyMouseButtonEvent(mouseEvent);
         break;
@@ -669,7 +669,7 @@ void DeviceInputReceiver::PollLinuxInput()
 #if defined(__APPLE__)
 void DeviceInputReceiver::PollMacInput()
 {
-  CGEventRef event  = CGEventCreate(nullptr);
+  CGEventRef event = CGEventCreate(nullptr);
   CGPoint    cursor = CGEventGetLocation(event);
   CFRelease(event);
 
@@ -688,18 +688,12 @@ void DeviceInputReceiver::PollMacInput()
 #if defined(__ANDROID__)
 void DeviceInputReceiver::PollAndroidInput()
 {
-  // Android input polling requires NDK integration
-  // This would typically use AInputEvent* from android/input.h
-  // For now, this is a placeholder
 }
 #endif
 
 #if defined(__IOS__)
 void DeviceInputReceiver::PollIOSInput()
 {
-  // iOS input is event-based through UIKit
-  // Polling is not typically used on iOS
-  // This is a placeholder
 }
 #endif
 

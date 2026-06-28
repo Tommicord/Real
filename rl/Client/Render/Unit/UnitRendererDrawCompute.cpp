@@ -3,7 +3,7 @@ import Rl.Client.Render.Unit.UnitRendererFrustum;
 import Rl.Client.Render.Unit.UnitRendererInfo;
 import Rl.Client.State.UnitState;
 import Rl.Base.Binding;
-import Rl.World.Camera;
+import Rl.Player.Camera;
 
 import <algorithm>;
 import <glm/glm.hpp>;
@@ -32,7 +32,7 @@ void UnitDispatchComputeShaders(Providers::UnitStateResource& resource,
 {
   // Get camera matrices for push constants
   UnitRenderUBO        ubo{};
-  const World::Camera& cam = resource.camera->GetObjectRef();
+  const World::PlayerCamera& cam = resource.camera->GetObjectRef();
   ubo.model = cam.GetModelMatrix();
   ubo.view = cam.GetViewMatrix();
   ubo.projection = cam.GetProjectionMatrix();
@@ -69,7 +69,7 @@ void UnitDispatchComputeShaders(Providers::UnitStateResource& resource,
 
   // Ambient and environment
   lightingData.ambientStrength = 0.15f;
-  World::AbstractCamera::Eye eyePos = cam.eye;
+  World::ICamera::Eye eyePos = cam.eye;
   lightingData.cameraPosition = glm::vec3(eyePos.x, eyePos.y, eyePos.z);
   lightingData.exposure = 1.25f;
 

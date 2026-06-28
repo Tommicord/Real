@@ -25,11 +25,21 @@ export class UnitGrass final : public IUnit,
                                public IUnitIdentifiable<UnitGrass>
 {
   public:
-  UnitGrass() noexcept;
+  UnitGrass() noexcept :
+      IUnit(IUnitIdentifiable<UnitGrass>::GetClassId()), IUnitGrowable(), IUnitIdentifiable<UnitGrass>()
+  {
+    RegisterDerived<UnitGrass>(*this);
+  }
 
   protected:
-  bool InGrowState() override;
-  void Grow() override;
+  bool UnitGrass::InGrowState() override
+  {
+    return true;
+  }
+
+  void UnitGrass::Grow() override
+  {
+  }
 
   private:
   [[nodiscard]]

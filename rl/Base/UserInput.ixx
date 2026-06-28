@@ -188,29 +188,20 @@ export struct MouseMoveEvent
 
 export struct MouseScrollEvent
 {
-  double xoffset, yoffset;
+  double xOffset, yOffset;
 };
 
-export class InputObserver
+export class IInputObserver;
+export class UserInput
 {
   public:
-  virtual ~InputObserver()                                       = default;
-  virtual void OnKeyEvent(const KeyEvent& event)                 = 0;
-  virtual void OnMouseButtonEvent(const MouseButtonEvent& event) = 0;
-  virtual void OnMouseMoveEvent(const MouseMoveEvent& event)     = 0;
-  virtual void OnMouseScrollEvent(const MouseScrollEvent& event) = 0;
-};
-
-export class InputReceiver
-{
-  public:
-  static InputReceiver& GetInstance();
-  InputReceiver(const InputReceiver&)            = delete;
-  InputReceiver& operator=(const InputReceiver&) = delete;
-  InputReceiver(InputReceiver&&)                 = delete;
-  InputReceiver& operator=(InputReceiver&&)      = delete;
-  void           Subscribe(InputObserver* observer);
-  void           Unsubscribe(InputObserver* observer);
+  static UserInput& GetInstance();
+  UserInput(const UserInput&)            = delete;
+  UserInput& operator=(const UserInput&) = delete;
+  UserInput(UserInput&&)                 = delete;
+  UserInput& operator=(UserInput&&)      = delete;
+  void           Subscribe(IInputObserver* observer);
+  void           Unsubscribe(IInputObserver* observer);
   void           NotifyKeyEvent(const KeyEvent& event);
   void           NotifyMouseButtonEvent(const MouseButtonEvent& event);
   void           NotifyMouseMoveEvent(const MouseMoveEvent& event);
@@ -219,15 +210,15 @@ export class InputReceiver
   void           Stop();
 
   private:
-  InputReceiver();
-  ~InputReceiver();
+  UserInput();
+  ~UserInput();
   void                        InputThread();
   void                        PollWindowsInput();
   void                        PollLinuxInput();
   void                        PollMacInput();
   void                        PollAndroidInput();
   void                        PollIOSInput();
-  std::vector<InputObserver*> observers;
+  std::vector<IInputObserver*> observers;
   std::mutex                  observersMutex;
   std::thread                 inputThread;
   std::atomic<bool>           running{false};
@@ -236,6 +227,21 @@ export class InputReceiver
 #if defined(__linux__)
   void* display;
 #endif
+};
+
+export class IInputObserver
+{
+public:
+  /* Registers an InputObserver to the UserInput listeners */
+  explicit IInputObserver(IInputObserver& observer)
+  {
+    UserInput::GetInstance().Subscribe(&observer);
+  }
+  virtual ~IInputObserver()                                      = default;
+  virtual void OnKeyEvent(const KeyEvent& event)                 = 0;
+  virtual void OnMouseButtonEvent(const MouseButtonEvent& event) = 0;
+  virtual void OnMouseMoveEvent(const MouseMoveEvent& event)     = 0;
+  virtual void OnMouseScrollEvent(const MouseScrollEvent& event) = 0;
 };
 
 } // namespace Rl::Input

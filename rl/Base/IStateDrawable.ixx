@@ -1,12 +1,20 @@
 export module Rl.Base.IDrawable;
 
 import Rl.Base.Binding;
+import Rl.Player;
 
 namespace Rl::Providers
 {
 
 export struct IStateResource
 {
+  /* The player reference, cannot be null */
+  Player::IPlayer& player;
+
+  IStateResource()
+  {
+  }
+
   virtual ~IStateResource() = default;
 };
 

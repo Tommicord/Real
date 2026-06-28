@@ -4,7 +4,8 @@ import Rl.Base.IDrawable;
 import Rl.Base.IModel;
 import Rl.Base.Binding;
 import Rl.World.Unit;
-import Rl.Client.State.CameraState;
+import Rl.Player.Camera;
+import Rl.World.Unit.UnitGrass;
 
 import <cstdint>;
 import <memory>;
@@ -20,10 +21,8 @@ namespace Rl::Providers
 export struct UnitStateResource final : public IStateResource
 {
   World::IUnit& unit;
-  CameraModel*   camera;
 
-  explicit UnitStateResource(World::IUnit& unit) :
-      IStateResource(), unit(unit), camera(nullptr)
+  explicit UnitStateResource(World::IUnit& unit) : IStateResource(), unit(unit)
   {
   }
 };
@@ -117,56 +116,83 @@ export struct UnitStateBinding final : public IStateDrawableBinding
   UnitStateBinding() = default;
 };
 
-export class UnitStateDrawable final : public IStateDrawable<UnitStateResource, UnitStateBinding>
+export class UnitStateDrawable final
+    : public IStateDrawable<UnitStateResource, UnitStateBinding>
 {
   public:
   /* Stores the base class type */
   using Base = IStateDrawable;
 
-  void OnDraw(
-      UnitStateResource& resource, UnitStateBinding& vk, Game::MainBinding& context) override;
-  void OnDrawCompute(
-      UnitStateResource& resource, UnitStateBinding& vk, Game::MainBinding& context) override;
-  void OnUpdate(
-      UnitStateResource& resource, UnitStateBinding& vk, Game::MainBinding& context) override;
-  void OnCreate(
-      UnitStateResource& resource, UnitStateBinding& vk, Game::MainBinding& context) override;
-  void OnDestroy(
-      UnitStateResource& resource, UnitStateBinding& vk, Game::MainBinding& context) override;
+  void OnDraw(UnitStateResource& resource,
+      UnitStateBinding&          vk,
+      Game::MainBinding&         context) override;
+  void OnDrawCompute(UnitStateResource& resource,
+      UnitStateBinding&                 vk,
+      Game::MainBinding&                context) override;
+  void OnUpdate(UnitStateResource& resource,
+      UnitStateBinding&            vk,
+      Game::MainBinding&           context) override;
+  void OnCreate(UnitStateResource& resource,
+      UnitStateBinding&            vk,
+      Game::MainBinding&           context) override;
+  void OnDestroy(UnitStateResource& resource,
+      UnitStateBinding&             vk,
+      Game::MainBinding&            context) override;
   void OnPause() override;
   void OnResume() override;
 };
 
-export class UnitModel final
-    : public IStateModel<World::IUnit, UnitStateDrawable, UnitStateResource, UnitStateBinding>
+export class UnitModel final : public IStateModel<World::IUnit,
+                                   UnitStateDrawable,
+                                   UnitStateResource,
+                                   UnitStateBinding>
 {
-  std::shared_ptr<UnitStateDrawable> unitDrawable;
-  std::unique_ptr<UnitStateResource> unitResource;
-  std::unique_ptr<UnitStateBinding>  unitBinding;
-  std::unique_ptr<World::IUnit>    unit;
+  std::shared_ptr<UnitStateDrawable> drawable;
+  std::unique_ptr<UnitStateResource> resource;
+  std::unique_ptr<UnitStateBinding>  binding;
+  std::unique_ptr<World::IUnit>      ref;
 
   public:
   /* Constructs a model of the Camera class */
-  explicit UnitModel(Game::MainBinding& context);
+  explicit UnitModel(Game::MainBinding& context) : IStateModel(context)
+  {
+    drawable = std::make_shared<UnitStateDrawable>();
+    binding = std::make_unique<UnitStateBinding>();
+    ref = std::make_unique<World::UnitGrass>();
+    resource = std::make_unique<UnitStateResource>(*ref);
+    drawable->OnCreate(*resource, *binding, context);
+  }
 
   /* Destructs a CameraModel */
   ~UnitModel() override = default;
 
   /* Gets the stored camera */
   [[nodiscard]]
-  World::IUnit& GetObjectRef() const override;
+  World::IUnit& GetObjectRef() const override
+  {
+    return *ref;
+  }
 
   /* Gets the stored camera */
   [[nodiscard]]
-  UnitStateResource& GetResource() const override;
+  UnitStateResource& GetResource() const override
+  {
+    return *resource;
+  }
 
   /* Gets the stored camera */
   [[nodiscard]]
-  UnitStateDrawable& GetDrawable() const override;
+  UnitStateDrawable& GetDrawable() const override
+  {
+    return *drawable;
+  }
 
   /* Gets the stored camera */
   [[nodiscard]]
-  UnitStateBinding& GetBinding() const override;
+  UnitStateBinding& GetBinding() const override
+  {
+    return *binding;
+  }
 };
 
-} // namespace Rl::Providers
+}; // namespace Rl::Providers

@@ -2,9 +2,8 @@ import Rl.Base.Game;
 import Rl.Base.Shader;
 import Rl.Base.Binding;
 import Rl.Base.InputReceiver;
-import Rl.Client.State.CameraState;
 import Rl.Client.State.UnitState;
-import Rl.World.Camera;
+import Rl.Player.Camera;
 
 import <algorithm>;
 import <cstdint>;
@@ -30,13 +29,13 @@ constexpr bool enableValidationLayers = false;
 constexpr bool enableValidationLayers = true;
 #endif
 
-Game::Game() : input(Input::InputReceiver::GetInstance())
+Game::Game() : input(Input::UserInput::GetInstance())
 {
+  input.Start();
 }
 
 Game::~Game()
 {
-  input.Unsubscribe(this);
   input.Stop();
   CleanupGraphics();
 }
@@ -45,17 +44,12 @@ void Game::Run()
 {
   InitWindow();
   InitGraphics();
-  InitInputReceiverObserver();
-  while (!glfwWindowShouldClose(window))
+
+  while (!glfwWindowShouldClose( window ))
   {
-    glfwPollEvents();
-    DrawFrame();
+    Draw();
   }
   vkDeviceWaitIdle(binding.device);
-}
-
-void Game::Tick()
-{
 }
 
 void Game::CleanupGraphics()
@@ -88,47 +82,7 @@ void Game::CleanupGraphics()
 }
 void Game::CleanupResources()
 {
-  cameraModel->GetDrawable().OnDestroy(
-      cameraModel->GetResource(), cameraModel->GetBinding(), binding);
-  cameraModel.reset();
-}
-
-void Game::InitInputReceiverObserver()
-{
-  input.Subscribe(this);
-  input.Start();
-}
-
-void Game::OnKeyEvent(const Input::KeyEvent& event)
-{
-  if (cameraModel)
-  {
-    cameraModel->GetObjectRef().OnKeyEvent(event);
-  }
-}
-
-void Game::OnMouseButtonEvent(const Input::MouseButtonEvent& event)
-{
-  if (cameraModel)
-  {
-    cameraModel->GetObjectRef().OnMouseButtonEvent(event);
-  }
-}
-
-void Game::OnMouseMoveEvent(const Input::MouseMoveEvent& event)
-{
-  if (cameraModel)
-  {
-    cameraModel->GetObjectRef().OnMouseMoveEvent(event);
-  }
-}
-
-void Game::OnMouseScrollEvent(const Input::MouseScrollEvent& event)
-{
-  if (cameraModel)
-  {
-    cameraModel->GetObjectRef().OnMouseScrollEvent(event);
-  }
+  delete unitModel;
 }
 
 void Game::InitGraphics()
@@ -153,62 +107,18 @@ void Game::InitWindow()
   glfwInit();
   glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
   glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
-  window = glfwCreateWindow(width, height, "RL", nullptr, nullptr);
-  // Configure monitor and window
   GLFWmonitor*       monitor = glfwGetPrimaryMonitor();
   const GLFWvidmode* mode = glfwGetVideoMode(monitor);
+  window = glfwCreateWindow(width, height, "RL", monitor, nullptr);
+
   glfwSetWindowPos(window, (mode->width - width) / 2, (mode->height - height) / 2);
-  // Disable cursor and center it for better camera
   glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
   glfwSetCursorPos(window, width / 2.0, height / 2.0);
-  // Set GLFW cursor position callback
-  glfwSetCursorPosCallback(window,
-      [](GLFWwindow* window, const double xpos, const double ypos)
-      {
-        Game&                 game = Game::GetInstance();
-        Input::MouseMoveEvent event{};
-        event.x = xpos;
-        event.y = ypos;
-        game.OnMouseMoveEvent(event);
-      });
 }
 
-void Game::GetDeltaTime()
+void Game::UpdateModels()
 {
-}
-
-void Game::InputHandle()
-{
-}
-
-void Game::UpdateEntities()
-{
-}
-
-void Game::UpdateCamera()
-{
-}
-
-void Game::UpdatePhysics()
-{
-}
-
-void Game::UpdateAudio()
-{
-}
-
-void Game::UpdateUI()
-{
-  cameraModel->Update(binding);
   unitModel->Update(binding);
-}
-
-void Game::UpdateLogic()
-{
-}
-
-void Game::UpdateRender()
-{
 }
 
 Game& Game::GetInstance()
@@ -224,9 +134,9 @@ MainBinding& Game::GetVulkanContext()
 
 void Game::CreateInstance()
 {
-  if (enableValidationLayers && !CheckValidationLayerSupport())
+  if (!CheckValidationLayerSupport())
   {
-    throw std::runtime_error("Validation layers requested, but not available");
+    throw std::runtime_error("Validation layers requested but not available");
   }
   VkApplicationInfo appInfo{};
   appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
@@ -267,30 +177,13 @@ void Game::CreateSurface()
   }
 }
 
-void Game::CreateCameraModel()
-{
-  cameraModel = std::make_unique<CameraModel>(binding);
-  // Set camera aspect ratio to match window dimensions
-  cameraModel->GetObjectRef().SetAspectRatio(static_cast<float>(width) / static_cast<float>(height));
-  // Move camera back from origin to see the unit
-  World::AbstractCamera::Eye eyePosition{};
-  eyePosition.x = 0.0;
-  eyePosition.y = 0.0;
-  eyePosition.z = 5.0;
-  cameraModel->GetObjectRef().SetEyePosition(eyePosition);
-}
-
 void Game::CreateUnitModel()
 {
   unitModel = std::make_unique<UnitModel>(binding);
-  // For now this
-  unitModel->GetResource()
-    .camera = cameraModel.get();
 }
 
 void Game::CreateResources()
 {
-  CreateCameraModel();
   CreateUnitModel();
 }
 
@@ -555,7 +448,6 @@ void Game::CreateSyncObjects()
     throw std::runtime_error("Failed to create image available semaphore");
   }
 
-  // Create one render finished semaphore per swap chain image
   binding.renderFinishedSemaphores.resize(binding.swapChainImages.size());
   for (size_t i = 0; i < binding.swapChainImages.size(); i++)
   {
@@ -572,15 +464,13 @@ void Game::CreateSyncObjects()
   }
 }
 
-void Game::DrawUI()
+void Game::DrawModels()
 {
-  // Only draw unit model, camera matrices are pushed in unit renderer
   unitModel->Draw(binding);
 }
 
 void Game::CreatePipelineLayout()
 {
-  // Create pipeline layout with push constants for camera matrices (3 mat4 = 192 bytes)
   VkPushConstantRange pushConstantRange{};
   pushConstantRange.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
   pushConstantRange.offset = 0;
@@ -600,7 +490,7 @@ void Game::CreatePipelineLayout()
   }
 }
 
-void Game::DrawFrame()
+void Game::Draw()
 {
   vkWaitForFences(binding.device, 1, &binding.inFlightFence, VK_TRUE, UINT64_MAX);
 
@@ -619,7 +509,6 @@ void Game::DrawFrame()
     throw std::runtime_error("Failed to begin recording command buffer");
   }
 
-  // Dispatch compute shader for frustum culling (before render pass)
   unitModel->DrawCompute(binding);
 
   VkRenderPassBeginInfo renderPassInfo{};
@@ -649,8 +538,8 @@ void Game::DrawFrame()
   scissor.offset = {0, 0};
   scissor.extent = binding.swapChainExtent;
   vkCmdSetScissor(binding.commandBuffers[0], 0, 1, &scissor);
-  UpdateUI();
-  DrawUI();
+  UpdateModels();
+  DrawModels();
   vkCmdEndRenderPass(binding.commandBuffers[0]);
 
   if (vkEndCommandBuffer(binding.commandBuffers[0]) != VK_SUCCESS)
@@ -724,14 +613,14 @@ MainBinding::QueueFamilyIndices Game::FindQueueFamilies(VkPhysicalDevice device)
   return indices;
 }
 
-bool Game::IsDeviceSuitable(VkPhysicalDevice device)
+bool Game::IsDeviceSuitable(VkPhysicalDevice device) const
 {
   MainBinding::QueueFamilyIndices indices = FindQueueFamilies(device);
 
   return indices.isComplete();
 }
 
-bool Game::CheckValidationLayerSupport()
+bool Game::CheckValidationLayerSupport() const
 {
   uint32_t layerCount;
   vkEnumerateInstanceLayerProperties(&layerCount, nullptr);
@@ -759,10 +648,10 @@ bool Game::CheckValidationLayerSupport()
   return true;
 }
 
-std::vector<const char*> Game::GetRequiredExtensions()
+std::vector<const char*> Game::GetRequiredExtensions() const
 {
   uint32_t     glfwExtensionCount = 0;
-  const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+  const auto   glfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
   std::vector  extensions(glfwExtensions, glfwExtensions + glfwExtensionCount);
 
   if (enableValidationLayers)

@@ -3,7 +3,7 @@ import Rl.Client.Render.Unit.UnitRendererShadowMap;
 import Rl.Client.Render.Unit.UnitRendererVertices;
 import Rl.Client.State.UnitState;
 import Rl.Client.State.CameraState;
-import Rl.World.Camera;
+import Rl.Player.Camera;
 import Rl.Base.Binding;
 
 import <glm/glm.hpp>;
@@ -31,11 +31,11 @@ void UnitRenderShadowMap(Providers::UnitStateResource& resource,
       vk.shadowMapRenderPass == VK_NULL_HANDLE || vk.shadowMapFramebuffer == VK_NULL_HANDLE)
     return;
 
-  const World::Camera& cam = resource.camera->GetObjectRef();
+  const World::PlayerCamera& cam = resource.camera->GetObjectRef();
 
   // Calculate light space matrix
   glm::vec3                  sunDirection = glm::normalize(glm::vec3(0.5f, 0.8f, 0.6f));
-  World::AbstractCamera::Eye eyePos = cam.eye;
+  World::ICamera::Eye eyePos = cam.eye;
   glm::vec3                  cameraPosition = glm::vec3(eyePos.x, eyePos.y, eyePos.z);
   glm::mat4 lightSpaceMatrix = CalculateLightSpaceMatrix(sunDirection, cameraPosition);
 
@@ -107,7 +107,7 @@ void UnitRender(Providers::UnitStateResource& resource,
     Game::MainBinding&                      context)
 {
   const auto&          vertices = UnitGetTestVertices();
-  const World::Camera& cam = resource.camera->GetObjectRef();
+  const World::PlayerCamera& cam = resource.camera->GetObjectRef();
   glm::mat4            model = cam.GetModelMatrix();
   glm::mat4            view = cam.GetViewMatrix();
   glm::mat4            projection = cam.GetProjectionMatrix();
