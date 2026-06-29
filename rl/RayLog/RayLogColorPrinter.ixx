@@ -1,6 +1,6 @@
 export module Rl.RayLog.ColorPrinter;
 
-import Rl.RayLog.IRayLogSerializable;
+import Rl.RayLog.ISerializable;
 
 import <string>;
 
@@ -25,7 +25,7 @@ export class RayLogColorPrinter final : public IRayLogSerializable<RayLogColor>
   public:
   /* Stringify a RayLogColor enum value */
   [[nodiscard]]
-  constexpr const std::string& ToString(const RayLogColor level) const override
+  constexpr std::string ToString(const RayLogColor level) const override
   {
     switch (level)
     {

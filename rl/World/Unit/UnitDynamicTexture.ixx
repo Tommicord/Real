@@ -2,6 +2,7 @@ export module Rl.World.Unit.UnitDynamicTexture;
 
 import Rl.Base.SimplexNoise;
 import Rl.Base.Texture2;
+
 import <cstddef>;
 import <cstdint>;
 import <map>;

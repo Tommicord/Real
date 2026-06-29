@@ -1,6 +1,6 @@
 export module Rl.RayLog.Uuid;
 
-import Rl.RayLog.IRayLogSerializable;
+import Rl.RayLog.ISerializable;
 
 import <random>;
 import <sstream>;
@@ -12,7 +12,7 @@ namespace Rl::RayLog
 {
 
 /* RayLog logging thread UUID */
-export class RayLogUuid final : IRayLogSerializable<void>
+export class RayLogUuid final : IRayLogSerializable2
 {
   /* The UUID bytes data */
   std::array<unsigned char, 16> data{};
@@ -23,10 +23,10 @@ export class RayLogUuid final : IRayLogSerializable<void>
   {
     std::random_device rd;
     std::mt19937 gen(rd());
-    std::uniform_int_distribution<unsigned char> dis(0, 255);
+    std::uniform_int_distribution<unsigned int> dis(0, 255);
 
     for (auto& byte : data)
-      byte = dis(gen);
+      byte = static_cast<unsigned char>(dis(gen));
 
     data[6] = (data[6] & 0x0F) | 0x40;
     data[8] = (data[8] & 0x3F) | 0x80;
@@ -34,7 +34,7 @@ export class RayLogUuid final : IRayLogSerializable<void>
 
   /* Returns the formatted UUID string */
   [[nodiscard]]
-  constexpr const std::string& ToString() const override
+  std::string ToString() const
   {
     std::stringstream ss;
     for (size_t i = 0; i < data.size(); ++i)

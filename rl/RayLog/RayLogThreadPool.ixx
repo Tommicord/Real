@@ -5,11 +5,11 @@ import <vector>;
 import <functional>;
 import <atomic>;
 import <condition_variable>;
-#include <future>
+import <future>;
 import <queue>;
 
 #if defined(_WIN32) || defined(_WIN64)
-#include <windows.h>
+import <windows.h>;
 #endif
 
 namespace Rl::RayLog
@@ -57,7 +57,7 @@ export class RayLogThreadPool
     condition.notify_all();
     for (auto& worker : workers)
     {
-      auto future = std::async(std::launch::async, &std::thread::join, &worker);
+      auto future = std::async(std::launch::async, [&worker] { worker.join(); });
       if (future.wait_for(std::chrono::seconds(4)) == std::future_status::timeout)
       {
 #if defined(_WIN32) || defined(_WIN64)

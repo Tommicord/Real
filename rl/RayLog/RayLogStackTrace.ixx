@@ -2,6 +2,12 @@ export module Rl.RayLog.StackTrace;
 
 import <vector>;
 import <string>;
+#if defined(_WIN32)
+#include <windows.h>;
+#include <DbgHelp.h>;
+#elif defined(__linux__) || defined(__APPLE__)
+#include <execinfo.h>
+#endif
 
 namespace Rl::RayLog
 {
@@ -10,10 +16,9 @@ export class RayLogStackTrace
 {
   public:
   [[nodiscard]]
-  static std::vector<void*> Capture(int skipFrames = 0)
+  static std::vector<void*> Capture(const int skipFrames = 0)
   {
 #if defined(__linux__) || defined(__APPLE__)
-    #include <execinfo.h>
     constexpr int MaxFrames = 64;
     void* buffer[MaxFrames];
     int count = backtrace(buffer, MaxFrames);
@@ -22,12 +27,10 @@ export class RayLogStackTrace
       result.push_back(buffer[i]);
     return result;
 #elif defined(_WIN32)
-    #include <windows.h>
-    #include <DbgHelp.h>
     constexpr int MaxFrames = 64;
     void* buffer[MaxFrames];
-    USHORT count = CaptureStackBackTrace(skipFrames + 1, MaxFrames, buffer, nullptr);
-    std::vector<void*> result(buffer, buffer + count);
+    const USHORT count = CaptureStackBackTrace(skipFrames + 1, MaxFrames, buffer, nullptr);
+    std::vector result(buffer, buffer + count);
     return result;
 #else
     return {};
@@ -51,7 +54,7 @@ export class RayLogStackTrace
   {
     char buffer[20];
     snprintf(buffer, sizeof(buffer), "%p", ptr);
-    return std::string(buffer);
+    return { buffer };
   }
 };
 

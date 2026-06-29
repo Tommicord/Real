@@ -49,7 +49,6 @@ function(target_add_header_units TARGET)
   endforeach ()
 endfunction()
 
-# Helper: apply SIMD/compiler flags to a target (centralized to avoid duplication)
 function(target_configure TARGET)
   if (CMAKE_SYSTEM_PROCESSOR MATCHES "arm|ARM|aarch64|AARCH64")
     if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
@@ -73,6 +72,7 @@ function(target_configure TARGET)
 endfunction()
 
 set(CXX_MODULES
+  rl/Base/Game.ixx
   rl/Base/Binding.ixx
   rl/Base/Game.ixx
   rl/Base/Shader.ixx
@@ -145,6 +145,7 @@ set(CXX_MODULES
 )
 
 set(SOURCES
+  rl/Base/Game.cpp
   rl/Base/Shader.cpp
   rl/Base/UserInput.cpp
   rl/Base/SimplexNoise.cpp
@@ -191,7 +192,7 @@ add_subdirectory(Deps/glfw)
 add_subdirectory(Deps/glm)
 add_subdirectory(Deps/gtest)
 
-add_executable(rlgame rl/Base/Game.cpp ${SOURCES})
+add_executable(rlgame rl/Base/Main.cpp ${SOURCES})
 
 target_sources(
   rlgame
@@ -274,7 +275,15 @@ add_executable(
   ${SOURCES}
   Tests/UnitDynamicTextureTest.cpp
   Tests/UnitChunkBufferTest.cpp
-  Tests/UnitRegistryTest.cpp
+  Tests/RayLogRingBufferTest.cpp
+  Tests/RayLogUuidTest.cpp
+  Tests/RayLogFormatterTest.cpp
+  Tests/RayLogFormatParserTest.cpp
+  Tests/RayLogTimestampTest.cpp
+  Tests/RayLogMessageTest.cpp
+  Tests/RayLogLevelPrinterTest.cpp
+  Tests/RayLogConfigTest.cpp
+  Tests/RayLogPlatformTest.cpp
 )
 target_sources(
   rlgame_tests
@@ -317,6 +326,9 @@ target_link_libraries(
   glm::glm
   glfw
 )
+if(WIN32)
+  target_link_libraries(rlgame_tests PRIVATE dbghelp)
+endif()
 
 set(HEADER_UNITS
   Deps/stb/stb_image.h

@@ -59,7 +59,6 @@ export class RayLogFileOutput
     logf.close();
     currentSize = 0;
     logUuid = RayLogUuid();
-    std::sstr
     logfp = ".log/" + logUuid.ToString() + ".log";
     logf.open(logfp, std::ios::out | std::ios::app);
   }

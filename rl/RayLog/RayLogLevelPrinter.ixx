@@ -1,6 +1,6 @@
 export module Rl.RayLog.LevelPrinter;
 
-import Rl.RayLog.IRayLogSerializable;
+import Rl.RayLog.ISerializable;
 
 import <string>;
 
@@ -24,7 +24,7 @@ export class RayLogLevelPrinter final : public IRayLogSerializable<RayLogLevel>
 public:
   /* Stringify a RayLogLevel enum value */
   [[nodiscard]]
-  constexpr const std::string& ToString(const RayLogLevel level) const override
+  std::string ToString(const RayLogLevel level) const override
   {
     switch (level)
     {

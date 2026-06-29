@@ -17,7 +17,8 @@ class RayLogRingBuffer
   size_t capacity;
 
   public:
-  explicit RayLogRingBuffer(size_t size) : buffer(size), capacity(size) {}
+  explicit RayLogRingBuffer(size_t size) :
+    buffer(size), capacity(size) {}
 
   bool Push(const T& item)
   {

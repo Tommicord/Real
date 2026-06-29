@@ -21,23 +21,29 @@ export class RayLogFormatParser
   {
     std::vector<FormatToken> tokens;
     std::string current;
-
+    constexpr char pc = 0x25; // '%' in ASCII
     for (size_t i = 0; i < format.size(); ++i)
     {
-      if (format[i] == '%' && i + 1 < format.size())
+      if (format[i] == pc && i + 1 < format.size())
       {
+        const char spec = format[i + 1];
+        if (spec == pc)
+        {
+          current += pc;
+          i++;
+          if (!current.empty())
+          {
+            tokens.push_back({false, current});
+            current.clear();
+          }
+          continue;
+        }
         if (!current.empty())
         {
           tokens.push_back({false, current});
           current.clear();
         }
-        char spec = format[i + 1];
-        if (spec == 's' || spec == 'd' || spec == 'f' || spec == 'h' || spec == 'p' || spec == 'b' || spec == 'a')
-        {
-          tokens.push_back({true, std::string(1, spec)});
-          i++;
-        }
-        else if (spec == 'f' && i + 2 < format.size() && format[i + 2] == '.')
+        if (spec == 'f' && i + 2 < format.size() && format[i + 2] == '.')
         {
           std::string precision;
           size_t j = i + 3;
@@ -48,6 +54,11 @@ export class RayLogFormatParser
           }
           tokens.push_back({true, "%f." + precision});
           i = j - 1;
+        }
+        else if (spec == 's' || spec == 'd' || spec == 'f' || spec == 'h' || spec == 'p' || spec == 'b' || spec == 'a')
+        {
+          tokens.push_back({true, std::string(1, spec)});
+          i++;
         }
         else
         {

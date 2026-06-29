@@ -6,10 +6,11 @@ AlignConsecutiveDeclarations: true
 AlignAfterOpenBracket: DontAlign
 AlignOperands: true
 AlignTrailingComments: false
+AllowShortBlocksOnASingleLine: Always
+AllowBreakBeforeNoexceptSpecifier: Always
 AlwaysBreakTemplateDeclarations: Yes
 BreakInheritanceList: AfterComma
 BreakTemplateDeclarations: MultiLine
-AllowBreakBeforeNoexceptSpecifier: Always
 Cpp11BracedListStyle: true
 BinPackArguments: true
 BinPackParameters: false

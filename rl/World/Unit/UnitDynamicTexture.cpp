@@ -30,7 +30,6 @@ std::vector<float> UnitDynamicTexture::GenNoiseValMap(const float scale) const
   int                width  = baseTexture->GetWidth();
   int                height = baseTexture->GetHeight();
   map.resize(width * height);
-
 #ifdef X86_
   // SSE/AVX optimized version for x86/x86-64
   __m128    scaleVec    = _mm_set1_ps(scale);
