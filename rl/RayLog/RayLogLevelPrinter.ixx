@@ -19,7 +19,7 @@ export enum class RayLogLevel : unsigned char
 };
 
 /* RayLog logging level printer from RayLogLevel enum */
-export class RayLogColorPrinter final : public IRayLogSerializable<RayLogLevel>
+export class RayLogLevelPrinter final : public IRayLogSerializable<RayLogLevel>
 {
 public:
   /* Stringify a RayLogLevel enum value */

@@ -123,7 +123,6 @@ set(CXX_MODULES
   rl/Client/Render/Unit/UnitRendererVertices.ixx
   rl/World/Chunk/UnitChunkBuffer.ixx
   rl/World/Chunk/UnitChunkBufferGPUSimplex.ixx
-  rl/RayLog/RayLog.ixx
   rl/RayLog/RayLogConfig.ixx
   rl/RayLog/RayLogPlatform.ixx
   rl/RayLog/RayLogUuid.ixx
@@ -141,7 +140,7 @@ set(CXX_MODULES
   rl/RayLog/RayLogStackTrace.ixx
   rl/RayLog/RayLogSymbolDemangler.ixx
   rl/RayLog/RayLogFatalHandler.ixx
-  rl/RayLog/RayLogger.ixx
+  rl/RayLog/RayLog.ixx
   rl/RayLog/RayLogMacro.ixx
 )
 
